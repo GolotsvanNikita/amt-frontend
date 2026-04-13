@@ -49,7 +49,7 @@ export function YouTubeCustomPlayer()
     }, 500); // обновляется каждые полсекунды
 
     return () => clearInterval(interval);
-  }, []);
+   }, []);
 
   const togglePlay = () => {
     const player = playerRef.current;

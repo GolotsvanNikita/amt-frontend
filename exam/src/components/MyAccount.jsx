@@ -11,7 +11,7 @@ export function MyAccount(){
         subscribers: 0,
         avatar: "/ava.png",
         bannerUrl: "/backimage.jpg"
-    });
+     });
         const [popularVideos,setPopularVideos] = useState([]);
         const [allVideos,setAllVideos] = useState([]);
         const [playlists,setPlaylists] = useState([]);

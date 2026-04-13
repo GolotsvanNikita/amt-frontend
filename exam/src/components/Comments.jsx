@@ -97,7 +97,7 @@ export function Comments()
         <button className='sendCom'onClick={handleAddComment}><img src={Send}></img></button>
       </div>
 
-      <div className="comment-list">
+       <div className="comment-list">
         {comments.map(comment => (
           <div key={comment.id} className="comment-block">
             <div className="comment">

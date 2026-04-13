@@ -2,7 +2,7 @@ import { createContext, useState } from 'react';
 
 export const UserContext = createContext();
 
-export function UserProvider({ children })
+ export function UserProvider({ children })
 {
     const [userData, setUserData] = useState(null);
     const [isLoggedIn, setIsLoggedIn] = useState(false);

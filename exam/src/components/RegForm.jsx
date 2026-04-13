@@ -7,7 +7,7 @@ import Button from 'react-bootstrap/Button';
 import { NavLink } from 'react-router-dom';
 import './RegStyle.css';
 
-export function RegForm()
+ export function RegForm()
 {
     const [name, setName] = useState('');
     const [email, setEmail] = useState('');

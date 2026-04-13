@@ -424,7 +424,7 @@
 }
 
 .playlistCard:hover
-{
+{ 
     transform: translateY(-8px);
     box-shadow: 0 15px 40px rgba(137, 3, 0, 0.39);
     border-color: #890300;

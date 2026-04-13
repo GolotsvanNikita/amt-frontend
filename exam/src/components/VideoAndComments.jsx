@@ -1,7 +1,7 @@
 import { YouTubeCustomPlayer } from './VideoPage';
 import { Comments } from './Comments';
 
-export function VideoAndComments()
+ export function VideoAndComments()
 {
     return (
         <>

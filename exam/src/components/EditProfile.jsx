@@ -12,7 +12,7 @@ export function EditProfile() {
         bannerUrl: "/backimage.jpg"
     });
 
-    const [form, setForm] = useState({
+     const [form, setForm] = useState({
         displayName: "",
         about: "",
         color: "#B26E6E"

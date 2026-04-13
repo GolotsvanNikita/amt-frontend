@@ -11,7 +11,7 @@ import { MyAccount } from './components/MyAccount';
 import { EditProfile } from './components/EditProfile';
 import './App.css';
 
-function ProtectedRoute({ children })
+ function ProtectedRoute({ children })
 {
     const { isLoggedIn } = useContext(UserContext);
     return isLoggedIn ? children : <Navigate to="/login" />;

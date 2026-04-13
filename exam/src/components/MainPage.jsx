@@ -277,6 +277,6 @@ export function MainPage()
                     </div>
                 </div>
             </div>
-        </div>
+         </div>
     );
 }

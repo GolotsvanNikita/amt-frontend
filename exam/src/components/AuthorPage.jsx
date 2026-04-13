@@ -76,7 +76,8 @@ export function AuthorPage()
                             <p>ENLEO</p>
                             <span>10K views • 1 year ago</span>
                         </div>
-                    </div>
+                    </div> 
+                    
                     <div className="videoCard2">
                         <img src="../public/3a.png" alt="Video thumbnail" />
                         <div className="videoInfo">

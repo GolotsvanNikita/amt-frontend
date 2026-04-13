@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom';
 import './SideMenu.css';
 
-export function SideMenu()
+ export function SideMenu()
 {
     return (
         <aside className="sidebar">
