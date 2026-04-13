@@ -17,7 +17,9 @@ export function Navigation()
             <div className='buttons'>
                 <a href="#" className='kvadrat'><img src="../public/kvadrat.svg" alt="kvadrat"/></a>
                 <a href="#" className='bell'><img src="../public/Bell.svg" alt="ring"/></a>
-                <a href="#" className='ava'><img src="../public/ava.png" alt="ava"/></a>
+                <Link to="/my-account" className='ava'>
+                    <img src="/ava.png" alt="ava"/>
+                </Link>
             </div>
         </nav>
     );

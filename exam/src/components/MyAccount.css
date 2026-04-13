@@ -1,0 +1,286 @@
+.account-page {
+  min-height: 100vh;
+  background: #000;
+  color: #fff;
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+
+.account-banner {
+  position: relative;
+  height: 340px;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  overflow: hidden;
+}
+
+.banner-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.35);
+  display: flex;
+  align-items: center;
+  gap: 30px;
+  padding: 0 42px;
+}
+
+.account-avatar {
+  width: 145px;
+  height: 145px;
+  border-radius: 50%;
+  border: 3px solid #fff;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.account-info {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.account-info h1 {
+  margin: 0;
+  font-size: 28px;
+  font-weight: 400;
+  color: #f5f5f5;
+}
+
+.account-info p {
+  margin: 8px 0 0;
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+
+.profile-actions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-top: 16px;
+}
+
+.control-btn {
+  background: #f0c400;
+  color: #111;
+  border: none;
+  border-radius: 12px;
+  padding: 12px 28px;
+  font-size: 16px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: 0.2s ease;
+}
+
+.control-btn:hover {
+  filter: brightness(0.96);
+}
+
+.profile-icon-btn {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  color: #fff;
+  cursor: pointer;
+  padding: 0;
+}
+
+.profile-icon-btn svg {
+  width: 21px;
+  height: 21px;
+  stroke: white;
+  fill: none;
+  stroke-width: 1.8;
+}
+
+
+.account-nav {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 0 38px;
+  height: 60px;
+  border-bottom: 2px solid #12a8ff;
+  background: #000;
+}
+
+.account-nav button {
+  background: transparent;
+  border: none;
+  color: #f2f2f2;
+  font-size: 12px;
+  font-weight: 500;
+  text-transform: uppercase;
+  padding: 9px 28px;
+  border-radius: 12px;
+  cursor: pointer;
+}
+
+.account-nav button.active {
+  border: 1.5px solid #d8b300;
+  color: white;
+}
+
+
+.section {
+  padding: 24px 32px 28px;
+}
+
+.section h2 {
+  margin: 0 0 18px;
+  font-size: 18px;
+  font-weight: 400;
+  color: #e8e8e8;
+}
+
+.section + .section {
+  border-top: 1px solid rgba(255, 255, 255, 0.22);
+  padding-top: 28px;
+}
+
+/* ===== ВИДЕО ===== */
+.video-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 320px));
+  gap: 26px;
+}
+
+.video-card {
+  cursor: pointer;
+}
+
+.video-thumb {
+  width: 100%;
+  height: 180px;
+  object-fit: cover;
+  display: block;
+  border-radius: 10px;
+  background: #111;
+}
+
+.video-meta {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.meta-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.video-info {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1;
+}
+
+.video-title {
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 1.25;
+  color: #f2f2f2;
+  margin: 0;
+  word-break: break-word;
+}
+
+.video-channel {
+  margin-top: 5px;
+  font-size: 11px;
+  color: #bdbdbd;
+}
+
+.video-sub {
+  margin-top: 4px;
+  font-size: 11px;
+  color: #9c9c9c;
+}
+
+.video-more {
+  margin-left: auto;
+  color: #c2c2c2;
+  font-size: 20px;
+  line-height: 1;
+  padding-top: 2px;
+}
+
+
+.playlist-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(110px, 110px));
+  gap: 24px;
+}
+
+.playlist-card {
+  cursor: pointer;
+}
+
+.playlist-card img {
+  width: 100%;
+  height: 182px;
+  object-fit: cover;
+  display: block;
+  border-radius: 8px;
+  background: #111;
+}
+
+.playlist-card p {
+  margin: 8px 0 0;
+  font-size: 12px;
+  line-height: 1.25;
+  color: #e6e6e6;
+}
+
+
+.mixes-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 320px));
+  gap: 26px;
+}
+
+.loading {
+  padding: 40px;
+  color: #9b9b9b;
+}
+
+@media (max-width: 900px) {
+  .banner-overlay {
+    padding: 20px;
+    gap: 20px;
+  }
+
+  .account-avatar {
+    width: 110px;
+    height: 110px;
+  }
+
+  .account-info h1 {
+    font-size: 22px;
+  }
+
+  .account-nav {
+    flex-wrap: wrap;
+    height: auto;
+    padding: 12px 20px;
+    gap: 10px;
+  }
+
+  .section {
+    padding: 20px;
+  }
+
+  .video-grid,
+  .mixes-grid {
+    grid-template-columns: 1fr;
+  }
+}

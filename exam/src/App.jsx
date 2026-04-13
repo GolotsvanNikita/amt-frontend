@@ -7,6 +7,8 @@ import { MainPage } from './components/MainPage';
 import { AuthorPage } from './components/AuthorPage';
 import { Layout } from './components/Layout';
 import { VideoAndComments } from './components/VideoAndComments';
+import { MyAccount } from './components/MyAccount';
+import { EditProfile } from './components/EditProfile';
 import './App.css';
 
 function ProtectedRoute({ children })
@@ -20,16 +22,30 @@ function App()
     return (
         <UserProvider>
             <BrowserRouter>
+
                 <Routes>
+
                     <Route path="/register" element={<RegForm />} />
                     <Route path="/login" element={<FormFloatingBasicExample />} />
+
                     <Route path="/" element={<ProtectedRoute><Layout /></ProtectedRoute>}>
+
                         <Route index element={<MainPage />} />
+
                         <Route path="video" element={<VideoAndComments />} />
+
                         <Route path="author" element={<AuthorPage />} />
+
+                        <Route path="my-account" element={<MyAccount />} />
+
+                        <Route path="edit-profile" element={<EditProfile />} />
+
                     </Route>
-                    <Route path="/" element={<Navigate to="/register" />} />
+
+                    <Route path="*" element={<Navigate to="/register" />} />
+
                 </Routes>
+
             </BrowserRouter>
         </UserProvider>
     );

@@ -1,0 +1,409 @@
+.edit-page {
+  min-height: 100vh;
+  background: #000;
+  color: #fff;
+  font-family: Arial, Helvetica, sans-serif;
+  box-sizing: border-box;
+}
+
+.edit-page * {
+  box-sizing: border-box;
+}
+
+
+.native-color-input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.color-area,
+.hue-bar {
+  cursor: pointer;
+}
+.edit-banner {
+  position: relative;
+  height: 185px;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.18);
+}
+
+.edit-banner-inner {
+  position: relative;
+  width: 100%;
+  max-width: 980px;
+  height: 100%;
+  margin: 0 auto;
+}
+
+/* ===== АВАТАР ===== */
+.edit-avatar {
+  position: absolute;
+  margin-left: 69px;
+  margin-bottom: 30px;
+  bottom: -18px;
+  width: 84px;
+  height: 84px;
+  z-index: 3;
+}
+
+.edit-avatar img {
+  width: 84px;
+  height: 84px;
+  border-radius: 50%;
+  object-fit: cover;
+  display: block;
+  border: 2px solid rgba(255, 255, 255, 0.72);
+}
+
+.edit-avatar-btn {
+  position: absolute;
+  right: -6px;
+  top: 10px;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: none;
+  background: #2e477e;
+  color: white;
+  font-size: 13px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+
+.edit-container {
+  width: 100%;
+  max-width: 980px;
+  margin: 28px auto 0;
+  display: grid;
+  grid-template-columns: 520px 250px;
+  gap: 54px;
+  align-items: start;
+  justify-content: center;
+}
+
+.edit-main,
+.edit-side {
+  width: 100%;
+  margin-top: 0;
+  padding: 0;
+}
+
+
+.edit-main {
+  padding-top: 28px;
+}
+
+.edit-side {
+  width: 300px;
+  padding-top: 0;
+}
+
+
+.edit-card {
+  width: 100%;
+  background: #000;
+  border: 1px solid rgba(255, 255, 255, 0.24);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.edit-card.small {
+  padding: 18px;
+  margin-top: 27px;
+}
+
+
+.edit-side .edit-card + .edit-card {
+  margin-top: 14px;
+}
+
+.edit-header {
+  padding: 14px 16px 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.18);
+}
+
+.edit-header h2 {
+  margin: 0;
+  font-size: 23px;
+  font-weight: 600;
+  line-height: 1.1;
+}
+
+.edit-header p {
+  margin: 6px 0 0;
+  font-size: 12px;
+  color: #9a9a9a;
+}
+
+.edit-body {
+  padding: 14px 16px 18px;
+}
+
+
+.edit-card label {
+  display: block;
+  margin: 12px 0 7px;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  color: #d7d7d7;
+}
+
+.edit-card input[type="text"],
+.edit-card textarea {
+  width: 100%;
+  background: transparent;
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.24);
+  border-radius: 4px;
+  outline: none;
+  font-size: 12px;
+  padding: 10px 12px;
+}
+
+.edit-card input[type="text"] {
+  height: 36px;
+}
+
+.edit-card textarea {
+  height: 128px;
+  resize: none;
+}
+
+.edit-card input[type="text"]:focus,
+.edit-card textarea:focus {
+  border-color: rgba(255, 255, 255, 0.45);
+}
+
+
+.color-picker-wrap {
+  margin-top: 10px;
+}
+
+.color-area {
+  width: 100%;
+  height: 118px;
+  border-radius: 4px;
+  position: relative;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background:
+    linear-gradient(to top, #000, transparent),
+    linear-gradient(to right, #fff, #ff0000);
+}
+
+.color-area::after {
+  content: "";
+  position: absolute;
+  left: 58%;
+  top: 34%;
+  width: 7px;
+  height: 7px;
+  border: 1px solid #fff;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.hue-bar {
+  width: 100%;
+  height: 8px;
+  margin-top: 10px;
+  border-radius: 999px;
+  background: linear-gradient(
+    to right,
+    #ff0000,
+    #ffff00,
+    #00ff00,
+    #00ffff,
+    #0000ff,
+    #ff00ff,
+    #ff0000
+  );
+}
+
+.color-code-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.color-pen {
+  width: 18px;
+  flex-shrink: 0;
+  font-size: 18px;
+  text-align: center;
+  color: #fff;
+}
+
+.color-code {
+  width: 132px;
+  height: 36px;
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.24);
+  border-radius: 4px;
+  color: white;
+  font-size: 12px;
+  padding: 0 12px;
+  outline: none;
+}
+
+.color-preview {
+  width: 40px;
+  height: 36px;
+  border-radius: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  flex-shrink: 0;
+}
+
+.color-row {
+  display: flex;
+  gap: 10px;
+  margin-top: 12px;
+  flex-wrap: wrap;
+}
+
+.color-box {
+  width: 32px;
+  height: 32px;
+  border-radius: 4px;
+  border: 1px solid transparent;
+  padding: 0;
+  cursor: pointer;
+  transition: transform 0.16s ease, box-shadow 0.16s ease, border-color 0.16s ease;
+}
+
+.color-box:hover {
+  transform: scale(1.06);
+}
+
+.color-box.active {
+  border: 2px solid #fff;
+  transform: scale(1.12);
+  box-shadow: 0 0 10px rgba(255, 255, 255, 0.35);
+}
+
+
+.save-btn {
+  display: block;
+  margin: 20px auto 0;
+  min-width: 132px;
+  height: 38px;
+  padding: 0 22px;
+  border: none;
+  border-radius: 999px;
+  background: #5f82e8;
+  color: white;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+
+.edit-side .edit-card p {
+  margin: 0 0 12px;
+  font-size: 12px;
+  line-height: 1.25;
+  color: #d0d0d0;
+}
+
+.pro-btn {
+  width: 100%;
+  height: 28px;
+  border: none;
+  border-radius: 4px;
+  background: #6587ea;
+  color: white;
+  font-size: 10px;
+  cursor: pointer;
+}
+
+.theme-row {
+  display: flex;
+  gap: 10px;
+  margin: 8px 0 14px;
+}
+
+.theme {
+  width: 38px;
+  height: 38px;
+  border-radius: 4px;
+  border: none;
+  position: relative;
+  cursor: pointer;
+}
+
+.theme::after {
+  content: "✎";
+  position: absolute;
+  right: 6px;
+  top: 4px;
+  font-size: 11px;
+  color: white;
+}
+
+.theme.yellow {
+  background: #f0cb00;
+}
+
+.theme.gray {
+  background: #555;
+}
+
+.side-group {
+  margin-top: 12px;
+}
+
+.side-group label {
+  display: block;
+  margin: 0 0 7px;
+}
+
+.outline-btn {
+  width: 265px;
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 8px;
+  background: transparent;
+  border: 1px solid #2b63ff;
+  border-radius: 6px;
+  color: white;
+  font-size: 10px;
+  line-height: 1;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+@media (max-width: 900px) {
+  .edit-banner-inner {
+    max-width: none;
+    margin: 0 20px;
+  }
+
+  .edit-avatar {
+    left: 0;
+    bottom: -18px;
+  }
+
+  .edit-container {
+    max-width: none;
+    margin: 24px 20px 0;
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+
+  .edit-main {
+    padding-top: 28px;
+  }
+
+  .save-btn {
+    margin: 18px 0 0;
+  }
+}
