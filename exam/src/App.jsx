@@ -9,6 +9,7 @@ import { Layout } from './components/Layout';
 import { VideoAndComments } from './components/VideoAndComments';
 import { MyAccount } from './components/MyAccount';
 import { EditProfile } from './components/EditProfile';
+import { ThemePage } from './components/ThemePage';
 import './App.css';
 
  function ProtectedRoute({ children })
@@ -39,6 +40,9 @@ function App()
                         <Route path="my-account" element={<MyAccount />} />
 
                         <Route path="edit-profile" element={<EditProfile />} />
+
+                        <Route path="theme-page" element={<ThemePage/>} />
+                         
 
                     </Route>
 
