@@ -1,4 +1,4 @@
-import { useRef, useState, useEffect } from "react";
+import { useRef, useState, useEffect, useMemo } from "react";
 import skipPrevious from '../assets/skip_previous.svg';
 import playArrow from '../assets/play_arrow.svg';
 import skipNext from '../assets/skip_next.svg';
@@ -9,289 +9,286 @@ import Plus from '../assets/Component 170.svg'
 import ArrowDown from '../assets/ArrowDown.svg'
 import YouTube from "react-youtube";
 import "./VideoPage.css";
+import { useNavigate, useParams } from "react-router-dom";
+import { Button } from "bootstrap";
+
+function formatViews(views){
+  const numericViews = Number(views) || 0;
+
+  if(numericViews >= 1000000) {
+    return `${(numericViews / 1000000).toFixed(1)}M Views`;
+  }
+
+  if(numericViews >= 100000){
+    return `${(numericViews/100000).toFixed(1)}K Views`
+  }
+
+  return `${numericViews} views`
+}
 
 export function YouTubeCustomPlayer()
 {
-  const playerRef = useRef(null);
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [muted, setMuted] = useState(false);
-  const [progress, setProgress] = useState(0);
-  const [currentTime, setCurrentTime] = useState(0);
-  const [duration, setDuration] = useState(0);
-  const [showVideo, setShowVideo] = useState(false);
+    const playerRef = useRef(null);
+    const navigate = useNavigate();
+    const {id} = useParams;
 
-  const opts = {
-    height: "525",
-    width: "1068",
-    playerVars: {
-      autoplay: 0,
-      controls: 0,
-      modestbranding: 1,
-      rel: 0,
-      fs: 0,
-    },
-  };
+    const {videos, setVideos} = useState([]);
+    const {loading, setLoading} = useState(true);
+    const {error, setError} = useState(" ");
 
-  const onReady = (e) => {
-    playerRef.current = e.target;
-    setDuration(e.target.getDuration());
-  };
+    const [isPlaying, setIsPlaying] = useState(false);
+    const [muted, setIsMuted] = useState(false);
+    const [progress, setProgress] = useState(0);
+    const [currentTime, setCurrentTime] = useState(0);
+    const [duration, setDuration] = useState(0);
+    const [showVideo, setShowVideo] = useState(true);
 
-  useEffect(() => {
-    const interval = setInterval(() => {
-      if (playerRef.current && playerRef.current.getCurrentTime) {
+    useEffect(()=>{
+        const loadVideos = async () =>{
+            try{
+                setLoading(true);
+                setError("")
+                const response = fetch(`${import.meta.env.VITE_API_URL}/api/video/all`);
+
+                if(!response.ok){
+                    throw new Error('failed to load videos');
+                }
+
+                const data = await response.json();
+
+                const normalizedVideo = Array.isArray(data?.videos) ? data.videos : Array.isArray(data) ? data : [];
+                setVideos(normalizedVideo);
+            }catch(err){
+                setError(err.message || "Something went wrong");
+                setVideos([]);
+            }finally{
+                setLoading(false);
+            }
+        };
+        loadVideos();
+    }, []);
+
+    const currentVideo = useMemo(()=>{
+        if(!videos.length) return null;
+        return videos.find((video)=>String(video.id) === String(id)) || videos[0];
+    }, [videos,id]);
+
+    const recommendedVideos = useMemo(()=>{
+        if(!videos.length || !currentVideo) return [];
+        return videos.filter((video)=>String(video.id) !== String(currentVideo.id)).slice(0,8) 
+    }, [videos,currentVideo])
+
+    const opts = {
+        height: "525",
+        width: "1068",
+        playerVars:{
+            autoplay: 0,
+            controls: 0,
+            modestbranding: 1,
+            rel: 0,
+            fs: 0,
+        }
+    }
+
+    const onReady = (e) =>{
+        playerRef.current = e.target;
+        setDuration(e.target.getDuration());
+    };
+
+    useEffect(()=>{
+        const interval = setInterval(()=>{
+            if(playerRef.current && playerRef.current.getCurrentTime){
+                const time = playerRef.current.getCurrentTime();
+                const dur = playerRef.current.getDuration();
+
+                setCurrentTime(time);
+                setDuration(dur || 0);
+                setProgress(dur ? (time / dur) * 100 : 0);
+            }
+        }, 500);
+        return () => clearInterval(interval);
+    }, []);
+
+    useEffect(()=>{
+        setIsPlaying(false);
+        setIsMuted(false);
+        setProgress(0);
+        setCurrentTime(0);
+    }, [currentVideo?.id]);
+
+    const tooglePlay = () =>{
+        const player = playerRef.current;
+        if(!player) return;
+        if(!showVideo) setShowVideo(true);
+        if(isPlaying){
+            player.pauseVideo();
+            setIsPlaying(false);
+        }else{
+            player.playVideo();
+            setIsPlaying(true);
+        }
+    };
+    const toogleMute = () =>{
+        const player = playerRef.current;
+        if(!player) return;
+        if(!muted){
+            player.unMute();
+            setIsMuted(false);
+        }else{
+            player.mute();
+            setIsMuted(true);
+        };
+    };
+    const handleSeek = (e) =>{
+        const value = Number(e.target.value);
+        const newTime = (value / 100) * duration;
+        if(playerRef.current){
+            playerRef.current.seekTo(newTime, true);
+        }
+        setCurrentTime(newTime);
+        setProgress(value);
+    };
+    const rewind = () =>{
+        if(!playerRef.current) return;
         const time = playerRef.current.getCurrentTime();
-        const dur = playerRef.current.getDuration();
-        setCurrentTime(time);
-        setDuration(dur);
-        setProgress((time / dur) * 100);
-      }
-    }, 500); // обновляется каждые полсекунды
-
-    return () => clearInterval(interval);
-   }, []);
-
-  const togglePlay = () => {
-    const player = playerRef.current;
-    if (!showVideo) setShowVideo(true);
-    if (isPlaying) {
-      player.pauseVideo();
-    } else {
-      player.playVideo();
+        playerRef.current.seekTo(Math.max(time - 10,0));
+    };
+    const forward = () =>{
+        if(playerRef.current)return;
+        const time = playerRef.current.getCurrentTime();
+        playerRef.current.seekTo(Math.min(time + 10, duration));
     }
-    setIsPlaying(!isPlaying);
-  };
+    const toogleFullscreen = () => {
+        const iframe = document.querySelector("iframe");
+        if(iframe?.requestFullscreen){
+            iframe.requestFullscreen();
+        }
+    };
+    const formatTime = (timeInSeconds) =>{
+        const minutes = Math.floor(timeInSeconds/60);
+        const seconds = Math.floor(timeInSeconds % 60).toString().padStart(2,"0");
+        return `${minutes}: ${seconds}`;
+    };
 
-  const toggleMute = () => {
-    const player = playerRef.current;
-    if (muted) {
-      player.unMute();
-    } else {
-      player.mute();
+    if(loading){
+        return <div className="yt-page-status">Loading video...</div>
     }
-    setMuted(!muted);
-  };
+    if(error){
+        return <div className="yt-page-status">{error}</div>
+    }
+    if(!currentVideo){
+        return <div className="yt-page-status">VideoNotFound</div>;
+    }
 
-  const handleSeek = (e) => {
-    const value = e.target.value;
-    const newTime = (value / 100) * duration;
-    playerRef.current.seekTo(newTime, true);
-    setCurrentTime(newTime);
-    setProgress(value);
-  };
-
-  const rewind = () => {
-    const time = playerRef.current.getCurrentTime();
-    playerRef.current.seekTo(Math.max(time - 10, 0));
-  };
-
-  const forward = () => {
-    const time = playerRef.current.getCurrentTime();
-    playerRef.current.seekTo(Math.min(time + 10, duration));
-  };
-
-  const toggleFullscreen = () => {
-    const iframe = document.querySelector("iframe");
-    if (iframe.requestFullscreen) iframe.requestFullscreen();
-  };
-
-  const formatTime = (timeInSeconds) => {
-    const minutes = Math.floor(timeInSeconds / 60);
-    const seconds = Math.floor(timeInSeconds % 60)
-      .toString()
-      .padStart(2, "0");
-    return `${minutes}:${seconds}`;
-  };
-
-  return (
-    <div>
-        <div className="yt-page">
-            {/* Левая колонка */}
-            <div className="yt-left">
-                <div className="yt-wrapper">
-                    {/* Плеер */}
-                    <div className="video-section">
-                        {showVideo ? (
-                            <YouTube videoId="icaSda6Rrrg" opts={opts} onReady={onReady} />
-                        ) : (
-                            <div className="preview" onClick={togglePlay}>
-                                <img
-                                    src="/posterVideo.jpg"
-                                    alt="Preview"
-                                    className="preview-image"
-                                />
-                                <div className="overlay-text">
-                                    <h1>ENLEØ</h1>
-                                    <p>ВЕДИ МЕНЕ В ХРАМ</p>
+    return(
+        <div>
+            <div className="yt-page">
+                <div className="yt-left">
+                    <div className="yt-wrapper">
+                        <div className="video-section">
+                            {showVideo ? (<YouTube videoId={currentVideo.id} opts = {opts} onReady={onReady}/>):
+                            (
+                                <div className="preview" onClick={tooglePlay}>
+                                    <img src = {currentVideo.thumbnailUrl} alt={currentVideo.title} className="preview-image"/>
+                                    <div className="overlay-text">
+                                        <h1>{currentVideo.channelName}</h1>
+                                        <p>{currentVideo.title}</p>
+                                    </div>
                                 </div>
+                            )}
+                        </div>
+                        <div className="controls">
+                            <button onClick={rewind}><img src={skipPrevious} alt="rewing" width="34" height="34"/></button>
+                            <button onClick={tooglePlay}><img src={playArrow} alt="play" width="34" height="34"/></button>
+                            <button onClick={forward}><img src={skipNext} alt="forward" width="34" height="34"/></button>
+                            <button onClick={toogleMute}><img src={muteSvg} alt="mute" width="34" height="34"/></button>
+                            <input type = "range" min = "0" max = "100" value={progress} onChange={handleSeek} className="timeline"/>
+                            <span className="time-display">{formatTime(currentTime)} / {formatTime(duration)}</span>
+                            <button onClick = {toogleFullscreen} title="Fullscreen">⛶</button>
+                            <button title = "Settings">⚙</button>
+                            <button title = "Subtitries">🄲</button>
+                        </div>
+                    </div>
+                    <h2>{currentVideo.title}</h2>
+                    <div className="video-actions-bar">
+                        <div className="channel-info">
+                            <img src={currentVideo.thumbnailUrl} alt={currentVideo.channelName} className="channel-avatar"/>
+                            <div className="channel-text">
+                                <p className="channel-name">{currentVideo.channelName}</p>
+                                <p className="channel-subs">{currentVideo.publishedAt}</p>
+                                <button className="subscribe-btn">Subscribe</button>
                             </div>
-                        )}
-                    </div>
-
-                    {/* Controls */}
-                    <div className="controls">
-                        <button onClick={rewind}><img src={skipPrevious} alt="rewind" width="34" height="34" /></button>
-                        <button onClick={togglePlay}><img src={playArrow} alt="play" width="34" height="34" /></button>
-                        <button onClick={forward}><img src={skipNext} alt="forward" width="34" height="34" /></button>
-                        <button onClick={toggleMute}><img src={muteSvg} alt="mute" width="34" height="34" /></button>
-
-                        <input
-                            type="range"
-                            min="0"
-                            max="100"
-                            value={progress}
-                            onChange={handleSeek}
-                            className="timeline"
-                        />
-
-                        <span className="time-display">
-                            {formatTime(currentTime)} / {formatTime(duration)}
-                        </span>
-
-                        <button onClick={toggleFullscreen} title="Fullscreen">⛶</button>
-                        <button title="Налаштування">⚙</button>
-                        <button title="Субтитри">🄲</button>
-                    </div>
-                </div>
-
-                {/* Заголовок */}
-                <h2>ENLEO - ВЕДИ МЕНЕ В ХРАМ (TAKE ME TO CHURCH УКРАЇНСЬКОЮ)</h2>
-
-                {/* Панель действий */}
-                <div className="video-actions-bar">
-                    <div className="channel-info">
-                        <img src="/EnleoAv.png" alt="ENLEO Avatar" className="channel-avatar" />
-                        <div className="channel-text">
-                            <p className="channel-name">ENLEO</p>
-                            <p className="channel-subs">34,9k subscribes</p>
                         </div>
-                        <button className="subscribe-btn">Subscribe</button>
+                        <div className="actions">
+                            <button className="action-btn">
+                                <img src = {Like} alt = "like" width="34" height="34"/>
+                                <span>{formatTime(currentVideo.views)}</span>
+                            </button>
+                            <button className="action-btn">
+                                <img src = {Forward} alt="forward" width="34" height="34"/> Forward
+                            </button>
+                            <button className="action-btn">
+                                <img src={Plus} alt = "add to playlist" width= "34" height="34"/>
+                                Add to Playlist
+                            </button>
+                            <button className="action-btn">More <img src = {ArrowDown} alt = "more" width="34" height="34"/></button>
+                        </div>
                     </div>
-                    <div className="actions">
-                        <button className="action-btn">
-                            <img src={Like} alt="like" width="34" height="34" /><span>15 884</span>
-                        </button>
-                        <button className="action-btn">
-                            <img src={Forward} alt="forward" width="34" height="34" /> Forward
-                        </button>
-                        <button className="action-btn">
-                            <img src={Plus} alt="add to playlist" width="34" height="34" /> Add to playlist
-                        </button>
-                        <button className="action-btn">
-                            More <img src={ArrowDown} alt="more" width="34" height="34" />
-                        </button>
-                    </div>
+                </div>
+                <div className="VideoFromThisChannel">
+                    {recommendedVideos.slice(0,5).map((video) => (
+                        <div key = {video.id} className="RecomendVideo" onClick={()=> navigate(`/video/${video.id}`)}
+                        style={{cursor : "pointer"}}>
+                            <img src = {video.thumbnailUrl} alt={video.title}/>
+                            <div>
+                                <p>{video.title}</p>
+                                <p>{video.channelName}</p>
+                            </div>
+                        </div>
+                    ))}
                 </div>
             </div>
-
-            {/* Правая колонка - рекомендации */}
-            <div className="VideoFromThisChannel">
-                <div className="RecomendVideo">
-                    <img src="/Enleo1.png" alt="чорнеморе" />
-                    <div>
-                        <p>чорнеморе</p>
-                        <p>ENLEO</p>
-                    </div>
-                </div>
-                <div className="RecomendVideo">
-                    <img src="/Enleo2.png" alt="ENLEO & МАША КОНДРАТЕНКО - ЛЮБОВ СИЛЬНІША" />
-                    <div>
-                        <p>ENLEO & МАША КОНДРАТЕНКО - ЛЮБОВ СИЛЬНІША (MOOD VIDEO)</p>
-                        <p>ENLEO</p>
-                    </div>
-                </div>
-                <div className="RecomendVideo">
-                    <img src="/Enleo3.png" alt="ІНША ЛЮБОВ" />
-                    <div>
-                        <p>ІНША ЛЮБОВ (ANOTHER LOVE УКРАЇНСЬКОЮ)</p>
-                        <p>ENLEO</p>
-                    </div>
-                </div>
-                <div className="RecomendVideo">
-                    <img src="/Enleo4.png" alt="Sweater Weather" />
-                    <div>
-                        <p>The Neighbourhood - Sweater Weather (Українською)</p>
-                        <p>ENLEO</p>
-                    </div>
-                </div>
-                <div className="RecomendVideo">
-                    <img src="/Enleo5.png" alt="Animal ДжаZ" />
-                    <div>
-                        <p>Animal ДжаZ - Три Полоски (cover)</p>
-                        <p>ENLEO</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-            <div className="AboutAvtor">
+            <div channelName="aboutAvtor">
                 <div className="firstInfo">
-                     <p>3,9kk views 4 months ago</p> 
-                        <p>"Веди мене в храм" є україномовним перекладом відомої пісні Hozier «Take Me To Church»
-                        від музиканта та співака з українського Маріуполя ENLEO Нікіти Леонтьєва.<span>Show more<button className="action-btn1"><img src={ArrowDown} alt="more" width="24" height="14"/></button></span></p>
+                    <p>
+                        {formatTime(currentTime.views)} • {currentVideo.publishedAt};
+                    </p>
+                    <p>
+                        {currentVideo.title}
+                        <span>Show more
+                            <button className="action-btn1">
+                                <img src = {ArrowDown} alt = "more" width="24" height="14"/>
+                            </button>
+                        </span>
+                    </p>
                 </div>
             </div>
-
-        <div className="yt-rec-container">
-            <h2 className="yt-title">Recommended</h2>
+            <div className="yt-rec-container">
+                <h2 className="yt-title">Reommend</h2>
                 <div className="yt-cards">
-                    <div className="yt-card">
-                    <img src="/rec1.png" alt="Thumbnail 1" className="yt-thumbnail" />
-                    <div className="yt-info">
-                        <div className="yt-channel-info">
-                        <img src="/av1.png" alt="Avatar 1" className="yt-avatar" />
-                        <div>
-                            <p className="yt-video-title">'Before Your Very Eyes...Atoms for Peace - MAMA JAMMA (Live cover)'</p>
-                            <p className="yt-channel">St3inway</p>
+                    {recommendedVideos.map((video)=>(
+                        <div key={video.id}
+                        className="yt-card"
+                        onClick={()=>navigate(`/video/${video.id}`)}
+                        style={{cursor:"pointer"}}>
+                            <img src = {video.thumbnailUrl} alt={video.title} className="yt-thumbail"/>
+                            <div className="yt-info">
+                                <div className="yt-channel-info">
+                                    <img src={video.thumbnailUrl} alt={video.channelName} className="yt-avatar"/>
+                                    <div>
+                                        <p className="yt-video-title">{video.title}</p>
+                                        <p className="yt-channel">{video.channelName}</p>
+                                    </div>
+                                </div>
+                                <p className="yt-meta">
+                                    {formatViews(video.views)} • {video.publishedAt}
+                                </p>
+                            </div>
                         </div>
-                        </div>
-                        <p className="yt-meta">6M views • 1 day ago</p>
-                    </div>
-                    </div>
-
-                    <div className="yt-card">
-                    <img src="/rec2.png" alt="Thumbnail 2" className="yt-thumbnail" />
-                    <div className="yt-info">
-                        <div className="yt-channel-info">
-                        <img src="/av2.png" alt="Avatar 2" className="yt-avatar" />
-                        <div>
-                            <p className="yt-video-title">Joji - SMITHEREENS Full Album (Pacific Coast Highway)</p>
-                            <p className="yt-channel">Joji Edits</p>
-                        </div>
-                        </div>
-                        <p className="yt-meta">645M views • 6 months ago</p>
-                    </div>
-                    </div>
-
-                    <div className="yt-card">
-                    <img src="/rec3.png" alt="Thumbnail 3" className="yt-thumbnail" />
-                    <div className="yt-info">
-                        <div className="yt-channel-info">
-                        <img src="/av3.png" alt="Avatar 3" className="yt-avatar" />
-                        <div>
-                            <p className="yt-video-title">Loreen - Tattoo (Acoustic)</p>
-                            <p className="yt-channel">Loreen</p>
-                        </div>
-                        </div>
-                        <p className="yt-meta">2.2M views • 4 weeks ago</p>
-                    </div>
-                    </div>
-
-                    <div className="yt-card">
-                    <img src="/rec4.png" alt="Thumbnail 4" className="yt-thumbnail" />
-                    <div className="yt-info">
-                        <div className="yt-channel-info">
-                        <img src="/av4.jpg" alt="Avatar 4" className="yt-avatar" />
-                        <div>
-                            <p className="yt-video-title">電磁祭囃子 in NEO TOKYO 🔴</p>
-                            <p className="yt-channel">ELECTRONICOS FANTASTICOS!</p>
-                        </div>
-                        </div>
-                        <p className="yt-meta">12M views • 2 years ago</p>
-                    </div>
-                    </div>
+                    ))}
                 </div>
+            </div>
         </div>
-  
-    </div>
-  );
+    )
+
 }
