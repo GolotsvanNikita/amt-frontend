@@ -30,11 +30,11 @@ export function YouTubeCustomPlayer()
 {
     const playerRef = useRef(null);
     const navigate = useNavigate();
-    const {id} = useParams;
+    const {id} = useParams();
 
-    const {videos, setVideos} = useState([]);
-    const {loading, setLoading} = useState(true);
-    const {error, setError} = useState(" ");
+    const [videos, setVideos] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(" ");
 
     const [isPlaying, setIsPlaying] = useState(false);
     const [muted, setIsMuted] = useState(false);
@@ -48,7 +48,7 @@ export function YouTubeCustomPlayer()
             try{
                 setLoading(true);
                 setError("")
-                const response = fetch(`${import.meta.env.VITE_API_URL}/api/video/all`);
+                const response = await fetch(`${import.meta.env.VITE_API_URL}/api/video/all`);
 
                 if(!response.ok){
                     throw new Error('failed to load videos');
@@ -131,7 +131,7 @@ export function YouTubeCustomPlayer()
     const toogleMute = () =>{
         const player = playerRef.current;
         if(!player) return;
-        if(!muted){
+        if(muted){
             player.unMute();
             setIsMuted(false);
         }else{
@@ -154,7 +154,7 @@ export function YouTubeCustomPlayer()
         playerRef.current.seekTo(Math.max(time - 10,0));
     };
     const forward = () =>{
-        if(playerRef.current)return;
+        if(!playerRef.current)return;
         const time = playerRef.current.getCurrentTime();
         playerRef.current.seekTo(Math.min(time + 10, duration));
     }
