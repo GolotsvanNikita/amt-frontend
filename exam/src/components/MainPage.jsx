@@ -157,12 +157,16 @@ function getAuthToken() {
 }
 
 function normalizeVideo(video, index = 0) {
+    const metaString = (video.views && video.publishedAt)
+        ? `${video.views} • ${video.publishedAt}`
+        : (video.meta || video.viewsText || "");
+
     return {
         id: video.videoId || video.id || `video-${index}-${Date.now()}`,
         title: video.title || "Untitled video",
         thumbnail: video.thumbnail || video.thumbnailUrl || "/1v.png",
         channelName: video.channelName || video.author || "Unknown channel",
-        meta: video.meta || video.viewsText || "",
+        meta: metaString,
     };
 }
 
