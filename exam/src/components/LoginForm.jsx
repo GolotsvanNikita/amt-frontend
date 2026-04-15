@@ -29,31 +29,7 @@ export function FormFloatingBasicExample() {
         try {
             setLoading(true);
 
-            const useMock = true;
-
-            if (useMock) {
-                await new Promise((resolve) => setTimeout(resolve, 700));
-
-                if (trimmedEmail !== 'test@gmail.com' || password !== '123456') {
-                    throw new Error('Invalid email or password');
-                }
-
-                const mockData = {
-                    token: 'mock_jwt_token_login',
-                    user: {
-                        id: 1,
-                        name: 'Test User',
-                        email: 'test@gmail.com',
-                    },
-                };
-
-                setUserData(mockData);
-                setIsLoggedIn(true);
-                navigate('/');
-                return;
-            }
-
-            const response = await fetch('http://localhost:5000/api/auth/login', {
+            const response = await fetch(`${import.meta.env.VITE_API_URL}/api/auth/login`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -92,49 +68,7 @@ export function FormFloatingBasicExample() {
         setSocialLoading(provider);
 
         try {
-            const useMock = true;
-
-            if (useMock) {
-                await new Promise((resolve) => setTimeout(resolve, 700));
-
-                const mockSocialUsers = {
-                    facebook: {
-                        id: 11,
-                        name: 'Facebook User',
-                        email: 'facebook_user@gmail.com',
-                        token: 'mock_facebook_token',
-                        provider: 'facebook',
-                    },
-                    google: {
-                        id: 12,
-                        name: 'Google User',
-                        email: 'google_user@gmail.com',
-                        token: 'mock_google_token',
-                        provider: 'google',
-                    },
-                    twitter: {
-                        id: 13,
-                        name: 'Twitter User',
-                        email: 'twitter_user@gmail.com',
-                        token: 'mock_twitter_token',
-                        provider: 'twitter',
-                    },
-                    apple: {
-                        id: 14,
-                        name: 'Apple User',
-                        email: 'apple_user@gmail.com',
-                        token: 'mock_apple_token',
-                        provider: 'apple',
-                    },
-                };
-
-                setUserData(mockSocialUsers[provider]);
-                setIsLoggedIn(true);
-                navigate('/');
-                return;
-            }
-
-            window.location.href = `http://localhost:5000/api/auth/${provider}`;
+            window.location.href = `${import.meta.env.VITE_API_URL}/api/auth/${provider}`;
         } catch (err) {
             setError(err.message || `${provider} login failed`);
         } finally {

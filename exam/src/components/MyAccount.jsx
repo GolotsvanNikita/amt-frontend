@@ -38,14 +38,14 @@ export function MyAccount(){
         {
             id: 1,
             title: "kltron Mr Kitty After Dark",
-            thumbnail: "../public/15v.png",
+            thumbnail: "/15v.png",
             views: "12K",
             time: "1 year ago"
         },
         {
             id: 2,
             title: "kltron rain, window and hand",
-            thumbnail: "../public/16v.png",
+            thumbnail: "/16v.png",
             views: "12K",
             time: "1 year ago"
         }

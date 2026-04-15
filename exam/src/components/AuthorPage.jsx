@@ -9,7 +9,7 @@ export function AuthorPage()
                 <div className="authorCover">
                     <div className="authorInfo">
                         <div className="authorAvatar">
-                            <img src="../public/author-avatar.png" alt="ENLEO" />
+                            <img src="/author-avatar.png" alt="ENLEO" />
                         </div>
                         <div className="authorDetails">
                             <h1>ENLEO</h1>
@@ -19,13 +19,13 @@ export function AuthorPage()
                             </div>
                             <div className="authorActions">
                                 <button className="subscribeBtn">Subscribe</button>
-                                <button className="notificationBtn"><img src="../public/bee.png" alt="bee"/></button>
+                                <button className="notificationBtn"><img src="/bee.png" alt="bee"/></button>
                             </div>
                         </div>
                     </div>
                     <div className="authorDescription">
                         <p>ENLEO Нікіта Леонтьєв - музикант та співак з українського Маріуполя.</p>
-                        <img src="../public/strelka.png" alt="strelka"/>
+                        <img src="/strelka.png" alt="strelka"/>
                     </div>
                 </div>
             </div>
@@ -41,8 +41,8 @@ export function AuthorPage()
             <div className="featuredSection">
                 <div className="featuredVideo">
                     <div className="videoThumbnail">
-                        <img src="../public/featured-video.png" alt="Featured Video" />
-                        <div className="playButton"><img src="../public/play_circle.png" alt="play"/></div>
+                        <img src="/featured-video.png" alt="Featured Video" />
+                        <div className="playButton"><img src="/play_circle.png" alt="play"/></div>
                     </div>
                     <div className="featuredInfo">
                         <h2>ENLEO - чорнеморе</h2>
@@ -62,7 +62,7 @@ export function AuthorPage()
                 <h3>All videos</h3>
                 <div className="videoGrid">
                     <div className="videoCard2">
-                        <img src="../public/featured-video.png" alt="Video thumbnail" />
+                        <img src="/featured-video.png" alt="Video thumbnail" />
                         <div className="videoInfo">
                             <h4>чорнеморе</h4>
                             <p>ENLEO</p>
@@ -70,7 +70,7 @@ export function AuthorPage()
                         </div>
                     </div>
                     <div className="videoCard2">
-                        <img src="../public/2a.png" alt="Video thumbnail" />
+                        <img src="/2a.png" alt="Video thumbnail" />
                         <div className="videoInfo">
                             <h4>ЛЮБОВ СИЛЬНІША</h4>
                             <p>ENLEO</p>
@@ -79,7 +79,7 @@ export function AuthorPage()
                     </div> 
                     
                     <div className="videoCard2">
-                        <img src="../public/3a.png" alt="Video thumbnail" />
+                        <img src="/3a.png" alt="Video thumbnail" />
                         <div className="videoInfo">
                             <h4>ТІНА ЛЮБОВ [ANOTHER LOVE УКРАЇНСЬКОЮ💙💛]</h4>
                             <p>ENLEO</p>
@@ -87,7 +87,7 @@ export function AuthorPage()
                         </div>
                     </div>
                     <div className="videoCard2">
-                        <img src="../public/4a.png" alt="Video thumbnail" />
+                        <img src="/4a.png" alt="Video thumbnail" />
                         <div className="videoInfo">
                             <h4>The Neighbourhood - Sweater Weather (Українською)</h4>
                             <p>ENLEO</p>
@@ -103,7 +103,7 @@ export function AuthorPage()
                 <h3>Music videos</h3>
                 <div className="videoGrid">
                     <div className="videoCard2">
-                        <img src="../public/3a.png" alt="Video thumbnail" />
+                        <img src="/3a.png" alt="Video thumbnail" />
                         <div className="videoInfo">
                             <h4>ТІНА ЛЮБОВ [ANOTHER LOVE УКРАЇНСЬКОЮ💙💛]</h4>
                             <p>ENLEO</p>
@@ -111,7 +111,7 @@ export function AuthorPage()
                         </div>
                     </div>
                     <div className="videoCard2">
-                        <img src="../public/featured-video.png" alt="Video thumbnail" />
+                        <img src="/featured-video.png" alt="Video thumbnail" />
                         <div className="videoInfo">
                             <h4>чорнеморе</h4>
                             <p>ENLEO</p>
@@ -119,7 +119,7 @@ export function AuthorPage()
                         </div>
                     </div>
                     <div className="videoCard2">
-                        <img src="../public/5a.jpg" alt="Video thumbnail" />
+                        <img src="/5a.jpg" alt="Video thumbnail" />
                         <div className="videoInfo">
                             <h4>ENLEO - ВЕДИ МЕНЕ В ХРАМ [TAKE ME TO CHURCH УКРАЇНСЬКОЮ]</h4>
                             <p>ENLEO</p>
@@ -127,7 +127,7 @@ export function AuthorPage()
                         </div>
                     </div>
                     <div className="videoCard2">
-                        <img src="../public/4a.png" alt="Video thumbnail" />
+                        <img src="/4a.png" alt="Video thumbnail" />
                         <div className="videoInfo">
                             <h4>The Neighbourhood - Sweater Weather (Українською)</h4>
                             <p>ENLEO</p>
@@ -144,7 +144,7 @@ export function AuthorPage()
                 <div className="playlistGrid">
                     <div className="playlistCard">
                         <div className="playlistThumbnail">
-                            <img src="../public/3a.png" alt="Playlist thumbnail" />
+                            <img src="/3a.png" alt="Playlist thumbnail" />
                         </div>
                         <div className="playlistInfo">
                             <h4>Українські пісні</h4>
@@ -154,7 +154,7 @@ export function AuthorPage()
                     </div>
                     <div className="playlistCard">
                         <div className="playlistThumbnail">
-                            <img src="../public/6a.png" alt="Playlist thumbnail" />
+                            <img src="/6a.png" alt="Playlist thumbnail" />
                         </div>
                         <div className="playlistInfo">
                             <h4>Covers</h4>

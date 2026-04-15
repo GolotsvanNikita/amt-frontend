@@ -6,17 +6,17 @@ import {Link} from "react-router-dom";
 {
     return(
         <nav className='navContainer'>
-            <Link to='/'><img src="../public/logo.png" alt="logo" className='logo'/></Link>
+            <Link to='/'><img src="/logo.png" alt="logo" className='logo'/></Link>
             <div className='inputNav'>
                 <div className='combine'>
                     <input type="text" placeholder='Search'/>
-                    <button className='search'><img src="../public/search.png" alt="search"/></button>
+                    <button className='search'><img src="/search.png" alt="search"/></button>
                 </div>
-                <button className='mic'><img src="../public/mic.png" alt="mic"/></button>
+                <button className='mic'><img src="/mic.png" alt="mic"/></button>
             </div>
             <div className='buttons'>
-                <a href="#" className='kvadrat'><img src="../public/kvadrat.svg" alt="kvadrat"/></a>
-                <a href="#" className='bell'><img src="../public/Bell.svg" alt="ring"/></a>
+                <Link to="/reels-page" className='kvadrat'><img src="/kvadrat.svg" alt="kvadrat"/></Link>
+                <a href="#" className='bell'><img src="/Bell.svg" alt="ring"/></a>
                 <Link to="/my-account" className='ava'>
                     <img src="/ava.png" alt="ava"/>
                 </Link>

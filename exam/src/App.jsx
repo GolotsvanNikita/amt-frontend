@@ -10,6 +10,8 @@ import { VideoAndComments } from './components/VideoAndComments';
 import { MyAccount } from './components/MyAccount';
 import { EditProfile } from './components/EditProfile';
 import { ThemePage } from './components/ThemePage';
+import { ReelsPage } from './components/ReelsPage';
+import {FullReels} from './components/ReelDetailsPage'
 import './App.css';
 
  function ProtectedRoute({ children })
@@ -43,6 +45,9 @@ function App()
 
                         <Route path="theme-page" element={<ThemePage/>} />
                          
+                         <Route path="reels-page" element={<ReelsPage/>} />
+
+                         <Route path="reels-page/:id" element={<FullReels />} />
 
                     </Route>
 
