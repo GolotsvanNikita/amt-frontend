@@ -26,11 +26,11 @@ import './SideMenu.css';
             <div className="sidebarSection">
                 <h4>Subscriptions</h4>
                 <ul className="subscriptions">
-                    <li><img src="/public/one.png" alt="ENLEO" className='imgS'/><Link to="/author"><span>ENLEO</span></Link></li>
-                    <li><img src="/public/two.jpg" alt="Eve" className='imgS'/><span>Eve</span></li>
-                    <li><img src="/public/three.jpg" alt="Konikva" className='imgS'/><span>Konikva</span></li>
-                    <li><img src="/public/four.jpg" alt="Rob" className='imgS'/><span>Rob Scallon</span></li>
-                    <li><img src="/public/five.jpg" alt="Nikolai" className='imgS'/><span>Nikolai Chaze</span></li>
+                    <li><img src="/one.png" alt="ENLEO" className='imgS'/><Link to="/author"><span>ENLEO</span></Link></li>
+                    <li><img src="/two.jpg" alt="Eve" className='imgS'/><span>Eve</span></li>
+                    <li><img src="/three.jpg" alt="Konikva" className='imgS'/><span>Konikva</span></li>
+                    <li><img src="/four.jpg" alt="Rob" className='imgS'/><span>Rob Scallon</span></li>
+                    <li><img src="/five.jpg" alt="Nikolai" className='imgS'/><span>Nikolai Chaze</span></li>
                     <li className="showMore"><span>Show more</span><img src="/more.png" alt="more" className='more'/></li>
                     <hr/>
                 </ul>
