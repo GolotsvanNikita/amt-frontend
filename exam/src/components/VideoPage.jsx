@@ -116,7 +116,7 @@ export function YouTubeCustomPlayer()
                         ) : (
                             <div className="preview" onClick={togglePlay}>
                                 <img
-                                    src="./public/posterVideo.jpg"
+                                    src="/posterVideo.jpg"
                                     alt="Preview"
                                     className="preview-image"
                                 />
@@ -160,7 +160,7 @@ export function YouTubeCustomPlayer()
                 {/* Панель действий */}
                 <div className="video-actions-bar">
                     <div className="channel-info">
-                        <img src="./public/EnleoAv.png" alt="ENLEO Avatar" className="channel-avatar" />
+                        <img src="/EnleoAv.png" alt="ENLEO Avatar" className="channel-avatar" />
                         <div className="channel-text">
                             <p className="channel-name">ENLEO</p>
                             <p className="channel-subs">34,9k subscribes</p>
@@ -187,35 +187,35 @@ export function YouTubeCustomPlayer()
             {/* Правая колонка - рекомендации */}
             <div className="VideoFromThisChannel">
                 <div className="RecomendVideo">
-                    <img src="./public/Enleo1.png" alt="чорнеморе" />
+                    <img src="/Enleo1.png" alt="чорнеморе" />
                     <div>
                         <p>чорнеморе</p>
                         <p>ENLEO</p>
                     </div>
                 </div>
                 <div className="RecomendVideo">
-                    <img src="./public/Enleo2.png" alt="ENLEO & МАША КОНДРАТЕНКО - ЛЮБОВ СИЛЬНІША" />
+                    <img src="/Enleo2.png" alt="ENLEO & МАША КОНДРАТЕНКО - ЛЮБОВ СИЛЬНІША" />
                     <div>
                         <p>ENLEO & МАША КОНДРАТЕНКО - ЛЮБОВ СИЛЬНІША (MOOD VIDEO)</p>
                         <p>ENLEO</p>
                     </div>
                 </div>
                 <div className="RecomendVideo">
-                    <img src="./public/Enleo3.png" alt="ІНША ЛЮБОВ" />
+                    <img src="/Enleo3.png" alt="ІНША ЛЮБОВ" />
                     <div>
                         <p>ІНША ЛЮБОВ (ANOTHER LOVE УКРАЇНСЬКОЮ)</p>
                         <p>ENLEO</p>
                     </div>
                 </div>
                 <div className="RecomendVideo">
-                    <img src="./public/Enleo4.png" alt="Sweater Weather" />
+                    <img src="/Enleo4.png" alt="Sweater Weather" />
                     <div>
                         <p>The Neighbourhood - Sweater Weather (Українською)</p>
                         <p>ENLEO</p>
                     </div>
                 </div>
                 <div className="RecomendVideo">
-                    <img src="./public/Enleo5.png" alt="Animal ДжаZ" />
+                    <img src="/Enleo5.png" alt="Animal ДжаZ" />
                     <div>
                         <p>Animal ДжаZ - Три Полоски (cover)</p>
                         <p>ENLEO</p>
@@ -235,10 +235,10 @@ export function YouTubeCustomPlayer()
             <h2 className="yt-title">Recommended</h2>
                 <div className="yt-cards">
                     <div className="yt-card">
-                    <img src="./public/rec1.png" alt="Thumbnail 1" className="yt-thumbnail" />
+                    <img src="/rec1.png" alt="Thumbnail 1" className="yt-thumbnail" />
                     <div className="yt-info">
                         <div className="yt-channel-info">
-                        <img src="./public/av1.png" alt="Avatar 1" className="yt-avatar" />
+                        <img src="/av1.png" alt="Avatar 1" className="yt-avatar" />
                         <div>
                             <p className="yt-video-title">'Before Your Very Eyes...Atoms for Peace - MAMA JAMMA (Live cover)'</p>
                             <p className="yt-channel">St3inway</p>
@@ -249,10 +249,10 @@ export function YouTubeCustomPlayer()
                     </div>
 
                     <div className="yt-card">
-                    <img src="./public/rec2.png" alt="Thumbnail 2" className="yt-thumbnail" />
+                    <img src="/rec2.png" alt="Thumbnail 2" className="yt-thumbnail" />
                     <div className="yt-info">
                         <div className="yt-channel-info">
-                        <img src="./public/av2.png" alt="Avatar 2" className="yt-avatar" />
+                        <img src="/av2.png" alt="Avatar 2" className="yt-avatar" />
                         <div>
                             <p className="yt-video-title">Joji - SMITHEREENS Full Album (Pacific Coast Highway)</p>
                             <p className="yt-channel">Joji Edits</p>
@@ -263,10 +263,10 @@ export function YouTubeCustomPlayer()
                     </div>
 
                     <div className="yt-card">
-                    <img src="./public/rec3.png" alt="Thumbnail 3" className="yt-thumbnail" />
+                    <img src="/rec3.png" alt="Thumbnail 3" className="yt-thumbnail" />
                     <div className="yt-info">
                         <div className="yt-channel-info">
-                        <img src="./public/av3.png" alt="Avatar 3" className="yt-avatar" />
+                        <img src="/av3.png" alt="Avatar 3" className="yt-avatar" />
                         <div>
                             <p className="yt-video-title">Loreen - Tattoo (Acoustic)</p>
                             <p className="yt-channel">Loreen</p>
@@ -277,10 +277,10 @@ export function YouTubeCustomPlayer()
                     </div>
 
                     <div className="yt-card">
-                    <img src="./public/rec4.png" alt="Thumbnail 4" className="yt-thumbnail" />
+                    <img src="/rec4.png" alt="Thumbnail 4" className="yt-thumbnail" />
                     <div className="yt-info">
                         <div className="yt-channel-info">
-                        <img src="./public/av4.jpg" alt="Avatar 4" className="yt-avatar" />
+                        <img src="/av4.jpg" alt="Avatar 4" className="yt-avatar" />
                         <div>
                             <p className="yt-video-title">電磁祭囃子 in NEO TOKYO 🔴</p>
                             <p className="yt-channel">ELECTRONICOS FANTASTICOS!</p>
