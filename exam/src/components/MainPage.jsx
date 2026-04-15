@@ -196,9 +196,7 @@ export function MainPage() {
                 setLoadingSections(true);
                 setSectionsError("");
 
-                const response = await fetch(
-                    `${import.meta.env.VITE_API_URL}/api/main-page/videos`
-                );
+                const response = await fetch(`${import.meta.env.VITE_API_URL}/api/main-page/videos`);
 
                 if (!response.ok) {
                     throw new Error("Failed to load videos");
@@ -304,7 +302,7 @@ export function MainPage() {
                 setLoadingMoreAllVideos(false);
             }
         },
-        [allVideos.length]
+        []
     );
 
     useEffect(() => {

@@ -56,6 +56,8 @@ export function RegForm() {
                 throw new Error(data.message || 'Registration failed');
             }
 
+            localStorage.setItem('token', data.token);
+
             setUserData({
                 id: data.user?.id,
                 name: data.user?.name || trimmedName,
