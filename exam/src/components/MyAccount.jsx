@@ -1,10 +1,13 @@
-import React , {useEffect,useState} from "react";
+import React, { useEffect, useState, useContext } from "react";
 import "./MyAccount.css"
 import { Link, useNavigate } from "react-router-dom";
+import { UserContext } from '../UserContext';
 
 export function MyAccount(){
 
     const navigate = useNavigate();
+
+    const { userData } = useContext(UserContext);
 
     //  ЕЩЁ ЗАГЛУШКА
     const [profile, setProfile] = useState({
@@ -19,12 +22,7 @@ export function MyAccount(){
     const [allVideos,setAllVideos] = useState([]);
     const [playlists,setPlaylists] = useState([]);
 
-    // ЗАГЛУШКА, УБЕРИ ПОТОМ ПОД БЕК
-    const [channel, setChannel] = useState({
-        name: "LiliA Hmel",
-        username: "kltrons",
-        subscribers: 300
-    });
+    const [channel, setChannel] = useState({});
 
     // НОВАЯ ЗАГЛУШКА ДЛЯ АЧИВКИ (потом с бэка)
     const [achievement, setAchievement] = useState({
@@ -53,13 +51,23 @@ export function MyAccount(){
         }
     ];
 
-    useEffect(()=>{
-        async function loadAccount(){
+    useEffect(() => {
+        async function loadAccount() {
+            try {
+                if (userData?.token) {
+                    const profileRes = await fetch(`${import.meta.env.VITE_API_URL}/api/account/profile`, {
+                        headers: {
+                            'Authorization': `Bearer ${userData.token}`
+                        }
+                    });
+                    
+                    if (profileRes.ok) {
+                        const profileData = await profileRes.json();
+                        setProfile(profileData);
+                        setChannel(profileData);
+                    }
+                }
 
-            // ЗАГЛУШКА ДЛЯ ДАННЫХ (потом заменить на fetch)
-            const useMock = true;
-
-            if(useMock){
                 const mockPopular = [
                     {
                         id: 1,
@@ -91,35 +99,15 @@ export function MyAccount(){
                 setPopularVideos(mockPopular);
                 setAllVideos(mockAll);
                 setPlaylists(mockPlaylists);
-                return;
+
+            } catch (error) {
+                console.error("Failed to load account data:", error);
             }
-
-            // РЕАЛЬНЫЙ БЕК (потом включишь)
-            const profileRes = await fetch("/api/my-account/profile");
-            const profileData = await profileRes.json();
-
-            const popularRes = await fetch("/api/my-account/videos/popular");
-            const popularData = await popularRes.json();
-            
-            const videoRes = await fetch("/api/my-account/videos");
-            const videoData = await videoRes.json();
-
-            const playlistsRes = await fetch("/api/my-account/playlists");
-            const playlistsData = await playlistsRes.json();
-
-            const achievementRes = await fetch("/api/my-account/achievement-theme");
-            const achievementData = await achievementRes.json();
-
-            setProfile(profileData);
-            setPopularVideos(popularData);
-            setAllVideos(videoData);
-            setPlaylists(playlistsData);
-            setAchievement(achievementData);
         }
-        loadAccount();
-    }, [])
 
-    // ПЕРЕХОД НА THEME PAGE (apply)
+        loadAccount();
+    }, [userData?.token]);
+
     const handleApplyTheme = () => {
         navigate("/theme-page", {
             state: {
@@ -128,7 +116,6 @@ export function MyAccount(){
         });
     };
 
-    // ПОТОМ МОЖНО СДЕЛАТЬ ЛОГИКУ "watch later"
     const handleWatchLater = () => {
         navigate("/theme-page");
     };
