@@ -193,7 +193,7 @@ export function MainPage() {
                 setSectionsError("");
 
                 const response = await fetch(
-                    `${import.meta.env.VITE_API_URL}/api/main-page/videos`
+                    `${import.meta.env.VITE_API_URL}/api/video/tranding`
                 );
 
                 if (!response.ok) {
@@ -300,7 +300,7 @@ export function MainPage() {
                 setLoadingMoreAllVideos(false);
             }
         },
-        [allVideos.length]
+        []
     );
 
     useEffect(() => {

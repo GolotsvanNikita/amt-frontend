@@ -42,6 +42,8 @@ export function FormFloatingBasicExample() {
 
             const data = await response.json();
 
+            localStorage.setItem('token', data.token);
+
             if (!response.ok) {
                 throw new Error(data.message || 'Login failed');
             }
