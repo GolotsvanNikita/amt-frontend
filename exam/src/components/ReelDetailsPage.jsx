@@ -106,6 +106,14 @@ function normalizeReply(reply) {
     };
 }
 
+const loadMoreReels = async () => {
+    if (isFetchingMore || !hasMore) return;
+
+    const nextPage = page + 1;
+    await loadReels(nextPage, true);
+    setPage(nextPage);
+};
+
 function normalizeComment(comment) {
     return {
         id: String(comment?.id || comment?._id || Date.now()),
@@ -263,6 +271,9 @@ export function FullReels() {
     const [replyTo, setReplyTo] = useState("");
     const [replyToCommentId, setReplyToCommentId] = useState(null);
     const [expandedReplies, setExpandedReplies] = useState({});
+    const [page, setPage] = useState(1);
+    const [hasMore, setHasMore] = useState(true);
+    const [isFetchingMore, setIsFetchingMore] = useState(false);
 
     const feedRef = useRef(null);
     const sectionRefs = useRef({});
@@ -272,7 +283,7 @@ export function FullReels() {
     const playerShellRefs = useRef({});
 
     useEffect(() => {
-        loadReels();
+        loadReels(1, false);
     }, []);
 
     useEffect(() => {
@@ -311,26 +322,20 @@ export function FullReels() {
                     setActiveReelId(reelId);
                     navigate(`/reels-page/${reelId}`, { replace: true });
 
+                    const currentIndex = reels.findIndex(
+                        (item) => String(item.id) === String(reelId)
+                    );
+
+                    if (currentIndex >= reels.length - 2) {
+                        loadMoreReels();
+                    }
+
                     if (htmlVideo && typeof htmlVideo.play === "function") {
                         htmlVideo.play().catch(() => {});
                     }
 
                     if (youtubePlayer) {
-                        try {
-                            youtubePlayer.setVolume?.(100);
-                            youtubePlayer.unMute?.();
-                            youtubePlayer.playVideo?.();
-
-                            setTimeout(() => {
-                                try {
-                                    const state = youtubePlayer.getPlayerState?.();
-                                    if (state !== 1) {
-                                        youtubePlayer.mute?.();
-                                        youtubePlayer.playVideo?.();
-                                    }
-                                } catch {}
-                            }, 400);
-                        } catch {}
+                        youtubePlayer.playVideo?.();
                     }
                 } else {
                     if (htmlVideo && typeof htmlVideo.pause === "function") {
@@ -358,11 +363,18 @@ export function FullReels() {
         };
     }, [reels, navigate]);
 
-    const loadReels = async () => {
+    const loadReels = async (pageToLoad = 1, append = false) => {
         try {
-            setLoading(true);
+            if (pageToLoad === 1) {
+                setLoading(true);
+            } else {
+                setIsFetchingMore(true);
+            }
 
-            const response = await fetch(`${import.meta.env.VITE_API_URL}/api/reels`);
+            const response = await fetch(
+                `${import.meta.env.VITE_API_URL}/api/reels?page=${pageToLoad}&limit=10`
+            );
+
             const data = await response.json();
 
             if (!response.ok) {
@@ -379,17 +391,22 @@ export function FullReels() {
                 .map(normalizeReel)
                 .filter((item) => item.id);
 
-            setReels(normalized);
+            setReels((prev) => (append ? [...prev, ...normalized] : normalized));
 
-            if (!id && normalized.length > 0) {
+            setHasMore(normalized.length > 0);
+
+            if (pageToLoad === 1 && !id && normalized.length > 0) {
                 setActiveReelId(normalized[0].id);
                 navigate(`/reels-page/${normalized[0].id}`, { replace: true });
             }
         } catch (error) {
             console.error("Failed to load reels:", error);
-            setReels([]);
+            if (!append) {
+                setReels([]);
+            }
         } finally {
             setLoading(false);
+            setIsFetchingMore(false);
         }
     };
 

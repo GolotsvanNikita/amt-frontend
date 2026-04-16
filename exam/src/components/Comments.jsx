@@ -1,167 +1,171 @@
-import { useState } from 'react';
-import './Comments.css';
-import Send from '../assets/Send.svg';
-import Emoji from '../assets/emoji.svg';
-import Notif from '../assets/notif.svg';
+import { useMemo, useState } from "react";
+import "./Comments.css";
+import Send from "../assets/Send.svg";
+import Emoji from "../assets/emoji.svg";
+import Notif from "../assets/notif.svg";
 
 function getToken() {
   return (
-    localStorage.getItem('token') ||
-    localStorage.getItem('authToken') ||
-    localStorage.getItem('accessToken') ||
-    localStorage.getItem('jwt') ||
-    sessionStorage.getItem('token') ||
-    sessionStorage.getItem('authToken') ||
-    sessionStorage.getItem('accessToken') ||
-    sessionStorage.getItem('jwt') ||
-    ''
+    localStorage.getItem("token") ||
+    localStorage.getItem("authToken") ||
+    localStorage.getItem("accessToken") ||
+    localStorage.getItem("jwt") ||
+    sessionStorage.getItem("token") ||
+    sessionStorage.getItem("authToken") ||
+    sessionStorage.getItem("accessToken") ||
+    sessionStorage.getItem("jwt") ||
+    ""
   );
 }
 
 function isValidImageSrc(value) {
-  if (!value || typeof value !== 'string') return false;
+  if (!value || typeof value !== "string") return false;
+
+  const trimmed = value.trim();
 
   return (
-    value.startsWith('http://') ||
-    value.startsWith('https://') ||
-    value.startsWith('/') ||
-    value.startsWith('data:image/')
+    trimmed.startsWith("http://") ||
+    trimmed.startsWith("https://") ||
+    trimmed.startsWith("/") ||
+    trimmed.startsWith("data:image/")
   );
 }
 
-function getSafeAvatar(comment) {
-  const rawAvatar = comment?.avatar || comment?.authorAvatar || '';
+function getSafeAvatar(entity) {
+  const candidates = [
+    entity?.avatar,
+    entity?.authorAvatar,
+    entity?.profileImage,
+    entity?.profileImageUrl,
+    entity?.image,
+  ];
 
-  return isValidImageSrc(rawAvatar) ? rawAvatar : '/ava.png';
+  for (const candidate of candidates) {
+    if (isValidImageSrc(candidate)) {
+      return candidate.trim();
+    }
+  }
+
+  return "/ava.png";
 }
 
-function normalizeReply(reply) {
+function normalizeReply(reply, index) {
   return {
-    id: reply?.id || reply?._id || Math.random().toString(36),
-    name: reply?.name || reply?.author || reply?.username || 'Unknown user',
+    id: String(reply?.id || reply?._id || `reply-${index}-${Math.random().toString(36).slice(2)}`),
+    name: reply?.name || reply?.author || reply?.username || "Unknown user",
     avatar: getSafeAvatar(reply),
-    text: reply?.text || reply?.content || '',
-    time: reply?.time || reply?.createdAt || 'just now',
+    text: reply?.text || reply?.content || "",
+    time: reply?.time || reply?.createdAt || "just now",
   };
 }
 
-function normalizeComment(comment) {
+function normalizeComment(comment, index) {
   return {
-    id: comment?.id || comment?._id || Math.random().toString(36),
-    name: comment?.name || comment?.author || comment?.username || 'Unknown user',
+    id: String(comment?.id || comment?._id || `comment-${index}-${Math.random().toString(36).slice(2)}`),
+    name: comment?.name || comment?.author || comment?.username || "Unknown user",
     avatar: getSafeAvatar(comment),
-    text: comment?.text || comment?.content || '',
-    time: comment?.time || comment?.createdAt || 'just now',
+    text: comment?.text || comment?.content || "",
+    time: comment?.time || comment?.createdAt || "just now",
     replies: Array.isArray(comment?.replies)
-      ? comment.replies.map(normalizeReply)
+      ? comment.replies.map((reply, replyIndex) => normalizeReply(reply, replyIndex))
       : [],
   };
 }
 
 export function Comments({
   comments = [],
-  setComments,
   videoId,
   reloadInteractions,
 }) {
-  const [text, setText] = useState('');
-  const [replyText, setReplyText] = useState('');
+  const [text, setText] = useState("");
+  const [replyText, setReplyText] = useState("");
   const [replyTo, setReplyTo] = useState(null);
 
-  const normalizedComments = Array.isArray(comments)
-    ? comments.map(normalizeComment)
-    : [];
+  const normalizedComments = useMemo(() => {
+    return Array.isArray(comments)
+      ? comments.map((comment, index) => normalizeComment(comment, index))
+      : [];
+  }, [comments]);
 
   const handleAddComment = async () => {
-    if (!text.trim() || !videoId) return;
+    const trimmedText = text.trim();
+    if (!trimmedText || !videoId) return;
 
     const token = getToken();
     if (!token) {
-      console.error('Token not found');
+      console.error("Token not found");
       return;
     }
 
     try {
-      console.log('COMMENT videoId:', videoId);
-      console.log(
-        'COMMENT URL:',
-        `${import.meta.env.VITE_API_URL}/api/interactions/comment/${videoId}`
-      );
-
       const response = await fetch(
         `${import.meta.env.VITE_API_URL}/api/interactions/comment/${videoId}`,
         {
-          method: 'POST',
+          method: "POST",
           headers: {
-            'Content-Type': 'application/json',
+            "Content-Type": "application/json",
             Authorization: `Bearer ${token}`,
           },
           body: JSON.stringify({
-            text: text.trim(),
+            text: trimmedText,
           }),
         }
       );
 
       if (!response.ok) {
         const errorText = await response.text();
-        throw new Error(errorText || 'Failed to add comment');
+        throw new Error(errorText || "Failed to add comment");
       }
 
-      setText('');
+      setText("");
 
-      if (typeof reloadInteractions === 'function') {
+      if (typeof reloadInteractions === "function") {
         await reloadInteractions();
       }
-    } catch (err) {
-      console.error('Add comment error:', err);
+    } catch (error) {
+      console.error("Add comment error:", error);
     }
   };
 
   const handleAddReply = async (parentId) => {
-    if (!replyText.trim() || !videoId || !parentId) return;
+    const trimmedReply = replyText.trim();
+    if (!trimmedReply || !videoId || !parentId) return;
 
     const token = getToken();
     if (!token) {
-      console.error('Token not found');
+      console.error("Token not found");
       return;
     }
 
     try {
-      console.log('REPLY videoId:', videoId);
-      console.log('REPLY parentId:', parentId);
-      console.log(
-        'REPLY URL:',
-        `${import.meta.env.VITE_API_URL}/api/interactions/comment/${videoId}`
-      );
-
       const response = await fetch(
         `${import.meta.env.VITE_API_URL}/api/interactions/comment/${videoId}`,
         {
-          method: 'POST',
+          method: "POST",
           headers: {
-            'Content-Type': 'application/json',
+            "Content-Type": "application/json",
             Authorization: `Bearer ${token}`,
           },
           body: JSON.stringify({
-            text: replyText.trim(),
-            parentId: parentId,
+            text: trimmedReply,
+            parentId,
           }),
         }
       );
 
       if (!response.ok) {
         const errorText = await response.text();
-        throw new Error(errorText || 'Failed to add reply');
+        throw new Error(errorText || "Failed to add reply");
       }
 
-      setReplyText('');
+      setReplyText("");
       setReplyTo(null);
 
-      if (typeof reloadInteractions === 'function') {
+      if (typeof reloadInteractions === "function") {
         await reloadInteractions();
       }
-    } catch (err) {
-      console.error('Add reply error:', err);
+    } catch (error) {
+      console.error("Add reply error:", error);
     }
   };
 
@@ -170,14 +174,20 @@ export function Comments({
       <h3>Comments</h3>
 
       <div className="comment-form">
-        <img src="/ava.png" alt="your avatar" />
+        <img
+          src="/ava.png"
+          alt="your avatar"
+          onError={(e) => {
+            e.currentTarget.src = "/ava.png";
+          }}
+        />
 
         <input
           type="text"
           placeholder="Add a comment"
           value={text}
           onChange={(e) => setText(e.target.value)}
-          onKeyDown={(e) => e.key === 'Enter' && handleAddComment()}
+          onKeyDown={(e) => e.key === "Enter" && handleAddComment()}
         />
 
         <div className="form-icons">
@@ -202,7 +212,7 @@ export function Comments({
                 src={comment.avatar}
                 alt="avatar"
                 onError={(e) => {
-                  e.currentTarget.src = '/ava.png';
+                  e.currentTarget.src = "/ava.png";
                 }}
               />
 
@@ -229,16 +239,24 @@ export function Comments({
 
             {replyTo === comment.id && (
               <div className="reply-form">
-                <img src="/ava.png" alt="your avatar" />
+                <img
+                  src="/ava.png"
+                  alt="your avatar"
+                  onError={(e) => {
+                    e.currentTarget.src = "/ava.png";
+                  }}
+                />
+
                 <input
                   type="text"
                   placeholder="Write a reply"
                   value={replyText}
                   onChange={(e) => setReplyText(e.target.value)}
                   onKeyDown={(e) =>
-                    e.key === 'Enter' && handleAddReply(comment.id)
+                    e.key === "Enter" && handleAddReply(comment.id)
                   }
                 />
+
                 <button onClick={() => handleAddReply(comment.id)}>➤</button>
               </div>
             )}
@@ -251,7 +269,7 @@ export function Comments({
                       src={reply.avatar}
                       alt="avatar"
                       onError={(e) => {
-                        e.currentTarget.src = '/ava.png';
+                        e.currentTarget.src = "/ava.png";
                       }}
                     />
 
