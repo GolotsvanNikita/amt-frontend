@@ -12,7 +12,6 @@ import { EditProfile } from './components/EditProfile';
 import { ThemePage } from './components/ThemePage';
 import { ReelsPage } from './components/ReelsPage';
 import {FullReels} from './components/ReelDetailsPage'
-import { YouTubeCustomPlayer } from './components/VideoPage';
 import './App.css';
 
  function ProtectedRoute({ children })
@@ -36,8 +35,8 @@ function App()
 
                         <Route index element={<MainPage />} />
 
-                        <Route path="video" element={<YouTubeCustomPlayer />} />
-                        <Route path="video/:id" element={<YouTubeCustomPlayer />} />
+                        <Route path="video" element={<VideoAndComments />} />
+                        <Route path="video/:id" element={<VideoAndComments />} />
 
                         <Route path="author" element={<AuthorPage />} />
 

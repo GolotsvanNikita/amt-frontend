@@ -25,43 +25,23 @@ function formatViews(views) {
     return `${numericViews} views`;
 }
 
-function getVideoId(video) {
+function getResolvedId(video) {
     return String(video?.videoId || video?.id || "");
 }
 
 function normalizeVideo(video) {
     return {
         ...video,
-        resolvedId: getVideoId(video),
-        resolvedThumbnail:
-            video?.thumbnail ||
-            video?.thumbnailUrl ||
-            video?.snippet?.thumbnails?.high?.url ||
-            video?.snippet?.thumbnails?.medium?.url ||
-            video?.snippet?.thumbnails?.default?.url ||
-            "/1v.png",
-        resolvedChannelName:
-            video?.channelName ||
-            video?.author ||
-            video?.snippet?.channelTitle ||
-            "Unknown channel",
-        resolvedTitle:
-            video?.title ||
-            video?.snippet?.title ||
-            "Untitled video",
-        resolvedPublishedAt:
-            video?.publishedAt ||
-            video?.snippet?.publishedAt ||
-            "",
-        resolvedViews:
-            video?.views ||
-            video?.viewCount ||
-            video?.statistics?.viewCount ||
-            0,
+        resolvedId: getResolvedId(video),
+        resolvedTitle: video?.title || "Untitled video",
+        resolvedChannelName: video?.channelName || video?.author || "Unknown channel",
+        resolvedThumbnail: video?.thumbnailUrl || video?.thumbnail || "/1v.png",
+        resolvedPublishedAt: video?.publishedAt || "",
+        resolvedViews: video?.views || 0,
     };
 }
 
-export function YouTubeCustomPlayer({ initialVideo = null, routeVideoId = "" }) {
+export function YouTubeCustomPlayer({ routeVideoId = "", initialVideo = null }) {
     const playerRef = useRef(null);
     const navigate = useNavigate();
 
@@ -96,8 +76,14 @@ export function YouTubeCustomPlayer({ initialVideo = null, routeVideoId = "" }) 
                     ? data
                     : [];
 
-                setVideos(rawVideos.map(normalizeVideo));
+                const normalized = rawVideos.map(normalizeVideo);
+
+                console.log("ROUTE VIDEO ID:", routeVideoId);
+                console.log("VIDEOS:", normalized.slice(0, 5));
+
+                setVideos(normalized);
             } catch (err) {
+                console.error(err);
                 setError(err.message || "Something went wrong");
                 setVideos([]);
             } finally {
@@ -106,23 +92,21 @@ export function YouTubeCustomPlayer({ initialVideo = null, routeVideoId = "" }) 
         };
 
         loadVideos();
-    }, []);
+    }, [routeVideoId]);
 
     const normalizedInitialVideo = useMemo(() => {
         return initialVideo ? normalizeVideo(initialVideo) : null;
     }, [initialVideo]);
 
     const currentVideo = useMemo(() => {
-        if (!Array.isArray(videos) || videos.length === 0) {
-            return normalizedInitialVideo;
-        }
+        if (videos.length > 0) {
+            const found = videos.find(
+                (video) => String(video.resolvedId) === String(routeVideoId)
+            );
 
-        const foundByRoute = videos.find(
-            (video) => String(video.resolvedId) === String(routeVideoId)
-        );
-
-        if (foundByRoute) {
-            return foundByRoute;
+            if (found) {
+                return found;
+            }
         }
 
         if (
@@ -132,17 +116,15 @@ export function YouTubeCustomPlayer({ initialVideo = null, routeVideoId = "" }) 
             return normalizedInitialVideo;
         }
 
-        return normalizedInitialVideo || videos[0] || null;
+        return null;
     }, [videos, routeVideoId, normalizedInitialVideo]);
 
     const recommendedVideos = useMemo(() => {
-        if (!Array.isArray(videos) || videos.length === 0 || !currentVideo) return [];
+        if (!currentVideo) return [];
 
-        return videos
-            .filter(
-                (video) => String(video.resolvedId) !== String(currentVideo.resolvedId)
-            )
-            .slice(0, 8);
+        return videos.filter(
+            (video) => String(video.resolvedId) !== String(currentVideo.resolvedId)
+        );
     }, [videos, currentVideo]);
 
     const opts = {
@@ -154,7 +136,7 @@ export function YouTubeCustomPlayer({ initialVideo = null, routeVideoId = "" }) 
             modestbranding: 1,
             rel: 0,
             fs: 0,
-            origin: typeof window !== "undefined" ? window.location.origin : "",
+            enablejsapi: 1,
         },
     };
 
@@ -190,8 +172,6 @@ export function YouTubeCustomPlayer({ initialVideo = null, routeVideoId = "" }) 
     const togglePlay = () => {
         const player = playerRef.current;
         if (!player) return;
-
-        if (!showVideo) setShowVideo(true);
 
         if (isPlaying) {
             player.pauseVideo();
@@ -262,7 +242,7 @@ export function YouTubeCustomPlayer({ initialVideo = null, routeVideoId = "" }) 
         return <div className="yt-page-status">{error}</div>;
     }
 
-    if (!currentVideo || !currentVideo.resolvedId) {
+    if (!currentVideo?.resolvedId) {
         return <div className="yt-page-status">Video not found</div>;
     }
 
@@ -369,7 +349,11 @@ export function YouTubeCustomPlayer({ initialVideo = null, routeVideoId = "" }) 
                         <div
                             key={video.resolvedId}
                             className="RecomendVideo"
-                            onClick={() => navigate(`/video/${video.resolvedId}`, { state: { video } })}
+                            onClick={() =>
+                                navigate(`/video/${video.resolvedId}`, {
+                                    state: { video },
+                                })
+                            }
                         >
                             <img src={video.resolvedThumbnail} alt={video.resolvedTitle} />
                             <div className="RecomendVideo-text">
@@ -406,7 +390,11 @@ export function YouTubeCustomPlayer({ initialVideo = null, routeVideoId = "" }) 
                         <div
                             key={video.resolvedId}
                             className="yt-card"
-                            onClick={() => navigate(`/video/${video.resolvedId}`, { state: { video } })}
+                            onClick={() =>
+                                navigate(`/video/${video.resolvedId}`, {
+                                    state: { video },
+                                })
+                            }
                         >
                             <img
                                 src={video.resolvedThumbnail}
