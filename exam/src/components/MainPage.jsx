@@ -138,7 +138,6 @@ export function MainPage() {
             } catch (err) {
                 console.error(err);
                 setSectionsError(err.message || "Something went wrong");
-                setVideoSections([]);
             } finally {
                 setLoadingSections(false);
             }
@@ -191,7 +190,6 @@ export function MainPage() {
             } catch (err) {
                 console.error(err);
                 setHistoryError(err.message || "Failed to load watch history");
-                setHistory([]);
             } finally {
                 setLoadingHistory(false);
             }
@@ -249,7 +247,6 @@ export function MainPage() {
             setAllVideosError(err.message || "Failed to load all videos");
 
             if (!append) {
-                setAllVideos([]);
                 setHasMoreAllVideos(false);
                 setNextPageToken(null);
             }
