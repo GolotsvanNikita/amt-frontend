@@ -122,7 +122,7 @@ export function YouTubeCustomPlayer({ routeVideoId = "", initialVideo = null }) 
     const recommendedVideos = useMemo(() => {
         if(!currentVideo) return [];
         const filtered = videos.filter(
-            (video) => String(video.resolvedId) !== string(currentVideo.resolvedId)
+            (video) => String(video.resolvedId) !== String(currentVideo.resolvedId)
         );
 
         const sameChannel = filtered.filter(
