@@ -37,6 +37,8 @@ export function VideoAndComments() {
             const token = getAuthToken();
             console.log("INTERACTIONS id:", id);
             console.log("INTERACTIONS URL:", `${import.meta.env.VITE_API_URL}/api/interactions/video/${id}`);
+            console.log("INTERACTIONS RAW DATA:", data);        // ← сюда
+            console.log("COMMENTS ARRAY:", data?.comments);     // ← и сюда
             const response = await fetch(
                 `${import.meta.env.VITE_API_URL}/api/interactions/video/${id}`,
                 {
