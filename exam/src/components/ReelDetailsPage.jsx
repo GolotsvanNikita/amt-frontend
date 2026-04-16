@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import YouTube from "react-youtube";
 import "./ReelDetailsPage.css";
@@ -72,16 +72,16 @@ function extractYoutubeId(value) {
             if (v) return v;
 
             const parts = url.pathname.split("/").filter(Boolean);
-            const shortId = parts[parts.length - 1];
-            if (shortId && /^[a-zA-Z0-9_-]{11}$/.test(shortId)) {
-                return shortId;
+            const maybeId = parts[parts.length - 1];
+            if (maybeId && /^[a-zA-Z0-9_-]{11}$/.test(maybeId)) {
+                return maybeId;
             }
         }
 
         if (url.hostname.includes("youtu.be")) {
-            const id = url.pathname.replace("/", "");
-            if (/^[a-zA-Z0-9_-]{11}$/.test(id)) {
-                return id;
+            const maybeId = url.pathname.replace("/", "");
+            if (/^[a-zA-Z0-9_-]{11}$/.test(maybeId)) {
+                return maybeId;
             }
         }
     } catch {
@@ -93,7 +93,7 @@ function extractYoutubeId(value) {
 
 function normalizeReply(reply) {
     return {
-        id: String(reply?.id || reply?._id || Date.now()),
+        id: String(reply?.id || reply?._id || Math.random().toString(36).slice(2)),
         user: reply?.user || reply?.name || reply?.author || reply?.username || "Unknown user",
         avatar: isValidImageSrc(reply?.avatar)
             ? reply.avatar
@@ -102,21 +102,12 @@ function normalizeReply(reply) {
             : "/ava.png",
         text: reply?.text || reply?.content || "",
         time: reply?.time || reply?.createdAt || "just now",
-        likes: Number(reply?.likes) || 0,
     };
 }
 
-const loadMoreReels = async () => {
-    if (isFetchingMore || !hasMore) return;
-
-    const nextPage = page + 1;
-    await loadReels(nextPage, true);
-    setPage(nextPage);
-};
-
 function normalizeComment(comment) {
     return {
-        id: String(comment?.id || comment?._id || Date.now()),
+        id: String(comment?.id || comment?._id || Math.random().toString(36).slice(2)),
         user: comment?.user || comment?.name || comment?.author || comment?.username || "Unknown user",
         avatar: isValidImageSrc(comment?.avatar)
             ? comment.avatar
@@ -125,7 +116,6 @@ function normalizeComment(comment) {
             : "/ava.png",
         text: comment?.text || comment?.content || "",
         time: comment?.time || comment?.createdAt || "just now",
-        likes: Number(comment?.likes) || 0,
         replies: Array.isArray(comment?.replies)
             ? comment.replies.map(normalizeReply)
             : [],
@@ -174,6 +164,16 @@ function normalizeReel(item) {
     };
 }
 
+function mergeUniqueById(prev, next) {
+    const map = new Map();
+
+    [...prev, ...next].forEach((item) => {
+        map.set(String(item.id), item);
+    });
+
+    return Array.from(map.values());
+}
+
 function ReelMedia({
     reel,
     isActive,
@@ -210,25 +210,12 @@ function ReelMedia({
 
                         try {
                             player.setVolume?.(100);
+                            player.mute?.();
 
                             if (isActive) {
-
-                                player.unMute?.();
                                 player.playVideo?.();
-
-                                setTimeout(() => {
-                                    try {
-                                        const state = player.getPlayerState?.();
-                                        if (state !== 1) {
-                                            player.mute?.();
-                                            player.playVideo?.();
-                                        }
-                                    } catch {}
-                                }, 400);
                             }
-                        } catch (error) {
-                            console.error("YouTube player init error:", error);
-                        }
+                        } catch {}
                     }}
                 />
             </div>
@@ -252,11 +239,7 @@ function ReelMedia({
         );
     }
 
-    return (
-        <div className="reel-details-video reel-video-fallback">
-            Video unavailable
-        </div>
-    );
+    return <div className="reel-details-video reel-video-fallback">Video unavailable</div>;
 }
 
 export function FullReels() {
@@ -265,15 +248,15 @@ export function FullReels() {
 
     const [reels, setReels] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [isFetchingMore, setIsFetchingMore] = useState(false);
+    const [page, setPage] = useState(1);
+    const [hasMore, setHasMore] = useState(true);
 
     const [activeReelId, setActiveReelId] = useState(id ? String(id) : "");
     const [commentText, setCommentText] = useState("");
     const [replyTo, setReplyTo] = useState("");
     const [replyToCommentId, setReplyToCommentId] = useState(null);
     const [expandedReplies, setExpandedReplies] = useState({});
-    const [page, setPage] = useState(1);
-    const [hasMore, setHasMore] = useState(true);
-    const [isFetchingMore, setIsFetchingMore] = useState(false);
 
     const feedRef = useRef(null);
     const sectionRefs = useRef({});
@@ -282,9 +265,70 @@ export function FullReels() {
     const youtubePlayerRefs = useRef({});
     const playerShellRefs = useRef({});
 
+    const loadReels = useCallback(
+        async (pageToLoad = 1, append = false) => {
+            try {
+                if (pageToLoad === 1 && !append) {
+                    setLoading(true);
+                } else {
+                    setIsFetchingMore(true);
+                }
+
+                const response = await fetch(
+                    `${import.meta.env.VITE_API_URL}/api/reels?page=${pageToLoad}&limit=5`
+                );
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data?.message || "Failed to load reels");
+                }
+
+                const rawReels = Array.isArray(data?.reels)
+                    ? data.reels
+                    : Array.isArray(data)
+                    ? data
+                    : [];
+
+                const normalized = rawReels.map(normalizeReel).filter((item) => item.id);
+
+                setReels((prev) =>
+                    append ? mergeUniqueById(prev, normalized) : normalized
+                );
+
+                if (typeof data?.hasMore === "boolean") {
+                    setHasMore(data.hasMore);
+                } else {
+                    setHasMore(normalized.length === 5);
+                }
+
+                setPage(pageToLoad);
+
+                if (pageToLoad === 1 && !id && normalized.length > 0) {
+                    setActiveReelId(normalized[0].id);
+                    navigate(`/reels-page/${normalized[0].id}`, { replace: true });
+                }
+            } catch (error) {
+                console.error("Failed to load reels:", error);
+                if (!append) {
+                    setReels([]);
+                }
+            } finally {
+                setLoading(false);
+                setIsFetchingMore(false);
+            }
+        },
+        [id, navigate]
+    );
+
+    const loadMoreReels = useCallback(async () => {
+        if (loading || isFetchingMore || !hasMore) return;
+        await loadReels(page + 1, true);
+    }, [hasMore, isFetchingMore, loadReels, loading, page]);
+
     useEffect(() => {
         loadReels(1, false);
-    }, []);
+    }, [loadReels]);
 
     useEffect(() => {
         if (id) {
@@ -323,7 +367,7 @@ export function FullReels() {
                     navigate(`/reels-page/${reelId}`, { replace: true });
 
                     const currentIndex = reels.findIndex(
-                        (item) => String(item.id) === String(reelId)
+                        (item) => String(item.id) === reelId
                     );
 
                     if (currentIndex >= reels.length - 2) {
@@ -335,7 +379,9 @@ export function FullReels() {
                     }
 
                     if (youtubePlayer) {
-                        youtubePlayer.playVideo?.();
+                        try {
+                            youtubePlayer.playVideo?.();
+                        } catch {}
                     }
                 } else {
                     if (htmlVideo && typeof htmlVideo.pause === "function") {
@@ -343,7 +389,9 @@ export function FullReels() {
                     }
 
                     if (youtubePlayer) {
-                        youtubePlayer.pauseVideo?.();
+                        try {
+                            youtubePlayer.pauseVideo?.();
+                        } catch {}
                     }
                 }
             });
@@ -357,58 +405,9 @@ export function FullReels() {
         });
 
         return () => {
-            if (observerRef.current) {
-                observerRef.current.disconnect();
-            }
+            observerRef.current?.disconnect();
         };
-    }, [reels, navigate]);
-
-    const loadReels = async (pageToLoad = 1, append = false) => {
-        try {
-            if (pageToLoad === 1) {
-                setLoading(true);
-            } else {
-                setIsFetchingMore(true);
-            }
-
-            const response = await fetch(
-                `${import.meta.env.VITE_API_URL}/api/reels?page=${pageToLoad}&limit=10`
-            );
-
-            const data = await response.json();
-
-            if (!response.ok) {
-                throw new Error(data?.message || "Failed to load reels");
-            }
-
-            const rawReels = Array.isArray(data?.reels)
-                ? data.reels
-                : Array.isArray(data)
-                ? data
-                : [];
-
-            const normalized = rawReels
-                .map(normalizeReel)
-                .filter((item) => item.id);
-
-            setReels((prev) => (append ? [...prev, ...normalized] : normalized));
-
-            setHasMore(normalized.length > 0);
-
-            if (pageToLoad === 1 && !id && normalized.length > 0) {
-                setActiveReelId(normalized[0].id);
-                navigate(`/reels-page/${normalized[0].id}`, { replace: true });
-            }
-        } catch (error) {
-            console.error("Failed to load reels:", error);
-            if (!append) {
-                setReels([]);
-            }
-        } finally {
-            setLoading(false);
-            setIsFetchingMore(false);
-        }
-    };
+    }, [loadMoreReels, navigate, reels]);
 
     const activeReel = useMemo(
         () => reels.find((item) => String(item.id) === String(activeReelId)) || null,
@@ -681,14 +680,7 @@ export function FullReels() {
                 throw new Error(errorData?.message || "Failed to add comment");
             }
 
-            await loadReels();
-
-            if (replyToCommentId) {
-                setExpandedReplies((prev) => ({
-                    ...prev,
-                    [replyToCommentId]: true,
-                }));
-            }
+            await loadReels(1, false);
 
             setCommentText("");
             setReplyTo("");
@@ -956,6 +948,12 @@ export function FullReels() {
 
                                         <button type="submit">➤</button>
                                     </form>
+                                )}
+
+                                {isFetchingMore && (
+                                    <div className="reel-details-loading" style={{ marginTop: "12px" }}>
+                                        Loading more reels...
+                                    </div>
                                 )}
                             </aside>
                         </div>

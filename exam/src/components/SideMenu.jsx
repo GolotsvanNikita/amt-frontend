@@ -8,7 +8,7 @@ import './SideMenu.css';
             <nav className="sidebarSection">
                 <ul className='firstSection'>
                     <li><img src="/home.png" alt="home"/><Link to="/"><span>Home</span></Link></li>
-                    <li><img src="/shorts.png" alt="shorts"/><span>Playme</span></li>
+                    <Link to="/reels-page"><img src="/shorts.png" alt="shorts"/><span>Playme</span></Link>
                     <li><img src="/Group 185.png" alt="group"/><span>Subscriptions</span></li>
                     <li><img src="/Path.png" alt="path"/><span>Streamers</span></li>
                 </ul>
