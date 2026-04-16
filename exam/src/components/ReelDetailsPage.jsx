@@ -166,17 +166,24 @@ function normalizeReel(item) {
     };
 }
 
-function ReelMedia({ reel, isActive, setVideoNode }) {
+function ReelMedia({
+    reel,
+    isActive,
+    setVideoNode,
+    setYoutubePlayer,
+}) {
     const youtubeOpts = {
         width: "100%",
         height: "100%",
         playerVars: {
             autoplay: isActive ? 1 : 0,
-            controls: 1,
+            controls: 0,
             modestbranding: 1,
             rel: 0,
             loop: 1,
             playlist: reel.youtubeId,
+            fs: 0,
+            mute: 1,
         },
     };
 
@@ -187,6 +194,14 @@ function ReelMedia({ reel, isActive, setVideoNode }) {
                     videoId={reel.youtubeId}
                     opts={youtubeOpts}
                     className="reel-youtube-frame"
+                    onReady={(event) => {
+                        setYoutubePlayer(event.target);
+
+                        if (isActive) {
+                            event.target.mute?.();
+                            event.target.playVideo?.();
+                        }
+                    }}
                 />
             </div>
         );
@@ -199,7 +214,7 @@ function ReelMedia({ reel, isActive, setVideoNode }) {
                 className="reel-details-video"
                 src={reel.videoUrl}
                 poster={reel.posterUrl || ""}
-                controls
+                controls={false}
                 playsInline
                 autoPlay={isActive}
                 muted={Boolean(reel.isMuted)}
@@ -232,6 +247,8 @@ export function FullReels() {
     const sectionRefs = useRef({});
     const observerRef = useRef(null);
     const videoRefs = useRef({});
+    const youtubePlayerRefs = useRef({});
+    const playerShellRefs = useRef({});
 
     useEffect(() => {
         loadReels();
@@ -266,17 +283,29 @@ export function FullReels() {
         observerRef.current = new IntersectionObserver((entries) => {
             entries.forEach((entry) => {
                 const reelId = String(entry.target.dataset.reelId);
-                const video = videoRefs.current[reelId];
+                const htmlVideo = videoRefs.current[reelId];
+                const youtubePlayer = youtubePlayerRefs.current[reelId];
 
                 if (entry.isIntersecting) {
                     setActiveReelId(reelId);
                     navigate(`/reels-page/${reelId}`, { replace: true });
 
-                    if (video && typeof video.play === "function") {
-                        video.play().catch(() => {});
+                    if (htmlVideo && typeof htmlVideo.play === "function") {
+                        htmlVideo.play().catch(() => {});
                     }
-                } else if (video && typeof video.pause === "function") {
-                    video.pause();
+
+                    if (youtubePlayer) {
+                        youtubePlayer.mute?.();
+                        youtubePlayer.playVideo?.();
+                    }
+                } else {
+                    if (htmlVideo && typeof htmlVideo.pause === "function") {
+                        htmlVideo.pause();
+                    }
+
+                    if (youtubePlayer) {
+                        youtubePlayer.pauseVideo?.();
+                    }
                 }
             });
         }, options);
@@ -377,27 +406,72 @@ export function FullReels() {
     };
 
     const togglePlay = (reelId) => {
-        const video = videoRefs.current[reelId];
-        if (!video) return;
+        const htmlVideo = videoRefs.current[reelId];
+        const youtubePlayer = youtubePlayerRefs.current[reelId];
 
-        if (video.paused) {
-            video.play().catch(() => {});
-        } else {
-            video.pause();
+        if (htmlVideo) {
+            if (htmlVideo.paused) {
+                htmlVideo.play().catch(() => {});
+            } else {
+                htmlVideo.pause();
+            }
+            return;
+        }
+
+        if (youtubePlayer) {
+            const state = youtubePlayer.getPlayerState?.();
+
+            if (state === 1) {
+                youtubePlayer.pauseVideo();
+            } else {
+                youtubePlayer.playVideo();
+            }
         }
     };
 
+    const toggleFullscreen = (reelId) => {
+    const shell = playerShellRefs.current[reelId];
+    if (!shell) return;
+
+    if (document.fullscreenElement) {
+        document.exitFullscreen?.();
+    } else {
+        shell.requestFullscreen?.();
+    }
+    };
+
     const toggleMute = (reelId) => {
-        const video = videoRefs.current[reelId];
-        if (!video) return;
+        const htmlVideo = videoRefs.current[reelId];
+        const youtubePlayer = youtubePlayerRefs.current[reelId];
 
-        video.muted = !video.muted;
+        if (htmlVideo) {
+            htmlVideo.muted = !htmlVideo.muted;
 
-        setReels((prev) =>
-            prev.map((item) =>
-                item.id === reelId ? { ...item, isMuted: video.muted } : item
-            )
-        );
+            setReels((prev) =>
+                prev.map((item) =>
+                    item.id === reelId ? { ...item, isMuted: htmlVideo.muted } : item
+                )
+            );
+            return;
+        }
+
+        if (youtubePlayer) {
+            const isCurrentlyMuted = youtubePlayer.isMuted?.();
+
+            if (isCurrentlyMuted) {
+                youtubePlayer.unMute?.();
+            } else {
+                youtubePlayer.mute?.();
+            }
+
+            setReels((prev) =>
+                prev.map((item) =>
+                    item.id === reelId
+                        ? { ...item, isMuted: !isCurrentlyMuted }
+                        : item
+                )
+            );
+        }
     };
 
     const handleLike = async (reelId) => {
@@ -599,34 +673,47 @@ export function FullReels() {
                     >
                         <div className="reel-details-layout">
                             <div className="reel-details-video-wrap">
-                                <div className="reel-player-shell">
+                                <div className="reel-player-shell"
+                                    ref={(node) => {
+                                        playerShellRefs.current[reel.id] = node;
+                                    }}
+                                >
                                     <ReelMedia
                                         reel={reel}
                                         isActive={isActive}
                                         setVideoNode={(node) => {
                                             videoRefs.current[reel.id] = node;
                                         }}
+                                        setYoutubePlayer={(player) => {
+                                            youtubePlayerRefs.current[reel.id] = player;
+                                        }}
                                     />
 
-                                    {!reel.youtubeId && reel.videoUrl && (
-                                        <div className="reel-player-controls">
-                                            <button
-                                                type="button"
-                                                className="reel-player-btn"
-                                                onClick={() => togglePlay(reel.id)}
-                                            >
-                                                Play / Pause
-                                            </button>
+                                    <div className="reel-player-controls">
+                                        <button
+                                            type="button"
+                                            className="reel-player-btn"
+                                            onClick={() => togglePlay(reel.id)}
+                                        >
+                                            Play / Pause
+                                        </button>
 
-                                            <button
-                                                type="button"
-                                                className="reel-player-btn"
-                                                onClick={() => toggleMute(reel.id)}
-                                            >
-                                                {reel.isMuted ? "Unmute" : "Mute"}
-                                            </button>
-                                        </div>
-                                    )}
+                                        <button
+                                            type="button"
+                                            className="reel-player-btn"
+                                            onClick={() => toggleMute(reel.id)}
+                                        >
+                                            {reel.isMuted ? "Unmute" : "Mute"}
+                                        </button>
+
+                                        <button
+                                            type="button"
+                                            className="reel-player-btn"
+                                            onClick={() => toggleFullscreen(reel.id)}
+                                        >
+                                            Fullscreen
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
 
