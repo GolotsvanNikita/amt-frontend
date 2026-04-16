@@ -4,7 +4,10 @@ import Send from '../assets/Send.svg'
 import Emoji from '../assets/emoji.svg'
 import Notif from '../assets/notif.svg'
 
-export function Comments({comments = [], setComments}){
+export function Comments({    comments = [],
+    setComments,
+    videoId,
+    reloadInteractions,}){
   const [text,setText] = useState("");
   const [replyText, setReplyText] = useState("");
   const [replyTo, setReplyTo] = useState(null);
@@ -18,46 +21,76 @@ export function Comments({comments = [], setComments}){
     replies: Array.isArray(comment.replies) ? comment.replies : [],
   }));
 
-  const handleAddComment = () =>{
-    if(!text.trim()) return;
+  const handleAddComment = async () => {
+      if (!text.trim()) return;
 
-    setComments([
-      {
-        id:Date.now(),
-        name: "You",
-        avatar: "/ava.png",
-        text: text.trim(),
-        time : "just now",
-        replies: [],
-      },
-      ...comments,
-    ]);
-    setText("");
+      const token = getAuthToken();
+      if (!token || !videoId) return;
+
+      try {
+          const response = await fetch(
+              `${import.meta.env.VITE_API_URL}/api/interactions/comment/${videoId}`,
+              {
+                  method: "POST",
+                  headers: {
+                      "Content-Type": "application/json",
+                      Authorization: `Bearer ${token}`,
+                  },
+                  body: JSON.stringify({
+                      text: text.trim(),
+                  }),
+              }
+          );
+
+          if (!response.ok) {
+              throw new Error("Failed to add comment");
+          }
+
+          setText("");
+
+          if (typeof reloadInteractions === "function") {
+              await reloadInteractions();
+          }
+      } catch (err) {
+          console.error("Add comment error:", err);
+      }
   };
 
-  const handleAddReply = (parentId) =>{
-    if(!replyText.trim()) return;
-    setComments(
-      comments.map((comment) =>{
-        if(comment.id === parentId){
-          return{
-            ...comment,
-            replies:[
-              ...(Array.isArray(comment.replies) ? comment.replies : []),{
-                id: Date.now(),
-                name: "You",
-                avatar: "/ava.png",
-                text: replyText.trim(),
-                time: "just now",
-              },
-            ],
-          };
-        }
-        return comment;
-      })
-    );
-    setReplyText("");
-    setReplyTo(null);
+  const handleAddReply = async (parentId) => {
+      if (!replyText.trim()) return;
+
+      const token = getAuthToken();
+      if (!token || !videoId) return;
+
+      try {
+          const response = await fetch(
+              `${import.meta.env.VITE_API_URL}/api/interactions/comment/${videoId}`,
+              {
+                  method: "POST",
+                  headers: {
+                      "Content-Type": "application/json",
+                      Authorization: `Bearer ${token}`,
+                  },
+                  body: JSON.stringify({
+                      text: replyText.trim(),
+                      parentId,
+                  }),
+              }
+          );
+
+          if (!response.ok) {
+              throw new Error("Failed to add reply");
+          }
+
+          setReplyText("");
+          setReplyTo(null);
+
+          if (typeof reloadInteractions === "function") {
+              await reloadInteractions();
+          }
+      } catch (err) {
+          console.error("Add reply error:", err);
+      }
   };
 
   return(

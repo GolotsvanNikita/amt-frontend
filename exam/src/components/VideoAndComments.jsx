@@ -1,11 +1,15 @@
-import {useEffect, useState} from "react";
-import { useLocation, useParams} from "react-router-dom";
+import { useCallback, useEffect, useState } from "react";
+import { useLocation, useParams } from "react-router-dom";
 import { YouTubeCustomPlayer } from "./VideoPage";
 import { Comments } from "./Comments";
+import "./VideoAndComments.css";
 
-function getAuthToken(){
-    return(
-        localStorage.getItem("token") || localStorage.getItem("authToken") || localStorage.getItem("jwt") || ""
+function getAuthToken() {
+    return (
+        localStorage.getItem("token") ||
+        localStorage.getItem("authToken") ||
+        localStorage.getItem("jwt") ||
+        ""
     );
 }
 
@@ -18,7 +22,7 @@ export function VideoAndComments() {
     const [loadingInteractions, setLoadingInteractions] = useState(true);
     const [interactionsError, setInteractionsError] = useState("");
 
-    useEffect(() => {
+    const loadInteractions = useCallback(async () => {
         if (!id) {
             setComments([]);
             setLikes(0);
@@ -26,43 +30,43 @@ export function VideoAndComments() {
             return;
         }
 
-        const loadInteractions = async () => {
-            try {
-                setLoadingInteractions(true);
-                setInteractionsError("");
+        try {
+            setLoadingInteractions(true);
+            setInteractionsError("");
 
-                const token = getAuthToken();
+            const token = getAuthToken();
 
-                const response = await fetch(
-                    `${import.meta.env.VITE_API_URL}/api/interactions/video/${id}`,
-                    {
-                        method: "GET",
-                        headers: {
-                            ...(token ? { Authorization: `Bearer ${token}` } : {}),
-                        },
-                    }
-                );
-
-                if (!response.ok) {
-                    throw new Error("Failed to load interactions");
+            const response = await fetch(
+                `${import.meta.env.VITE_API_URL}/api/interactions/video/${id}`,
+                {
+                    method: "GET",
+                    headers: {
+                        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+                    },
                 }
+            );
 
-                const data = await response.json();
-
-                setComments(Array.isArray(data?.comments) ? data.comments : []);
-                setLikes(Number(data?.likesCount) || 0);
-            } catch (err) {
-                console.error("Failed to load interactions:", err);
-                setInteractionsError(err.message || "Failed to load interactions");
-                setComments([]);
-                setLikes(0);
-            } finally {
-                setLoadingInteractions(false);
+            if (!response.ok) {
+                throw new Error("Failed to load interactions");
             }
-        };
 
-        loadInteractions();
+            const data = await response.json();
+
+            setComments(Array.isArray(data?.comments) ? data.comments : []);
+            setLikes(Number(data?.likesCount) || 0);
+        } catch (err) {
+            console.error("Failed to load interactions:", err);
+            setInteractionsError(err.message || "Failed to load interactions");
+            setComments([]);
+            setLikes(0);
+        } finally {
+            setLoadingInteractions(false);
+        }
     }, [id]);
+
+    useEffect(() => {
+        loadInteractions();
+    }, [loadInteractions]);
 
     return (
         <div className="videoPage">
@@ -76,9 +80,16 @@ export function VideoAndComments() {
             {loadingInteractions ? (
                 <div style={{ marginTop: "20px" }}>Loading comments...</div>
             ) : interactionsError ? (
-                <div style={{ marginTop: "20px" }}>{interactionsError}</div>
+                <div style={{ marginTop: "20px" }}>
+                    Comments are temporarily unavailable
+                </div>
             ) : (
-                <Comments comments={comments} setComments={setComments} />
+                <Comments
+                    comments={comments}
+                    setComments={setComments}
+                    videoId={id}
+                    reloadInteractions={loadInteractions}
+                />
             )}
         </div>
     );
