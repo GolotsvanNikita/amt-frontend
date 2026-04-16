@@ -35,10 +35,7 @@ export function VideoAndComments() {
             setInteractionsError("");
 
             const token = getAuthToken();
-            console.log("INTERACTIONS id:", id);
-            console.log("INTERACTIONS URL:", `${import.meta.env.VITE_API_URL}/api/interactions/video/${id}`);
-            console.log("INTERACTIONS RAW DATA:", data);        // ← сюда
-            console.log("COMMENTS ARRAY:", data?.comments);     // ← и сюда
+
             const response = await fetch(
                 `${import.meta.env.VITE_API_URL}/api/interactions/video/${id}`,
                 {
@@ -55,6 +52,9 @@ export function VideoAndComments() {
 
             const data = await response.json();
 
+            console.log("INTERACTIONS RAW DATA:", data);
+            console.log("COMMENTS ARRAY:", data?.comments);
+
             setComments(Array.isArray(data?.comments) ? data.comments : []);
             setLikes(Number(data?.likesCount) || 0);
         } catch (err) {
@@ -70,6 +70,10 @@ export function VideoAndComments() {
     useEffect(() => {
         loadInteractions();
     }, [loadInteractions]);
+
+    useEffect(() => {
+        console.log("COMMENTS STATE:", comments);
+    }, [comments]);
 
     return (
         <div className="videoPage">
