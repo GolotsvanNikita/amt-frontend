@@ -47,6 +47,12 @@ function getResolvedId(video) {
     return String(video?.videoId || video?.id || "");
 }
 
+function getAuthToken(){
+    return(
+        localStorage.getItem("token") || localStorage.getItem("authToken") || localStorage.getItem("jwt") || ""
+    );
+}
+
 function normalizeVideo(video) {
     return {
         ...video,
@@ -56,6 +62,7 @@ function normalizeVideo(video) {
         resolvedThumbnail: video?.thumbnailUrl || video?.thumbnail || "/1v.png",
         resolvedPublishedAt: video?.publishedAt || "",
         resolvedViews: parseViewsToNumber(video?.views || video?.viewCount || 0),
+        resolvedDescription: video?.description || " ",
         category: video?.category || video?.genre || video?.type || "",
     };
 }
@@ -71,7 +78,7 @@ function shuffleArray(arr) {
     return copy;
 }
 
-export function YouTubeCustomPlayer({ routeVideoId = "", initialVideo = null }) {
+export function YouTubeCustomPlayer({ routeVideoId = "", initialVideo = null, likes = 0, setLikes = null, }) {
     const playerRef = useRef(null);
     const navigate = useNavigate();
 
@@ -80,10 +87,12 @@ export function YouTubeCustomPlayer({ routeVideoId = "", initialVideo = null }) 
     const [error, setError] = useState("");
 
     const [volume, setVolume] = useState(100);
-    const [showSetting, setShowSettings] = useState(false);
+    const [showSettings, setShowSettings] = useState(false);
     const [availableRates, setAvailableRates] = useState([1]);
-    const[playbackRate, setPlayBackRate] = useState(1);
+    const [playbackRate, setPlayBackRate] = useState(1);
     const [captionsAvailable,setCaptionsAbailable] = useState(false);
+
+    const [expandedDescription, setExpandedDescription] = useState(false);
 
     const [isPlaying, setIsPlaying] = useState(false);
     const [muted, setIsMuted] = useState(false);
@@ -129,6 +138,7 @@ export function YouTubeCustomPlayer({ routeVideoId = "", initialVideo = null }) 
 
         loadVideos();
     }, [routeVideoId]);
+
 
     const normalizedInitialVideo = useMemo(() => {
         return initialVideo ? normalizeVideo(initialVideo) : null;
@@ -208,7 +218,7 @@ export function YouTubeCustomPlayer({ routeVideoId = "", initialVideo = null }) 
             rel: 0,
             fs: 0,
             enablejsapi: 1,
-            origin: window.location.origin,
+            origin: typeof window !== "undefined" ? window.location.origin : "",
             cc_load_policy: 0,
         },
     };
@@ -306,7 +316,7 @@ export function YouTubeCustomPlayer({ routeVideoId = "", initialVideo = null }) 
             player.mute();
             setIsMuted(true);
         }else{
-            player.UnMute();
+            player.unMute();
             setIsMuted(false);
         }
     }
@@ -323,13 +333,67 @@ export function YouTubeCustomPlayer({ routeVideoId = "", initialVideo = null }) 
         setProgress(value);
     };
 
-    const handlePlayBackRateChange = (rate) =>{
+    const handlePlaybackRateChange = (rate) => {
         const player = playerRef.current;
-        if(!player || !player.setPlayBackRate) return;
+        if (!player || !player.setPlaybackRate) return;
 
-        player.setPlayBackRate(raye);
+        player.setPlaybackRate(rate);
         setPlayBackRate(rate);
-        setShowSettings(false)
+        setShowSettings(false);
+    };
+
+    const handleLike = async () => {
+        const token = getAuthToken();
+        if (!token || !currentVideo?.resolvedId) return;
+
+        try {
+            const response = await fetch(
+                `${import.meta.env.VITE_API_URL}/api/interactions/like/${currentVideo.resolvedId}`,
+                {
+                    method: "POST",
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
+                }
+            );
+
+            if (!response.ok) {
+                throw new Error("Failed to like video");
+            }
+
+            if (typeof setLikes === "function") {
+                setLikes((prev) => prev + 1);
+            }
+        } catch (err) {
+            console.error("Like error:", err);
+        }
+    };
+
+    const handleSubscribe = async () =>{
+        const token = getAuthToken();
+
+        if(!token || !currentVideo?.resolvedChannelName) return;
+
+        try{
+            const response = await fetch(
+                `${import.meta.env.VITE_API_URL}/api/interactions/subscribe`,
+                {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        Authorization: `Bearer ${token}`,
+                    },
+                    body: JSON.stringify({
+                        channelName: currentVideo.resolvedChannelName,
+                    }),
+                }
+            );
+            if(!response.ok){
+                throw new Error("Failed to subscribe");
+            }
+        }catch(err){
+            console.error("Subscribe error", err);
+        }
     }
 
     const rewind = () => {
@@ -445,7 +509,12 @@ export function YouTubeCustomPlayer({ routeVideoId = "", initialVideo = null }) 
                             <button onClick={toggleMute}>
                                 <img src={muteSvg} alt="mute" width="34" height="34" />
                             </button>
-                            <imput type = "range" min = "0" max = "0" value={volume} onChange={handleVolumeChange} className = "volume-slider"/>
+                            <input type="range"
+                             min ="0" 
+                             max ="100" 
+                             value={volume} 
+                             onChange={handleVolumeChange}
+                            className = "volume-slider"/>
 
                             <input
                                 type="range"
@@ -481,13 +550,13 @@ export function YouTubeCustomPlayer({ routeVideoId = "", initialVideo = null }) 
                                 <p className="channel-name">{currentVideo.resolvedChannelName}</p>
                                 <p className="channel-subs">{currentVideo.resolvedPublishedAt}</p>
                             </div>
-                            <button className="subscribe-btn">Subscribe</button>
+                            <button className="subscribe-btn" onClick={handleSubscribe}>Subscribe</button>
                         </div>
 
                         <div className="actions">
-                            <button className="action-btn">
+                            <button className="action-btn" onClick={handleLike}>
                                 <img src={Like} alt="like" width="34" height="34" />
-                                <span>{formatViews(currentVideo.resolvedViews)}</span>
+                                <span>{likes}</span>
                             </button>
                             <button className="action-btn">
                                 <img src={Forward} alt="forward" width="34" height="34" />
@@ -530,15 +599,19 @@ export function YouTubeCustomPlayer({ routeVideoId = "", initialVideo = null }) 
                     <p>
                         {formatViews(currentVideo.resolvedViews)} • {currentVideo.resolvedPublishedAt}
                     </p>
-                    <p>
-                        {currentVideo.resolvedTitle}
-                        <span>
-                            Show more
-                            <button className="action-btn1">
+                        <div className="video-description-block">
+                            <p className={expandedDescription ? "video-description expanded" : "video-description"}>
+                                {currentVideo.resolvedDescription || currentVideo.resolvedTitle}
+                            </p>
+
+                            <button
+                                className="action-btn1"
+                                onClick={() => setExpandedDescription((prev) => !prev)}
+                            >
+                                {expandedDescription ? "Show less" : "Show more"}
                                 <img src={ArrowDown} alt="more" width="24" height="14" />
                             </button>
-                        </span>
-                    </p>
+                        </div>
                 </div>
             </div>
 
