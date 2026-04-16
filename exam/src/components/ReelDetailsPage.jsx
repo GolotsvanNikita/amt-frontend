@@ -97,6 +97,7 @@ function normalizeReel(item) {
         item?.videoSrc ||
         item?.url ||
         item?.src ||
+        item?.youtubeUrl ||
         item?.youtubeId ||
         item?.videoId ||
         "";
@@ -218,15 +219,11 @@ export function FullReels() {
     const [isFetchingMore, setIsFetchingMore] = useState(false);
     const [page, setPage] = useState(1);
     const [hasMore, setHasMore] = useState(true);
-    const [activeReelId, setActiveReelId] = useState(id ? String(id) : "");
+    const [activeIndex, setActiveIndex] = useState(0);
 
-    const feedRef = useRef(null);
-    const sectionRefs = useRef({});
-    const observerRef = useRef(null);
     const videoRefs = useRef({});
     const youtubePlayerRefs = useRef({});
     const playerShellRefs = useRef({});
-    const lastNavigatedIdRef = useRef("");
 
     const loadReels = useCallback(
         async (pageToLoad = 1, append = false) => {
@@ -241,16 +238,28 @@ export function FullReels() {
                     `${import.meta.env.VITE_API_URL}/api/reels?page=${pageToLoad}&limit=5`
                 );
 
-                const data = await response.json();
+                const text = await response.text();
+                let data = {};
+
+                try {
+                    data = text ? JSON.parse(text) : {};
+                } catch (error) {
+                    console.error("Failed to parse reels JSON:", error);
+                    data = {};
+                }
 
                 if (!response.ok) {
-                    throw new Error(data?.message || "Failed to load reels");
+                    throw new Error(data?.message || text || "Failed to load reels");
                 }
 
                 const rawReels = Array.isArray(data?.reels)
                     ? data.reels
                     : Array.isArray(data)
                     ? data
+                    : Array.isArray(data?.data)
+                    ? data.data
+                    : Array.isArray(data?.items)
+                    ? data.items
                     : [];
 
                 const normalized = rawReels
@@ -263,19 +272,16 @@ export function FullReels() {
 
                 if (typeof data?.hasMore === "boolean") {
                     setHasMore(data.hasMore);
+                } else if (typeof data?.pagination?.hasMore === "boolean") {
+                    setHasMore(data.pagination.hasMore);
                 } else {
                     setHasMore(normalized.length === 5);
                 }
 
                 setPage(pageToLoad);
-
-                if (pageToLoad === 1 && !id && normalized.length > 0) {
-                    setActiveReelId(normalized[0].id);
-                    lastNavigatedIdRef.current = normalized[0].id;
-                    navigate(`/reels-page/${normalized[0].id}`, { replace: true });
-                }
             } catch (error) {
                 console.error("Failed to load reels:", error);
+
                 if (!append) {
                     setReels([]);
                 }
@@ -284,7 +290,7 @@ export function FullReels() {
                 setIsFetchingMore(false);
             }
         },
-        [id, navigate]
+        []
     );
 
     const loadMoreReels = useCallback(async () => {
@@ -297,118 +303,69 @@ export function FullReels() {
     }, [loadReels]);
 
     useEffect(() => {
-        if (id) {
-            setActiveReelId(String(id));
-        }
-    }, [id]);
-
-    useEffect(() => {
         if (!reels.length) return;
 
-        const options = {
-            root: feedRef.current,
-            threshold: 0.7,
-        };
+        let nextIndex = 0;
 
-        observerRef.current?.disconnect();
+        if (id) {
+            const foundIndex = reels.findIndex((item) => String(item.id) === String(id));
+            if (foundIndex !== -1) {
+                nextIndex = foundIndex;
+            }
+        }
 
-        observerRef.current = new IntersectionObserver((entries) => {
-            entries.forEach((entry) => {
-                if (!entry.isIntersecting) return;
+        setActiveIndex(nextIndex);
+    }, [id, reels]);
 
-                const reelId = String(entry.target.dataset.reelId);
-                const htmlVideo = videoRefs.current[reelId];
-                const youtubePlayer = youtubePlayerRefs.current[reelId];
+    const activeReel = useMemo(() => {
+        if (!reels.length) return null;
+        return reels[activeIndex] || reels[0] || null;
+    }, [reels, activeIndex]);
 
-                setActiveReelId((prev) => (prev === reelId ? prev : reelId));
+    useEffect(() => {
+        if (!activeReel) return;
 
-                if (lastNavigatedIdRef.current !== reelId) {
-                    lastNavigatedIdRef.current = reelId;
-                    navigate(`/reels-page/${reelId}`, { replace: true });
-                }
+        navigate(`/reels-page/${activeReel.id}`, { replace: true });
 
-                const currentIndex = reels.findIndex(
-                    (item) => String(item.id) === reelId
-                );
+        Object.entries(videoRefs.current).forEach(([reelId, video]) => {
+            if (!video || typeof video.play !== "function") return;
 
-                if (currentIndex >= reels.length - 2) {
-                    loadMoreReels();
-                }
-
-                Object.entries(videoRefs.current).forEach(([id, video]) => {
-                    if (!video || typeof video.pause !== "function") return;
-
-                    if (id === reelId) {
-                        video.play?.().catch(() => {});
-                    } else {
-                        video.pause();
-                    }
-                });
-
-                Object.entries(youtubePlayerRefs.current).forEach(([id, player]) => {
-                    if (!player) return;
-
-                    try {
-                        if (id === reelId) {
-                            player.playVideo?.();
-                        } else {
-                            player.pauseVideo?.();
-                        }
-                    } catch {}
-                });
-            });
-        }, options);
-
-        reels.forEach((reel) => {
-            const section = sectionRefs.current[reel.id];
-            if (section) {
-                observerRef.current.observe(section);
+            if (String(reelId) === String(activeReel.id)) {
+                video.play().catch(() => {});
+            } else {
+                video.pause();
             }
         });
 
-        return () => {
-            observerRef.current?.disconnect();
-        };
-    }, [loadMoreReels, navigate, reels]);
+        Object.entries(youtubePlayerRefs.current).forEach(([reelId, player]) => {
+            if (!player) return;
 
-    const activeReel = useMemo(
-        () => reels.find((item) => String(item.id) === String(activeReelId)) || null,
-        [reels, activeReelId]
-    );
-
-    const scrollToReelByIndex = (direction) => {
-        if (!reels.length) return;
-
-        const currentIndex = reels.findIndex(
-            (item) => String(item.id) === String(activeReelId)
-        );
-
-        if (currentIndex === -1) return;
-
-        let nextIndex = currentIndex + direction;
-
-        if (nextIndex < 0) nextIndex = 0;
-        if (nextIndex > reels.length - 1) nextIndex = reels.length - 1;
-
-        const nextReel = reels[nextIndex];
-        if (!nextReel) return;
-
-        sectionRefs.current[nextReel.id]?.scrollIntoView({
-            behavior: "smooth",
-            block: "start",
+            try {
+                if (String(reelId) === String(activeReel.id)) {
+                    player.playVideo?.();
+                } else {
+                    player.pauseVideo?.();
+                }
+            } catch {}
         });
+
+        if (activeIndex >= reels.length - 2) {
+            loadMoreReels();
+        }
+    }, [activeReel, activeIndex, reels.length, navigate, loadMoreReels]);
+
+    const goToPrev = () => {
+        if (!reels.length) return;
+        setActiveIndex((prev) => (prev > 0 ? prev - 1 : 0));
     };
 
-    const handleFeedKeyDown = (e) => {
-        if (e.key === "ArrowDown") {
-            e.preventDefault();
-            scrollToReelByIndex(1);
-        }
+    const goToNext = () => {
+        if (!reels.length) return;
 
-        if (e.key === "ArrowUp") {
-            e.preventDefault();
-            scrollToReelByIndex(-1);
-        }
+        setActiveIndex((prev) => {
+            const nextIndex = prev < reels.length - 1 ? prev + 1 : prev;
+            return nextIndex;
+        });
     };
 
     const togglePlay = (reelId) => {
@@ -602,167 +559,173 @@ export function FullReels() {
         return <div className="reel-details-loading">Loading reels...</div>;
     }
 
-    if (!reels.length) {
+    if (!reels.length || !activeReel) {
         return <div className="reel-details-loading">No reels found</div>;
     }
 
     return (
-        <div
-            className="reel-feed-page"
-            ref={feedRef}
-            tabIndex={0}
-            onKeyDown={handleFeedKeyDown}
-        >
-            {reels.map((reel) => {
-                const isActive = String(reel.id) === String(activeReelId);
+        <div className="reel-feed-page reel-feed-page--buttons-only">
+            <section className="reel-feed-section reel-feed-section--single">
+                <div className="reel-details-layout">
+                    <div className="reel-details-video-wrap">
+                        <div
+                            className="reel-player-shell"
+                            ref={(node) => {
+                                playerShellRefs.current[activeReel.id] = node;
+                            }}
+                        >
+                            <ReelMedia
+                                reel={activeReel}
+                                isActive={true}
+                                setVideoNode={(node) => {
+                                    videoRefs.current[activeReel.id] = node;
+                                }}
+                                setYoutubePlayer={(player) => {
+                                    youtubePlayerRefs.current[activeReel.id] = player;
+                                }}
+                                onMediaClick={() => togglePlay(activeReel.id)}
+                            />
 
-                return (
-                    <section
-                        key={reel.id}
-                        data-reel-id={reel.id}
-                        ref={(node) => {
-                            sectionRefs.current[reel.id] = node;
-                        }}
-                        className="reel-feed-section"
-                    >
-                        <div className="reel-details-layout">
-                            <div className="reel-details-video-wrap">
-                                <div
-                                    className="reel-player-shell"
-                                    ref={(node) => {
-                                        playerShellRefs.current[reel.id] = node;
-                                    }}
-                                >
-                                    <ReelMedia
-                                        reel={reel}
-                                        isActive={isActive}
-                                        setVideoNode={(node) => {
-                                            videoRefs.current[reel.id] = node;
-                                        }}
-                                        setYoutubePlayer={(player) => {
-                                            youtubePlayerRefs.current[reel.id] = player;
-                                        }}
-                                        onMediaClick={() => togglePlay(reel.id)}
-                                    />
-
-                                    <div className="reel-player-controls">
-                                        <button
-                                            type="button"
-                                            className="reel-player-btn"
-                                            onClick={() => togglePlay(reel.id)}
-                                        >
-                                            Play / Pause
-                                        </button>
-
-                                        <button
-                                            type="button"
-                                            className="reel-player-btn"
-                                            onClick={() => toggleMute(reel.id)}
-                                        >
-                                            {reel.isMuted ? "Unmute" : "Mute"}
-                                        </button>
-
-                                        <button
-                                            type="button"
-                                            className="reel-player-btn"
-                                            onClick={() => toggleFullscreen(reel.id)}
-                                        >
-                                            Fullscreen
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className="reel-details-actions">
+                            <div className="reel-player-controls">
                                 <button
                                     type="button"
-                                    className={`reel-side-action ${reel.isLiked ? "is-active" : ""}`}
-                                    onClick={() => handleLike(reel.id)}
+                                    className="reel-player-btn"
+                                    onClick={() => togglePlay(activeReel.id)}
                                 >
-                                    <span>♡</span>
-                                    <small>{formatCount(reel.likes)}</small>
+                                    Play / Pause
                                 </button>
 
                                 <button
                                     type="button"
-                                    className="reel-side-action"
-                                    onClick={() => navigate(`/reels-page/${reel.id}/comments`)}
+                                    className="reel-player-btn"
+                                    onClick={() => toggleMute(activeReel.id)}
                                 >
-                                    <span>💬</span>
-                                    <small>{formatCount(reel.commentsCount)}</small>
+                                    {activeReel.isMuted ? "Unmute" : "Mute"}
                                 </button>
 
                                 <button
                                     type="button"
-                                    className={`reel-side-action ${reel.isShared ? "is-active" : ""}`}
-                                    onClick={() => handleShare(reel.id)}
+                                    className="reel-player-btn"
+                                    onClick={() => toggleFullscreen(activeReel.id)}
                                 >
-                                    <span>↗</span>
-                                    <small>{formatCount(reel.shares)}</small>
-                                </button>
-
-                                <button
-                                    type="button"
-                                    className={`reel-side-action ${reel.isRemixed ? "is-active" : ""}`}
-                                    onClick={() => handleRemix(reel.id)}
-                                >
-                                    <span>⤴</span>
-                                    <small>{formatCount(reel.remix)}</small>
+                                    Fullscreen
                                 </button>
                             </div>
-
-                            <aside className="reel-details-info">
-                                <div className="reel-author-row">
-                                    <img
-                                        src={reel.avatarUrl}
-                                        alt={reel.author}
-                                        className="reel-author-avatar"
-                                        onError={(e) => {
-                                            e.currentTarget.src = "/ava.png";
-                                        }}
-                                    />
-
-                                    <div className="reel-author-text">
-                                        <h2>{reel.author}</h2>
-                                        <p>{reel.username}</p>
-                                    </div>
-
-                                    <button
-                                        type="button"
-                                        className={`reel-subscribe-btn ${reel.isSubscribed ? "is-subscribed" : ""}`}
-                                        onClick={() => handleSubscribe(reel.id)}
-                                    >
-                                        {reel.isSubscribed ? "Subscribed" : "Subscribe"}
-                                    </button>
-                                </div>
-
-                                <div className="reel-description-box">
-                                    <h3>{reel.description}</h3>
-
-                                    <div className="reel-audio-row">
-                                        <span className="reel-audio-icon">♫</span>
-                                        <span>{reel.audioTitle}</span>
-                                    </div>
-                                </div>
-
-                                <button
-                                    type="button"
-                                    className="open-comments-page-btn"
-                                    onClick={() => navigate(`/reels-page/${reel.id}/comments`)}
-                                >
-                                    Open comments
-                                </button>
-
-                                {isFetchingMore && isActive && (
-                                    <div className="reel-details-loading" style={{ marginTop: "12px" }}>
-                                        Loading more reels...
-                                    </div>
-                                )}
-                            </aside>
                         </div>
-                    </section>
-                );
-            })}
+                    </div>
+
+                    <div className="reel-details-actions">
+                        <button
+                            type="button"
+                            className="reel-side-action"
+                            onClick={goToPrev}
+                            disabled={activeIndex === 0}
+                        >
+                            <span>↑</span>
+                            <small>Prev</small>
+                        </button>
+
+                        <button
+                            type="button"
+                            className="reel-side-action"
+                            onClick={goToNext}
+                            disabled={activeIndex === reels.length - 1 && !hasMore}
+                        >
+                            <span>↓</span>
+                            <small>Next</small>
+                        </button>
+
+                        <button
+                            type="button"
+                            className={`reel-side-action ${activeReel.isLiked ? "is-active" : ""}`}
+                            onClick={() => handleLike(activeReel.id)}
+                        >
+                            <span>♡</span>
+                            <small>{formatCount(activeReel.likes)}</small>
+                        </button>
+
+                        <button
+                            type="button"
+                            className="reel-side-action"
+                            onClick={() => navigate(`/reels-page/${activeReel.id}/comments`)}
+                        >
+                            <span>💬</span>
+                            <small>{formatCount(activeReel.commentsCount)}</small>
+                        </button>
+
+                        <button
+                            type="button"
+                            className={`reel-side-action ${activeReel.isShared ? "is-active" : ""}`}
+                            onClick={() => handleShare(activeReel.id)}
+                        >
+                            <span>↗</span>
+                            <small>{formatCount(activeReel.shares)}</small>
+                        </button>
+
+                        <button
+                            type="button"
+                            className={`reel-side-action ${activeReel.isRemixed ? "is-active" : ""}`}
+                            onClick={() => handleRemix(activeReel.id)}
+                        >
+                            <span>⤴</span>
+                            <small>{formatCount(activeReel.remix)}</small>
+                        </button>
+                    </div>
+
+                    <aside className="reel-details-info">
+                        <div className="reel-author-row">
+                            <img
+                                src={activeReel.avatarUrl}
+                                alt={activeReel.author}
+                                className="reel-author-avatar"
+                                onError={(e) => {
+                                    e.currentTarget.src = "/ava.png";
+                                }}
+                            />
+
+                            <div className="reel-author-text">
+                                <h2>{activeReel.author}</h2>
+                                <p>{activeReel.username}</p>
+                            </div>
+
+                            <button
+                                type="button"
+                                className={`reel-subscribe-btn ${activeReel.isSubscribed ? "is-subscribed" : ""}`}
+                                onClick={() => handleSubscribe(activeReel.id)}
+                            >
+                                {activeReel.isSubscribed ? "Subscribed" : "Subscribe"}
+                            </button>
+                        </div>
+
+                        <div className="reel-description-box">
+                            <h3>{activeReel.description}</h3>
+
+                            <div className="reel-audio-row">
+                                <span className="reel-audio-icon">♫</span>
+                                <span>{activeReel.audioTitle}</span>
+                            </div>
+                        </div>
+
+                        <button
+                            type="button"
+                            className="open-comments-page-btn"
+                            onClick={() => navigate(`/reels-page/${activeReel.id}/comments`)}
+                        >
+                            Open comments
+                        </button>
+
+                        <div className="reel-index-indicator">
+                            {activeIndex + 1} / {reels.length}
+                        </div>
+
+                        {isFetchingMore && (
+                            <div className="reel-details-loading" style={{ marginTop: "12px" }}>
+                                Loading more reels...
+                            </div>
+                        )}
+                    </aside>
+                </div>
+            </section>
         </div>
     );
 }
