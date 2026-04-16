@@ -120,11 +120,33 @@ export function YouTubeCustomPlayer({ routeVideoId = "", initialVideo = null }) 
     }, [videos, routeVideoId, normalizedInitialVideo]);
 
     const recommendedVideos = useMemo(() => {
-        if (!currentVideo) return [];
-
-        return videos.filter(
-            (video) => String(video.resolvedId) !== String(currentVideo.resolvedId)
+        if(!currentVideo) return [];
+        const filtered = videos.filter(
+            (video) => String(video.resolvedId) !== string(currentVideo.resolvedId)
         );
+
+        const sameChannel = filtered.filter(
+            (video) => video.resolvedChannelName && currentVideo.resolvedChannelName && video.resolvedChannelName === currentVideo.resolvedChannelName
+        );
+
+        const sameCategory = filtered.filter((video)=> video.category && currentVideo.category && video.category === currentVideo.category && video.resolvedChannelName !== currentVideo.resolvedChannelName);
+
+        const others = filtered.filter((video)=>video.resolvedChannelName !== currentVideo.resolvedChannelName && video.category !== currentVideo.category);
+
+        const shuffleArray = (arr) => {
+            const copy = [...arr];
+
+            for(let i = copy.length - 1; i>0 ; i--){
+                const randomIndex = Math.floor(Math.random() * (i+1));
+                [copy[i], copy[randomIndex]] = [copy[randomIndex], copy[i]];
+            }
+            return copy;
+        };
+        return [
+            ...shuffleArray(sameChannel),
+            ...shuffleArray(sameCategory),
+            ...shuffleArray(others),
+        ];
     }, [videos, currentVideo]);
 
     const opts = {
