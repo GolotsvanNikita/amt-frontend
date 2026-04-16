@@ -2,107 +2,100 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import "./ReelDetailsPage.css";
 
-const USE_MOCK = true;
-
-const initialMockReels = [
-    {
-        id: 1,
-        title: "Scene",
-        videoUrl: "/videos/reel1.mp4",
-        posterUrl: "/1.jpg",
-        avatarUrl: "/ava.png",
-        author: "LIA Hmel",
-        username: "@lhmel",
-        description: "Learning to play the guitar",
-        audioTitle: "original soundtrack",
-        likes: 0,
-        shares: 0,
-        remix: 0,
-        isSubscribed: false,
-        comments: [
-            {
-                id: 1,
-                user: "Anna",
-                avatar: "/ava.png",
-                text: "This band is in my playlist with Royal Blood, Highly Suspect, and Cleopatrick.",
-                time: "3 weeks ago",
-                likes: 0,
-                replies: [],
-            },
-            {
-                id: 2,
-                user: "Ryan Williams",
-                avatar: "/ava.png",
-                text: "I've got the same playlist.",
-                time: "3 weeks ago",
-                likes: 0,
-                replies: [],
-            },
-            {
-                id: 3,
-                user: "Matthew Wilson",
-                avatar: "/ava.png",
-                text: "I randomly found this song on a Spotify playlist and now I'm obsessed.",
-                time: "5 months ago",
-                likes: 0,
-                replies: [],
-            },
-        ],
-    },
-    {
-        id: 2,
-        title: "Portrait",
-        videoUrl: "/videos/reel2.mp4",
-        posterUrl: "/2.jpg",
-        avatarUrl: "/ava.png",
-        author: "Mila Rose",
-        username: "@milarose",
-        description: "Soft portrait lighting test",
-        audioTitle: "dreamy ambient",
-        likes: 0,
-        shares: 0,
-        remix: 0,
-        isSubscribed: false,
-        comments: [],
-    },
-    {
-        id: 3,
-        title: "City",
-        videoUrl: "/videos/reel3.mp4",
-        posterUrl: "/3.jpg",
-        avatarUrl: "/ava.png",
-        author: "Urban Eye",
-        username: "@urbaneye",
-        description: "Aerial city footage over downtown.",
-        audioTitle: "city atmosphere",
-        likes: 0,
-        shares: 0,
-        remix: 0,
-        isSubscribed: false,
-        comments: [],
-    },
-    {
-        id: 4,
-        title: "Concert",
-        videoUrl: "/videos/reel4.mp4",
-        posterUrl: "/4.jpg",
-        avatarUrl: "/ava.png",
-        author: "Noise Room",
-        username: "@noiseroom",
-        description: "Live crowd energy and stage lights.",
-        audioTitle: "live concert audio",
-        likes: 0,
-        shares: 0,
-        remix: 0,
-        isSubscribed: false,
-        comments: [],
-    },
-];
-
 function formatCount(value) {
-    if (value >= 1000000) return `${(value / 1000000).toFixed(1)}M`;
-    if (value >= 1000) return `${(value / 1000).toFixed(1)}K`;
-    return String(value);
+    const numericValue = Number(value) || 0;
+
+    if (numericValue >= 1000000) return `${(numericValue / 1000000).toFixed(1)}M`;
+    if (numericValue >= 1000) return `${(numericValue / 1000).toFixed(1)}K`;
+    return String(numericValue);
+}
+
+function getAuthToken() {
+    return (
+        localStorage.getItem("token") ||
+        localStorage.getItem("authToken") ||
+        localStorage.getItem("jwt") ||
+        localStorage.getItem("accessToken") ||
+        sessionStorage.getItem("token") ||
+        sessionStorage.getItem("authToken") ||
+        sessionStorage.getItem("jwt") ||
+        sessionStorage.getItem("accessToken") ||
+        ""
+    );
+}
+
+function isValidImageSrc(value) {
+    return (
+        typeof value === "string" &&
+        (
+            value.startsWith("http://") ||
+            value.startsWith("https://") ||
+            value.startsWith("/") ||
+            value.startsWith("data:image/")
+        )
+    );
+}
+
+function normalizeReply(reply) {
+    return {
+        id: String(reply?.id || reply?._id || Date.now()),
+        user: reply?.user || reply?.name || reply?.author || reply?.username || "Unknown user",
+        avatar: isValidImageSrc(reply?.avatar)
+            ? reply.avatar
+            : isValidImageSrc(reply?.authorAvatar)
+            ? reply.authorAvatar
+            : "/ava.png",
+        text: reply?.text || reply?.content || "",
+        time: reply?.time || reply?.createdAt || "just now",
+        likes: Number(reply?.likes) || 0,
+    };
+}
+
+function normalizeComment(comment) {
+    return {
+        id: String(comment?.id || comment?._id || Date.now()),
+        user: comment?.user || comment?.name || comment?.author || comment?.username || "Unknown user",
+        avatar: isValidImageSrc(comment?.avatar)
+            ? comment.avatar
+            : isValidImageSrc(comment?.authorAvatar)
+            ? comment.authorAvatar
+            : "/ava.png",
+        text: comment?.text || comment?.content || "",
+        time: comment?.time || comment?.createdAt || "just now",
+        likes: Number(comment?.likes) || 0,
+        replies: Array.isArray(comment?.replies)
+            ? comment.replies.map(normalizeReply)
+            : [],
+    };
+}
+
+function normalizeReel(item) {
+    return {
+        id: String(item?.id || item?._id || item?.videoId || ""),
+        title: item?.title || "Untitled reel",
+        videoUrl: item?.videoUrl || item?.url || item?.src || "",
+        posterUrl: item?.posterUrl || item?.thumbnailUrl || item?.thumbnail || "",
+        avatarUrl: isValidImageSrc(item?.avatarUrl)
+            ? item.avatarUrl
+            : isValidImageSrc(item?.authorAvatar)
+            ? item.authorAvatar
+            : "/ava.png",
+        author: item?.author || item?.channelName || item?.name || "Unknown author",
+        username: item?.username || item?.handle || "@unknown",
+        description: item?.description || "",
+        audioTitle: item?.audioTitle || item?.audio || "original audio",
+        likes: Number(item?.likes ?? item?.likesCount) || 0,
+        shares: Number(item?.shares ?? item?.sharesCount) || 0,
+        remix: Number(item?.remix ?? item?.remixCount) || 0,
+        isSubscribed: Boolean(item?.isSubscribed),
+        isLiked: Boolean(item?.isLiked),
+        isShared: Boolean(item?.isShared),
+        isRemixed: Boolean(item?.isRemixed),
+        isMuted: Boolean(item?.isMuted),
+        comments: Array.isArray(item?.comments)
+            ? item.comments.map(normalizeComment)
+            : [],
+    };
 }
 
 export function FullReels() {
@@ -112,7 +105,7 @@ export function FullReels() {
     const [reels, setReels] = useState([]);
     const [loading, setLoading] = useState(true);
 
-    const [activeReelId, setActiveReelId] = useState(Number(id));
+    const [activeReelId, setActiveReelId] = useState(id ? String(id) : "");
     const [commentText, setCommentText] = useState("");
     const [replyTo, setReplyTo] = useState("");
     const [replyToCommentId, setReplyToCommentId] = useState(null);
@@ -128,14 +121,13 @@ export function FullReels() {
     }, []);
 
     useEffect(() => {
-        const numericId = Number(id);
-        if (!Number.isNaN(numericId)) {
-            setActiveReelId(numericId);
+        if (id) {
+            setActiveReelId(String(id));
         }
     }, [id]);
 
     useEffect(() => {
-        if (!reels.length) return;
+        if (!reels.length || !activeReelId) return;
 
         const currentSection = sectionRefs.current[activeReelId];
         if (currentSection) {
@@ -156,7 +148,7 @@ export function FullReels() {
 
         observerRef.current = new IntersectionObserver((entries) => {
             entries.forEach((entry) => {
-                const reelId = Number(entry.target.dataset.reelId);
+                const reelId = String(entry.target.dataset.reelId);
                 const video = videoRefs.current[reelId];
 
                 if (entry.isIntersecting) {
@@ -166,17 +158,17 @@ export function FullReels() {
                     if (video) {
                         video.play().catch(() => {});
                     }
-                } else {
-                    if (video) {
-                        video.pause();
-                    }
+                } else if (video) {
+                    video.pause();
                 }
             });
         }, options);
 
         reels.forEach((reel) => {
             const section = sectionRefs.current[reel.id];
-            if (section) observerRef.current.observe(section);
+            if (section) {
+                observerRef.current.observe(section);
+            }
         });
 
         return () => {
@@ -190,31 +182,34 @@ export function FullReels() {
         try {
             setLoading(true);
 
-            if (USE_MOCK) {
-                await new Promise((resolve) => setTimeout(resolve, 250));
-                setReels(initialMockReels);
-                return;
+            const response = await fetch(
+                `${import.meta.env.VITE_API_URL}/api/reels`
+            );
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data?.message || "Failed to load reels");
             }
 
-            const res = await fetch("http://localhost:5000/api/reels");
-            const data = await res.json();
+            const rawReels = Array.isArray(data?.reels)
+                ? data.reels
+                : Array.isArray(data)
+                ? data
+                : [];
 
-            if (!res.ok) {
-                throw new Error(data.message || "Failed to load reels");
-            }
-
-            const normalized = data.map((item) => ({
-                ...item,
-                likes: item.likes ?? 0,
-                shares: item.shares ?? 0,
-                remix: item.remix ?? 0,
-                isSubscribed: item.isSubscribed ?? false,
-                comments: item.comments ?? [],
-            }));
+            const normalized = rawReels
+                .map(normalizeReel)
+                .filter((item) => item.id && item.videoUrl);
 
             setReels(normalized);
+
+            if (!id && normalized.length > 0) {
+                setActiveReelId(normalized[0].id);
+                navigate(`/reels-page/${normalized[0].id}`, { replace: true });
+            }
         } catch (error) {
-            console.error(error);
+            console.error("Failed to load reels:", error);
             setReels([]);
         } finally {
             setLoading(false);
@@ -222,14 +217,17 @@ export function FullReels() {
     };
 
     const activeReel = useMemo(
-        () => reels.find((item) => item.id === activeReelId) || null,
+        () => reels.find((item) => String(item.id) === String(activeReelId)) || null,
         [reels, activeReelId]
     );
 
     const scrollToReelByIndex = (direction) => {
         if (!reels.length) return;
 
-        const currentIndex = reels.findIndex((item) => item.id === activeReelId);
+        const currentIndex = reels.findIndex(
+            (item) => String(item.id) === String(activeReelId)
+        );
+
         if (currentIndex === -1) return;
 
         let nextIndex = currentIndex + direction;
@@ -283,6 +281,8 @@ export function FullReels() {
     };
 
     const handleLike = async (reelId) => {
+        const token = getAuthToken();
+
         setReels((prev) =>
             prev.map((item) => {
                 if (item.id !== reelId) return item;
@@ -296,14 +296,15 @@ export function FullReels() {
             })
         );
 
-        if (!USE_MOCK) {
-            try {
-                await fetch(`http://localhost:5000/api/reels/${reelId}/like`, {
-                    method: "POST",
-                });
-            } catch (error) {
-                console.error(error);
-            }
+        try {
+            await fetch(`${import.meta.env.VITE_API_URL}/api/reels/${reelId}/like`, {
+                method: "POST",
+                headers: {
+                    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+                },
+            });
+        } catch (error) {
+            console.error("Like reel error:", error);
         }
     };
 
@@ -311,6 +312,7 @@ export function FullReels() {
         setReels((prev) =>
             prev.map((item) => {
                 if (item.id !== reelId) return item;
+
                 return {
                     ...item,
                     isShared: true,
@@ -324,21 +326,21 @@ export function FullReels() {
                 `${window.location.origin}/reels-page/${reelId}`
             );
         } catch (error) {
-            console.error(error);
+            console.error("Copy reel link error:", error);
         }
 
-        if (!USE_MOCK) {
-            try {
-                await fetch(`http://localhost:5000/api/reels/${reelId}/share`, {
-                    method: "POST",
-                });
-            } catch (error) {
-                console.error(error);
-            }
+        try {
+            await fetch(`${import.meta.env.VITE_API_URL}/api/reels/${reelId}/share`, {
+                method: "POST",
+            });
+        } catch (error) {
+            console.error("Share reel error:", error);
         }
     };
 
     const handleRemix = async (reelId) => {
+        const token = getAuthToken();
+
         setReels((prev) =>
             prev.map((item) => {
                 if (item.id !== reelId) return item;
@@ -352,18 +354,21 @@ export function FullReels() {
             })
         );
 
-        if (!USE_MOCK) {
-            try {
-                await fetch(`http://localhost:5000/api/reels/${reelId}/remix`, {
-                    method: "POST",
-                });
-            } catch (error) {
-                console.error(error);
-            }
+        try {
+            await fetch(`${import.meta.env.VITE_API_URL}/api/reels/${reelId}/remix`, {
+                method: "POST",
+                headers: {
+                    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+                },
+            });
+        } catch (error) {
+            console.error("Remix reel error:", error);
         }
     };
 
     const handleSubscribe = async (reelId) => {
+        const token = getAuthToken();
+
         setReels((prev) =>
             prev.map((item) =>
                 item.id === reelId
@@ -372,14 +377,15 @@ export function FullReels() {
             )
         );
 
-        if (!USE_MOCK) {
-            try {
-                await fetch(`http://localhost:5000/api/reels/${reelId}/subscribe`, {
-                    method: "POST",
-                });
-            } catch (error) {
-                console.error(error);
-            }
+        try {
+            await fetch(`${import.meta.env.VITE_API_URL}/api/reels/${reelId}/subscribe`, {
+                method: "POST",
+                headers: {
+                    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+                },
+            });
+        } catch (error) {
+            console.error("Subscribe reel error:", error);
         }
     };
 
@@ -389,12 +395,12 @@ export function FullReels() {
         setCommentText(`@${commentUser} `);
     };
 
-
-    const toogleReplies = (commentId) =>{
-        setExpandedReplies((prev)=>({
-            ...prev,[commentId]:!prev[commentId],
-        }))
-    }
+    const toggleReplies = (commentId) => {
+        setExpandedReplies((prev) => ({
+            ...prev,
+            [commentId]: !prev[commentId],
+        }));
+    };
 
     const handleCommentSubmit = async (e) => {
         e.preventDefault();
@@ -404,77 +410,74 @@ export function FullReels() {
         const trimmed = commentText.trim();
         if (!trimmed) return;
 
-        const newComment = {
-            id: Date.now(),
-            user: "You",
-            avatar: "/ava.png",
-            text: trimmed,
-            time: "now",
-            likes: 0,
-            replies: [],
-        };
+        const token = getAuthToken();
 
-        setReels((prev) =>
-            prev.map((item) => {
-                if (item.id !== activeReel.id) return item;
-
-                if (replyToCommentId) {
-                    return {
-                        ...item,
-                        comments: item.comments.map((comment) => {
-                            if (comment.id !== replyToCommentId) return comment;
-
-                            return {
-                                ...comment,
-                                replies: [
-                                    ...(comment.replies || []),
-                                    {
-                                        id: Date.now() + 1,
-                                        user: "You",
-                                        avatar: "/ava.png",
-                                        text: trimmed,
-                                        time: "now",
-                                        likes: 0,
-                                    },
-                                ],
-                            };
-                        }),
-                    };
-                }
-
-                return {
-                    ...item,
-                    comments: [...item.comments, newComment],
-                };
-            })
-        );
-
-        if (replyToCommentId) {
-            setExpandedReplies((prev) => ({
-                ...prev,
-                [replyToCommentId]: true,
-            }));
-        }
-
-        setCommentText("");
-        setReplyTo("");
-        setReplyToCommentId(null);
-
-        if (!USE_MOCK) {
-            try {
-                await fetch(`http://localhost:5000/api/reels/${activeReel.id}/comments`, {
+        try {
+            const response = await fetch(
+                `${import.meta.env.VITE_API_URL}/api/reels/${activeReel.id}/comments`,
+                {
                     method: "POST",
                     headers: {
                         "Content-Type": "application/json",
+                        ...(token ? { Authorization: `Bearer ${token}` } : {}),
                     },
                     body: JSON.stringify({
                         text: trimmed,
                         parentCommentId: replyToCommentId,
                     }),
-                });
-            } catch (error) {
-                console.error(error);
+                }
+            );
+
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData?.message || "Failed to add comment");
             }
+
+            const responseData = await response.json().catch(() => null);
+
+            if (responseData?.comment) {
+                const newComment = normalizeComment(responseData.comment);
+
+                setReels((prev) =>
+                    prev.map((item) => {
+                        if (item.id !== activeReel.id) return item;
+
+                        if (replyToCommentId) {
+                            return {
+                                ...item,
+                                comments: item.comments.map((comment) => {
+                                    if (comment.id !== String(replyToCommentId)) return comment;
+
+                                    return {
+                                        ...comment,
+                                        replies: [...(comment.replies || []), newComment],
+                                    };
+                                }),
+                            };
+                        }
+
+                        return {
+                            ...item,
+                            comments: [...item.comments, newComment],
+                        };
+                    })
+                );
+            } else {
+                await loadReels();
+            }
+
+            if (replyToCommentId) {
+                setExpandedReplies((prev) => ({
+                    ...prev,
+                    [replyToCommentId]: true,
+                }));
+            }
+
+            setCommentText("");
+            setReplyTo("");
+            setReplyToCommentId(null);
+        } catch (error) {
+            console.error("Add reel comment error:", error);
         }
     };
 
@@ -494,7 +497,7 @@ export function FullReels() {
             onKeyDown={handleFeedKeyDown}
         >
             {reels.map((reel) => {
-                const isActive = reel.id === activeReelId;
+                const isActive = String(reel.id) === String(activeReelId);
 
                 return (
                     <section
@@ -506,8 +509,6 @@ export function FullReels() {
                         className="reel-feed-section"
                     >
                         <div className="reel-details-layout">
-
-                            {/* VIDEO */}
                             <div className="reel-details-video-wrap">
                                 <div className="reel-player-shell">
                                     <video
@@ -516,7 +517,7 @@ export function FullReels() {
                                         }}
                                         className="reel-details-video"
                                         src={reel.videoUrl}
-                                        poster={reel.posterUrl}
+                                        poster={reel.posterUrl || ""}
                                         controls
                                         playsInline
                                         autoPlay={isActive}
@@ -545,7 +546,6 @@ export function FullReels() {
                                 </div>
                             </div>
 
-                            {/* ACTIONS */}
                             <div className="reel-details-actions">
                                 <button
                                     type="button"
@@ -575,13 +575,15 @@ export function FullReels() {
                                 </button>
                             </div>
 
-                            {/* RIGHT PANEL */}
                             <aside className="reel-details-info">
                                 <div className="reel-author-row">
                                     <img
                                         src={reel.avatarUrl}
                                         alt={reel.author}
                                         className="reel-author-avatar"
+                                        onError={(e) => {
+                                            e.currentTarget.src = "/ava.png";
+                                        }}
                                     />
 
                                     <div className="reel-author-text">
@@ -607,7 +609,6 @@ export function FullReels() {
                                     </div>
                                 </div>
 
-                                {/* COMMENTS */}
                                 <div className="reel-comments-list">
                                     {reel.comments.length === 0 ? (
                                         <p className="reel-no-comments">No comments yet</p>
@@ -618,13 +619,14 @@ export function FullReels() {
 
                                             return (
                                                 <div key={comment.id} className="reel-comment-thread">
-
-                                                    {/* MAIN COMMENT */}
                                                     <div className="reel-comment-item">
                                                         <img
                                                             src={comment.avatar}
                                                             alt={comment.user}
                                                             className="reel-comment-avatar"
+                                                            onError={(e) => {
+                                                                e.currentTarget.src = "/ava.png";
+                                                            }}
                                                         />
 
                                                         <div className="reel-comment-body">
@@ -659,7 +661,6 @@ export function FullReels() {
                                                                 )}
                                                             </div>
 
-                                                            {/* REPLIES */}
                                                             {replies.length > 0 && isExpanded && (
                                                                 <div className="reel-comment-replies">
                                                                     {replies.map((reply) => (
@@ -671,6 +672,9 @@ export function FullReels() {
                                                                                 src={reply.avatar}
                                                                                 alt={reply.user}
                                                                                 className="reel-comment-avatar reel-comment-avatar--reply"
+                                                                                onError={(e) => {
+                                                                                    e.currentTarget.src = "/ava.png";
+                                                                                }}
                                                                             />
 
                                                                             <div className="reel-comment-body">
@@ -693,7 +697,6 @@ export function FullReels() {
                                     )}
                                 </div>
 
-                                {/* REPLYING TO */}
                                 {replyTo && (
                                     <div className="reel-replying-to">
                                         Replying to <strong>{replyTo}</strong>
@@ -712,7 +715,6 @@ export function FullReels() {
                                     </div>
                                 )}
 
-                                {/* INPUT */}
                                 {isActive && (
                                     <form
                                         className="reel-comment-form"
@@ -722,9 +724,7 @@ export function FullReels() {
                                             type="text"
                                             placeholder="Place your comment"
                                             value={commentText}
-                                            onChange={(e) =>
-                                                setCommentText(e.target.value)
-                                            }
+                                            onChange={(e) => setCommentText(e.target.value)}
                                         />
 
                                         <button type="submit">➤</button>
