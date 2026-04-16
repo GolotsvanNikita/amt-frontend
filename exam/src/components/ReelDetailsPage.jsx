@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import YouTube from "react-youtube";
 import "./ReelDetailsPage.css";
 
 function formatCount(value) {
@@ -36,6 +37,60 @@ function isValidImageSrc(value) {
     );
 }
 
+function isDirectVideoUrl(value) {
+    if (typeof value !== "string" || !value.trim()) return false;
+
+    const lower = value.toLowerCase();
+
+    return (
+        lower.startsWith("http://") ||
+        lower.startsWith("https://") ||
+        lower.startsWith("/") ||
+        lower.endsWith(".mp4") ||
+        lower.endsWith(".webm") ||
+        lower.endsWith(".ogg") ||
+        lower.includes(".mp4?") ||
+        lower.includes(".webm?") ||
+        lower.includes(".ogg?")
+    );
+}
+
+function extractYoutubeId(value) {
+    if (typeof value !== "string" || !value.trim()) return "";
+
+    const trimmed = value.trim();
+
+    if (/^[a-zA-Z0-9_-]{11}$/.test(trimmed)) {
+        return trimmed;
+    }
+
+    try {
+        const url = new URL(trimmed);
+
+        if (url.hostname.includes("youtube.com")) {
+            const v = url.searchParams.get("v");
+            if (v) return v;
+
+            const parts = url.pathname.split("/").filter(Boolean);
+            const shortId = parts[parts.length - 1];
+            if (shortId && /^[a-zA-Z0-9_-]{11}$/.test(shortId)) {
+                return shortId;
+            }
+        }
+
+        if (url.hostname.includes("youtu.be")) {
+            const id = url.pathname.replace("/", "");
+            if (/^[a-zA-Z0-9_-]{11}$/.test(id)) {
+                return id;
+            }
+        }
+    } catch {
+        return "";
+    }
+
+    return "";
+}
+
 function normalizeReply(reply) {
     return {
         id: String(reply?.id || reply?._id || Date.now()),
@@ -70,10 +125,23 @@ function normalizeComment(comment) {
 }
 
 function normalizeReel(item) {
+    const rawVideoValue =
+        item?.videoUrl ||
+        item?.videoSrc ||
+        item?.url ||
+        item?.src ||
+        item?.videoId ||
+        item?.youtubeId ||
+        "";
+
+    const directVideoUrl = isDirectVideoUrl(rawVideoValue) ? rawVideoValue : "";
+    const youtubeId = directVideoUrl ? "" : extractYoutubeId(rawVideoValue);
+
     return {
-        id: String(item?.id || item?._id || item?.videoId || ""),
+        id: String(item?.id || item?._id || item?.videoId || item?.youtubeId || ""),
         title: item?.title || "Untitled reel",
-        videoUrl: item?.videoUrl || item?.url || item?.src || "",
+        videoUrl: directVideoUrl,
+        youtubeId,
         posterUrl: item?.posterUrl || item?.thumbnailUrl || item?.thumbnail || "",
         avatarUrl: isValidImageSrc(item?.avatarUrl)
             ? item.avatarUrl
@@ -96,6 +164,55 @@ function normalizeReel(item) {
             ? item.comments.map(normalizeComment)
             : [],
     };
+}
+
+function ReelMedia({ reel, isActive, setVideoNode }) {
+    const youtubeOpts = {
+        width: "100%",
+        height: "100%",
+        playerVars: {
+            autoplay: isActive ? 1 : 0,
+            controls: 1,
+            modestbranding: 1,
+            rel: 0,
+            loop: 1,
+            playlist: reel.youtubeId,
+        },
+    };
+
+    if (reel.youtubeId) {
+        return (
+            <div className="reel-details-video youtube-reel-player">
+                <YouTube
+                    videoId={reel.youtubeId}
+                    opts={youtubeOpts}
+                    className="reel-youtube-frame"
+                />
+            </div>
+        );
+    }
+
+    if (reel.videoUrl) {
+        return (
+            <video
+                ref={setVideoNode}
+                className="reel-details-video"
+                src={reel.videoUrl}
+                poster={reel.posterUrl || ""}
+                controls
+                playsInline
+                autoPlay={isActive}
+                muted={Boolean(reel.isMuted)}
+                loop
+            />
+        );
+    }
+
+    return (
+        <div className="reel-details-video reel-video-fallback">
+            Video unavailable
+        </div>
+    );
 }
 
 export function FullReels() {
@@ -155,10 +272,10 @@ export function FullReels() {
                     setActiveReelId(reelId);
                     navigate(`/reels-page/${reelId}`, { replace: true });
 
-                    if (video) {
+                    if (video && typeof video.play === "function") {
                         video.play().catch(() => {});
                     }
-                } else if (video) {
+                } else if (video && typeof video.pause === "function") {
                     video.pause();
                 }
             });
@@ -200,7 +317,10 @@ export function FullReels() {
 
             const normalized = rawReels
                 .map(normalizeReel)
-                .filter((item) => item.id && item.videoUrl);
+                .filter((item) => item.id);
+
+            console.log("REELS RAW:", rawReels);
+            console.log("REELS NORMALIZED:", normalized);
 
             setReels(normalized);
 
@@ -433,38 +553,7 @@ export function FullReels() {
                 throw new Error(errorData?.message || "Failed to add comment");
             }
 
-            const responseData = await response.json().catch(() => null);
-
-            if (responseData?.comment) {
-                const newComment = normalizeComment(responseData.comment);
-
-                setReels((prev) =>
-                    prev.map((item) => {
-                        if (item.id !== activeReel.id) return item;
-
-                        if (replyToCommentId) {
-                            return {
-                                ...item,
-                                comments: item.comments.map((comment) => {
-                                    if (comment.id !== String(replyToCommentId)) return comment;
-
-                                    return {
-                                        ...comment,
-                                        replies: [...(comment.replies || []), newComment],
-                                    };
-                                }),
-                            };
-                        }
-
-                        return {
-                            ...item,
-                            comments: [...item.comments, newComment],
-                        };
-                    })
-                );
-            } else {
-                await loadReels();
-            }
+            await loadReels();
 
             if (replyToCommentId) {
                 setExpandedReplies((prev) => ({
@@ -511,38 +600,33 @@ export function FullReels() {
                         <div className="reel-details-layout">
                             <div className="reel-details-video-wrap">
                                 <div className="reel-player-shell">
-                                    <video
-                                        ref={(node) => {
+                                    <ReelMedia
+                                        reel={reel}
+                                        isActive={isActive}
+                                        setVideoNode={(node) => {
                                             videoRefs.current[reel.id] = node;
                                         }}
-                                        className="reel-details-video"
-                                        src={reel.videoUrl}
-                                        poster={reel.posterUrl || ""}
-                                        controls
-                                        playsInline
-                                        autoPlay={isActive}
-                                        muted={Boolean(reel.isMuted)}
-                                        loop
-                                        onClick={() => togglePlay(reel.id)}
                                     />
 
-                                    <div className="reel-player-controls">
-                                        <button
-                                            type="button"
-                                            className="reel-player-btn"
-                                            onClick={() => togglePlay(reel.id)}
-                                        >
-                                            Play / Pause
-                                        </button>
+                                    {!reel.youtubeId && reel.videoUrl && (
+                                        <div className="reel-player-controls">
+                                            <button
+                                                type="button"
+                                                className="reel-player-btn"
+                                                onClick={() => togglePlay(reel.id)}
+                                            >
+                                                Play / Pause
+                                            </button>
 
-                                        <button
-                                            type="button"
-                                            className="reel-player-btn"
-                                            onClick={() => toggleMute(reel.id)}
-                                        >
-                                            {reel.isMuted ? "Unmute" : "Mute"}
-                                        </button>
-                                    </div>
+                                            <button
+                                                type="button"
+                                                className="reel-player-btn"
+                                                onClick={() => toggleMute(reel.id)}
+                                            >
+                                                {reel.isMuted ? "Unmute" : "Mute"}
+                                            </button>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
 
