@@ -130,15 +130,15 @@ function normalizeReel(item) {
         item?.videoSrc ||
         item?.url ||
         item?.src ||
-        item?.videoId ||
         item?.youtubeId ||
+        item?.videoId ||
         "";
 
     const directVideoUrl = isDirectVideoUrl(rawVideoValue) ? rawVideoValue : "";
     const youtubeId = directVideoUrl ? "" : extractYoutubeId(rawVideoValue);
 
     return {
-        id: String(item?.id || item?._id || item?.videoId || item?.youtubeId || ""),
+        id: String(item?.id || item?._id || item?.youtubeId || item?.videoId || ""),
         title: item?.title || "Untitled reel",
         videoUrl: directVideoUrl,
         youtubeId,
@@ -159,7 +159,7 @@ function normalizeReel(item) {
         isLiked: Boolean(item?.isLiked),
         isShared: Boolean(item?.isShared),
         isRemixed: Boolean(item?.isRemixed),
-        isMuted: Boolean(item?.isMuted),
+        isMuted: item?.isMuted ?? false,
         comments: Array.isArray(item?.comments)
             ? item.comments.map(normalizeComment)
             : [],
@@ -171,6 +171,7 @@ function ReelMedia({
     isActive,
     setVideoNode,
     setYoutubePlayer,
+    onMediaClick,
 }) {
     const youtubeOpts = {
         width: "100%",
@@ -183,23 +184,42 @@ function ReelMedia({
             loop: 1,
             playlist: reel.youtubeId,
             fs: 0,
-            mute: 1,
+            playsinline: 1,
+            enablejsapi: 1,
         },
     };
 
     if (reel.youtubeId) {
         return (
-            <div className="reel-details-video youtube-reel-player">
+            <div className="reel-details-video youtube-reel-player" onClick={onMediaClick}>
                 <YouTube
                     videoId={reel.youtubeId}
                     opts={youtubeOpts}
                     className="reel-youtube-frame"
                     onReady={(event) => {
-                        setYoutubePlayer(event.target);
+                        const player = event.target;
+                        setYoutubePlayer(player);
 
-                        if (isActive) {
-                            event.target.mute?.();
-                            event.target.playVideo?.();
+                        try {
+                            player.setVolume?.(100);
+
+                            if (isActive) {
+
+                                player.unMute?.();
+                                player.playVideo?.();
+
+                                setTimeout(() => {
+                                    try {
+                                        const state = player.getPlayerState?.();
+                                        if (state !== 1) {
+                                            player.mute?.();
+                                            player.playVideo?.();
+                                        }
+                                    } catch {}
+                                }, 400);
+                            }
+                        } catch (error) {
+                            console.error("YouTube player init error:", error);
                         }
                     }}
                 />
@@ -219,6 +239,7 @@ function ReelMedia({
                 autoPlay={isActive}
                 muted={Boolean(reel.isMuted)}
                 loop
+                onClick={onMediaClick}
             />
         );
     }
@@ -295,8 +316,21 @@ export function FullReels() {
                     }
 
                     if (youtubePlayer) {
-                        youtubePlayer.mute?.();
-                        youtubePlayer.playVideo?.();
+                        try {
+                            youtubePlayer.setVolume?.(100);
+                            youtubePlayer.unMute?.();
+                            youtubePlayer.playVideo?.();
+
+                            setTimeout(() => {
+                                try {
+                                    const state = youtubePlayer.getPlayerState?.();
+                                    if (state !== 1) {
+                                        youtubePlayer.mute?.();
+                                        youtubePlayer.playVideo?.();
+                                    }
+                                } catch {}
+                            }, 400);
+                        } catch {}
                     }
                 } else {
                     if (htmlVideo && typeof htmlVideo.pause === "function") {
@@ -328,10 +362,7 @@ export function FullReels() {
         try {
             setLoading(true);
 
-            const response = await fetch(
-                `${import.meta.env.VITE_API_URL}/api/reels`
-            );
-
+            const response = await fetch(`${import.meta.env.VITE_API_URL}/api/reels`);
             const data = await response.json();
 
             if (!response.ok) {
@@ -347,9 +378,6 @@ export function FullReels() {
             const normalized = rawReels
                 .map(normalizeReel)
                 .filter((item) => item.id);
-
-            console.log("REELS RAW:", rawReels);
-            console.log("REELS NORMALIZED:", normalized);
 
             setReels(normalized);
 
@@ -421,23 +449,19 @@ export function FullReels() {
         if (youtubePlayer) {
             const state = youtubePlayer.getPlayerState?.();
 
+            try {
+                if (youtubePlayer.isMuted?.()) {
+                    youtubePlayer.unMute?.();
+                    youtubePlayer.setVolume?.(100);
+                }
+            } catch {}
+
             if (state === 1) {
-                youtubePlayer.pauseVideo();
+                youtubePlayer.pauseVideo?.();
             } else {
-                youtubePlayer.playVideo();
+                youtubePlayer.playVideo?.();
             }
         }
-    };
-
-    const toggleFullscreen = (reelId) => {
-    const shell = playerShellRefs.current[reelId];
-    if (!shell) return;
-
-    if (document.fullscreenElement) {
-        document.exitFullscreen?.();
-    } else {
-        shell.requestFullscreen?.();
-    }
     };
 
     const toggleMute = (reelId) => {
@@ -445,21 +469,23 @@ export function FullReels() {
         const youtubePlayer = youtubePlayerRefs.current[reelId];
 
         if (htmlVideo) {
-            htmlVideo.muted = !htmlVideo.muted;
+            const nextMuted = !htmlVideo.muted;
+            htmlVideo.muted = nextMuted;
 
             setReels((prev) =>
                 prev.map((item) =>
-                    item.id === reelId ? { ...item, isMuted: htmlVideo.muted } : item
+                    item.id === reelId ? { ...item, isMuted: nextMuted } : item
                 )
             );
             return;
         }
 
         if (youtubePlayer) {
-            const isCurrentlyMuted = youtubePlayer.isMuted?.();
+            const currentlyMuted = youtubePlayer.isMuted?.() ?? true;
 
-            if (isCurrentlyMuted) {
+            if (currentlyMuted) {
                 youtubePlayer.unMute?.();
+                youtubePlayer.setVolume?.(100);
             } else {
                 youtubePlayer.mute?.();
             }
@@ -467,10 +493,21 @@ export function FullReels() {
             setReels((prev) =>
                 prev.map((item) =>
                     item.id === reelId
-                        ? { ...item, isMuted: !isCurrentlyMuted }
+                        ? { ...item, isMuted: !currentlyMuted }
                         : item
                 )
             );
+        }
+    };
+
+    const toggleFullscreen = (reelId) => {
+        const shell = playerShellRefs.current[reelId];
+        if (!shell) return;
+
+        if (document.fullscreenElement) {
+            document.exitFullscreen?.();
+        } else {
+            shell.requestFullscreen?.();
         }
     };
 
@@ -673,7 +710,8 @@ export function FullReels() {
                     >
                         <div className="reel-details-layout">
                             <div className="reel-details-video-wrap">
-                                <div className="reel-player-shell"
+                                <div
+                                    className="reel-player-shell"
                                     ref={(node) => {
                                         playerShellRefs.current[reel.id] = node;
                                     }}
@@ -687,6 +725,7 @@ export function FullReels() {
                                         setYoutubePlayer={(player) => {
                                             youtubePlayerRefs.current[reel.id] = player;
                                         }}
+                                        onMediaClick={() => togglePlay(reel.id)}
                                     />
 
                                     <div className="reel-player-controls">
