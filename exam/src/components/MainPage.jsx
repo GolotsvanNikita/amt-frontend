@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import "bootstrap/dist/css/bootstrap.min.css";
 import Carousel from "react-bootstrap/Carousel";
 import "./MainPage.css";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 
 const categoryButtons = [
     "All",
@@ -14,204 +14,258 @@ const categoryButtons = [
     "Selena Gomez",
     "Games Shows",
     "Spiderman",
-]
+];
 
-function getAuthToken(){
-    return(
-        localStorage.getItem('token') || localStorage.getItem("authToken") || localStorage.getItem("jst") || ""
+function getAuthToken() {
+    return (
+        localStorage.getItem("token") ||
+        localStorage.getItem("authToken") ||
+        localStorage.getItem("jwt") ||
+        ""
     );
 }
 
-function parseViewsCount(meta = ""){
-     const match = meta.match(/([\d.,]+)\s*([KMB])?\s*views/i);
-     if(!match) return 0;
-     let value = parseFloat(match[1].replace(/,/g, " "));
-     const suffix = (match[2] || "").toUpperCase();
+function parseViewsCount(meta = "") {
+    const match = meta.match(/([\d.,]+)\s*([KMB])?\s*views/i);
 
-     if(suffix === "K") value *= 1_000;
-     if(suffix === "M") value *= 1_000_000;
-     if(suffix === "B") value *= 1_000_000_000;
-     return Math.floor(value);
+    if (!match) return 0;
+
+    let value = parseFloat(match[1].replace(/,/g, ""));
+    const suffix = (match[2] || "").toUpperCase();
+
+    if (suffix === "K") value *= 1_000;
+    if (suffix === "M") value *= 1_000_000;
+    if (suffix === "B") value *= 1_000_000_000;
+
+    return Math.floor(value);
 }
 
-function normalizedVideos(video, index = 0){
-    const metaString = video.views && video.publishedAt ? `${video.views} • ${video.publishedAt}` : video.meta || video.viewsText || " ";
+function normalizeVideo(video, index = 0) {
+    const metaString =
+        video.views && video.publishedAt
+            ? `${video.views} • ${video.publishedAt}`
+            : video.meta || video.viewsText || "";
+
     return {
         id: video.videoId || video.id || `video-${index}`,
         title: video.title || "Untitled video",
-        thumbnail: video.thumbnail || video.thumbnailUrl,
+        thumbnail: video.thumbnail || video.thumbnailUrl || "/1v.png",
         channelName: video.channelName || video.author || "Unknown channel",
         meta: metaString,
         viewsCount: parseViewsCount(metaString),
-        category: video.category || video.genre || video.type || video.tags?.[0] || "All"
+        category:
+            video.category ||
+            video.genre ||
+            video.type ||
+            video.tags?.[0] ||
+            "All",
     };
 }
 
-function sortVideosByViews(videos = []){
-    return [...videos].sort((a,b)=>(b.viewsCount || 0) - a(viewsCount || 0));
-}
-
-function videoMatchesCategory(video, category) {
-    if(category === "all") return true;
-
-    const categoryLower = category.toLowerCase();
-    const title = (video.title || " ").toLowerCase();
-    const channelName = (video.channelName || " ").toLowerCase();
-    const meta = (video.meta || " ").toLowerCase();
-    const videoCategory = (video.category || " ").toLowerCase();
-
-    return(
-        videoCategory.includes(categoryLower) || title.includes(categoryLower) || channelName.includes(categoryLower) || meta.includes(categoryLower)
+function sortVideosByViews(videos = []) {
+    return [...videos].sort(
+        (a, b) => (b.viewsCount || 0) - (a.viewsCount || 0)
     );
 }
 
-export function MainPage(){
+function videoMatchesCategory(video, category) {
+    if (category === "All") return true;
+
+    const categoryLower = category.toLowerCase();
+    const title = (video.title || "").toLowerCase();
+    const channelName = (video.channelName || "").toLowerCase();
+    const meta = (video.meta || "").toLowerCase();
+    const videoCategory = (video.category || "").toLowerCase();
+
+    return (
+        videoCategory.includes(categoryLower) ||
+        title.includes(categoryLower) ||
+        channelName.includes(categoryLower) ||
+        meta.includes(categoryLower)
+    );
+}
+
+export function MainPage() {
     const navigate = useNavigate();
-    const loaderRef = useRef();
+    const loaderRef = useRef(null);
 
-    const[selectedCategory, setSelectedCategory] = useState("All");
+    const [selectedCategory, setSelectedCategory] = useState("All");
+
     const [history, setHistory] = useState([]);
-    const[videoSections, setVideoSections] = useState([]);
-    const[allVideos, setAllVideos] = useState([]);
+    const [videoSections, setVideoSections] = useState([]);
+    const [allVideos, setAllVideos] = useState([]);
 
-    const[loadingSections, setLoadingSections] = useState(true);
-    const[loadingHistory, setLoadingHistory] = useState(true);
-    const[loadingAllVideos, setLoadingAllVideos] = useState(true);
-    const[loadingMoreAllVideos, setLoadingMoreAllVideos] = useState(false);
+    const [loadingSections, setLoadingSections] = useState(true);
+    const [loadingHistory, setLoadingHistory] = useState(true);
+    const [loadingAllVideos, setLoadingAllVideos] = useState(true);
+    const [loadingMoreAllVideos, setLoadingMoreAllVideos] = useState(false);
 
-    const[sectionsError,setSectionsError] = useState("");
-    const[historyError,setHistoryError] = useState("");
-    const[allVideosError, setAllVideosError] = useState("");
+    const [sectionsError, setSectionsError] = useState("");
+    const [historyError, setHistoryError] = useState("");
+    const [allVideosError, setAllVideosError] = useState("");
 
     const [nextPageToken, setNextPageToken] = useState(null);
     const [hasMoreAllVideos, setHasMoreAllVideos] = useState(true);
 
-
-
-    useEffect(()=>{
-        const loadMainPageSections = async () =>{
-            try{
+    useEffect(() => {
+        const loadMainPageSections = async () => {
+            try {
                 setLoadingSections(true);
-                setSectionsError(" ");
+                setSectionsError("");
 
-                const response = await fetch(`${import.meta.env.VITE_API_URL}/api/main-page/videos`);
+                const response = await fetch(
+                    `${import.meta.env.VITE_API_URL}/api/main-page/videos`
+                );
 
-                if(!response.ok){
-                    throw new Error("failed to load video");
+                if (!response.ok) {
+                    throw new Error("Failed to load videos");
                 }
 
                 const data = await response.json();
 
-                const normalizedSections = Array.isArray(data) ? data.map((section)=>({
-                    ...section, videos: sortVideosByViews(section.videos || []).map((video, index) => normalizedVideos(video, index))
-                })) : [];
+                const normalizedSections = Array.isArray(data)
+                    ? data.map((section) => ({
+                          ...section,
+                          videos: sortVideosByViews(
+                              (section.videos || []).map((video, index) =>
+                                  normalizeVideo(video, index)
+                              )
+                          ),
+                      }))
+                    : [];
+
                 setVideoSections(normalizedSections);
-            } catch(err){
+            } catch (err) {
                 console.error(err);
-                setSelectionError(err.message || "Something went wrong");
+                setSectionsError(err.message || "Something went wrong");
                 setVideoSections([]);
-            } finally{
-                setLoadingSections(false)
-            };
-        }
-        loadMainPageSections(false);
+            } finally {
+                setLoadingSections(false);
+            }
+        };
+
+        loadMainPageSections();
     }, []);
 
-    useEffect(()=>{
-        const loadRecentHistory = async () =>{
-            try{
+    useEffect(() => {
+        const loadRecentHistory = async () => {
+            try {
                 setLoadingHistory(true);
                 setHistoryError("");
+
                 const token = getAuthToken();
 
-                const response = await fetch(`${import.meta.env.VITE_API_URL}/api/history/recent`,{
-                    method: "GET",
-                    headers:{
-                        ...(token ? {Authorization: `Bearer ${token}`} : {})
-                    },
+                const response = await fetch(
+                    `${import.meta.env.VITE_API_URL}/api/history/recent`,
+                    {
+                        method: "GET",
+                        headers: {
+                            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+                        },
+                    }
+                );
+
+                if (!response.ok) {
+                    throw new Error("Failed to load watch history");
                 }
-                )
-                if(!response.ok){
-                    throw new Error("failed to load watch history");
-                }
+
                 const data = await response.json();
 
-                const normalizedHistory = Array.isArray(data) ? data.map((video, index)=> normalizedVideos({
-                    id: video.videoId || video.id,
-                    title: video.title,
-                    thumbnail: video.thumbnail || video.thumbnailUrl,
-                    channelName: video.channelName || video.author,
-                    meta: video.meta || video.viewsText || " ",
-                    category: video.category,
-                },
-                index
-                )) : [];
-                setHistoryError(normalizedHistory);
-            }catch(err){
+                const normalizedHistory = Array.isArray(data)
+                    ? data.map((video, index) =>
+                          normalizeVideo(
+                              {
+                                  id: video.videoId || video.id,
+                                  title: video.title,
+                                  thumbnail: video.thumbnail || video.thumbnailUrl,
+                                  channelName: video.channelName || video.author,
+                                  meta: video.meta || video.viewsText || "",
+                                  category: video.category,
+                              },
+                              index
+                          )
+                      )
+                    : [];
+
+                setHistory(normalizedHistory);
+            } catch (err) {
                 console.error(err);
-                setHistoryError(err.message || "failed to load watch history");
-                setHistoryError([]);
-            }finally{
+                setHistoryError(err.message || "Failed to load watch history");
+                setHistory([]);
+            } finally {
                 setLoadingHistory(false);
             }
         };
-        loadRecentHistory();
-    }, [])
 
-    const loadAllVideos = useCallback(async(pageToken = " ", append = false)=>{
-        try{
-            if(append){
+        loadRecentHistory();
+    }, []);
+
+    const loadAllVideos = useCallback(async (pageToken = "", append = false) => {
+        try {
+            if (append) {
                 setLoadingMoreAllVideos(true);
-            }else{
+            } else {
                 setLoadingAllVideos(true);
                 setAllVideosError("");
             }
 
-            const query = pageToken ? `?pageToken = ${encodeURIComponent(pageToken)}` : "";
+            const query = pageToken
+                ? `?pageToken=${encodeURIComponent(pageToken)}`
+                : "";
 
-            const response = await fetch(`${import.meta.env.VITE_API_URL}/api/video/all${query}`)
+            const response = await fetch(
+                `${import.meta.env.VITE_API_URL}/api/video/all${query}`
+            );
 
-            if(!response.ok){
-                throw new Error('failed to load all video');
+            if (!response.ok) {
+                throw new Error("Failed to load all videos");
             }
 
             const data = await response.json();
 
-            const newVideos = Array.isArray(data?.videos) ? data.videos.map((video, index) => normalizedVideos(video,index)) : [];
+            const newVideos = Array.isArray(data?.videos)
+                ? data.videos.map((video, index) => normalizeVideo(video, index))
+                : [];
 
-            if(append) {
-                setAllVideos((prev) =>{
+            if (append) {
+                setAllVideos((prev) => {
                     const merged = [...prev, ...newVideos];
-                    const uniqueVideos = merged.filter((video,index,arr) => index === arr.findIndex((item) => item.id === video.id)
-                );
-                return sortVideosByViews(uniqueVideos);
+
+                    const uniqueVideos = merged.filter(
+                        (video, index, arr) =>
+                            index === arr.findIndex((item) => item.id === video.id)
+                    );
+
+                    return sortVideosByViews(uniqueVideos);
                 });
-            }else{
+            } else {
                 setAllVideos(sortVideosByViews(newVideos));
             }
+
             setNextPageToken(data?.nextPageToken || null);
             setHasMoreAllVideos(Boolean(data?.nextPageToken));
-        }catch(err){
+        } catch (err) {
             console.error(err);
-            setAllVideosError(err.message || "failed to load all videos");
+            setAllVideosError(err.message || "Failed to load all videos");
 
-            if(!append){
+            if (!append) {
                 setAllVideos([]);
                 setHasMoreAllVideos(false);
                 setNextPageToken(null);
             }
-        }finally {
-            setLoadingAllVideos("",false);
+        } finally {
+            setLoadingAllVideos(false);
             setLoadingMoreAllVideos(false);
         }
     }, []);
 
-    useEffect(()=>{
-        loadAllVideos("",false);
-    }, [loadAllVideos])
+    useEffect(() => {
+        loadAllVideos("", false);
+    }, [loadAllVideos]);
 
-    useEffect(()=>{
+    useEffect(() => {
         const node = loaderRef.current;
+
         if (!node || !hasMoreAllVideos || loadingMoreAllVideos || loadingAllVideos) {
             return;
         }
@@ -235,9 +289,11 @@ export function MainPage(){
                 threshold: 0,
             }
         );
+
         observer.observe(node);
-        return() =>observer.disconnect();
-    },[
+
+        return () => observer.disconnect();
+    }, [
         nextPageToken,
         hasMoreAllVideos,
         loadingMoreAllVideos,
@@ -245,91 +301,130 @@ export function MainPage(){
         loadAllVideos,
     ]);
 
-    const handeVideoClick = async(video) =>{
+    const handleVideoClick = async (video) => {
         const token = getAuthToken();
-        try{
-            await fetch(`${import.meta.env.VITE_API_URL}/api/history/record`,{
+
+        try {
+            await fetch(`${import.meta.env.VITE_API_URL}/api/history/record`, {
                 method: "POST",
-                headers:{
-                    "Content-Type" : "application/json",
-                    ...(token ? {Authorization: `Bearer ${token}` }: {}),
+                headers: {
+                    "Content-Type": "application/json",
+                    ...(token ? { Authorization: `Bearer ${token}` } : {}),
                 },
                 body: JSON.stringify({
                     videoId: video.id,
                     title: video.title,
-                    thumbnailUrl: video.thumbnail || video.thumbnailUrl,
+                    thumbnailUrl: video.thumbnail,
                     channelName: video.channelName,
                     meta: video.meta,
                     category: video.category,
                 }),
             });
-            setHistory((prev) =>{
-                const filtered = prev.filter((item)=> item.id !== video.id);
-                return[video, ...filtered].slice(0,20);
+
+            setHistory((prev) => {
+                const filtered = prev.filter((item) => item.id !== video.id);
+                return [video, ...filtered].slice(0, 20);
             });
-        }catch(err){
-            console.error("failed to record history:", err);   
+        } catch (err) {
+            console.error("Failed to record history:", err);
         }
-        navigate(`/video/${video.id}`,{
-            state:{video},
+
+        navigate(`/video/${video.id}`, {
+            state: { video },
         });
     };
 
-    const renderVideoCard = (video) =>{
-        const normalizeVideos = normalizedVideos(video);
+    const renderVideoCard = (video) => {
+        const normalizedVideo = normalizeVideo(video);
 
-        return (<button type="button" className="videoCard" key ={normalizeVideos.id} onClick={()=> handeVideoClick(normalizeVideos)}>
-            <img src = {normalizeVideos.thumbnail} alt = {normalizeVideos.title || "Video thumbnail"} />
-            <div className="video info">
-                <h4>{normalizeVideos.title}</h4>
-                <p>{normalizeVideos.channelName}</p>
-                <span>{normalizeVideos.meta}</span>
-                </div> 
-        </button>);
+        return (
+            <button
+                type="button"
+                className="videoCard"
+                key={normalizedVideo.id}
+                onClick={() => handleVideoClick(normalizedVideo)}
+            >
+                <img
+                    src={normalizedVideo.thumbnail}
+                    alt={normalizedVideo.title || "Video thumbnail"}
+                />
+
+                <div className="videoInfo">
+                    <h4>{normalizedVideo.title}</h4>
+                    <p>{normalizedVideo.channelName}</p>
+                    <span>{normalizedVideo.meta}</span>
+                </div>
+            </button>
+        );
     };
 
-    const filteredSections = useMemo(()=>{
-        return videoSections.map((section) =>({
+    const filteredSections = useMemo(() => {
+        return videoSections.map((section) => ({
             ...section,
-            videos: (section.videos || []).filter((video)=> videoMatchesCategory(video,selectedCategory)
-        ),
+            videos: (section.videos || []).filter((video) =>
+                videoMatchesCategory(video, selectedCategory)
+            ),
         }));
     }, [videoSections, selectedCategory]);
 
-    const filteredHistory = useMemo(()=>{
-        return history.filter((video) => videoMatchesCategory(video, selectedCategory)
-    );
+    const filteredHistory = useMemo(() => {
+        return history.filter((video) =>
+            videoMatchesCategory(video, selectedCategory)
+        );
     }, [history, selectedCategory]);
 
-    const filteredAllVideos = useMemo(()=>{
+    const filteredAllVideos = useMemo(() => {
+        return allVideos.filter((video) =>
+            videoMatchesCategory(video, selectedCategory)
+        );
+    }, [allVideos, selectedCategory]);
+
+    const featuredVideo = useMemo(() => {
         return allVideos.length > 0 ? allVideos[0] : null;
     }, [allVideos]);
 
-    
-    return(
+    return (
         <div className="mainPage">
             <div className="ads">
                 <div className="topContent">
-                    <h2>{featuredVideo?.title || "featured video"}</h2>
+                    <h2>{featuredVideo?.title || "Featured video"}</h2>
                     <p>{featuredVideo?.channelName || "Channel"}</p>
                 </div>
 
                 <div className="bottomContent">
-                    <button type="button" onClick={()=> featuredVideo && handleVideoClick(featuredVideo)}>WATCH</button>
-                    <p>{featuredVideo?.meta || "No featured yet"}</p>
-                    <div className="carousel" style={{flex : 1}}>
-                        <Carousel data-bs-theme = "dark">
-                            {[1,2,3].map((item)=>(
-                                <Carousel.Item key = {item}>
-                                    <img className="d-block w-100" src={`/s${item}.jpg`} alt = {`Slide ${item}`} style={{width: "100%", objectFit: "cover", height: "140px", borderRadius:"20px"}}/>
+                    <button
+                        type="button"
+                        onClick={() => featuredVideo && handleVideoClick(featuredVideo)}
+                    >
+                        WATCH
+                    </button>
+
+                    <p>{featuredVideo?.meta || "No featured video yet"}</p>
+
+                    <div className="carousel" style={{ flex: 1 }}>
+                        <Carousel data-bs-theme="dark">
+                            {[1, 2, 3].map((item) => (
+                                <Carousel.Item key={item}>
+                                    <img
+                                        className="d-block w-100"
+                                        src={`/s${item}.jpg`}
+                                        alt={`Slide ${item}`}
+                                        style={{
+                                            width: "100%",
+                                            objectFit: "cover",
+                                            height: "140px",
+                                            borderRadius: "20px",
+                                        }}
+                                    />
                                 </Carousel.Item>
                             ))}
                         </Carousel>
                     </div>
                 </div>
             </div>
+
             <div className="categoryBtns">
-                {categoryButtons.map((category, index) => (
+                {categoryButtons.map((category) => (
                     <button
                         key={category}
                         className={selectedCategory === category ? "frts" : "another"}
@@ -339,62 +434,99 @@ export function MainPage(){
                     </button>
                 ))}
             </div>
-            {loadingSections && (<div className="mainPageStatus">Loading Videos...</div>)}
 
-            {!loadingSections && sectionsError && (<div className="mainPageStatus">{sectionsError}</div>)}
+            {loadingSections && (
+                <div className="mainPageStatus">Loading videos...</div>
+            )}
 
-            {!loadingSections && filteredSections.map((section, index)=>(
-                <React.Fragment key = {section.id || section.title || index}>
-                    <div className="videoSection">
-                        <h3>{section.title}</h3>
-                        {section.videos.length === 0 ? (
-                            <div className="mainPageStatus">No videos in this category</div>
-                        ): (
-                            <div className="videoGrid">{section.videos.map((video) => renderVideoCard(video))}</div>
-                        )}
-                    </div>
-                    <hr className="sectionDivider"/>
-                    {index === 0 && (
-                        <>
-                        <div className="VideoSection">
-                            <h3>Continue Watching</h3>
-                            {loadingHistory ? (
-                                <div className="mainPageStatus">Loading history</div>
-                            ): historyError ?(<div className="mainPageStatus">{historyError}</div>) : filteredHistory.length === 0 ? (
-                                <div className="mainPageStatus">No recently watched videos</div>
-                            ):(
-                                <div className="videoGrid">{filteredHistory.map((video)=> renderVideoCard(video))}</div>
+            {!loadingSections && sectionsError && (
+                <div className="mainPageStatus">{sectionsError}</div>
+            )}
+
+            {!loadingSections &&
+                filteredSections.map((section, index) => (
+                    <React.Fragment key={section.id || section.title || index}>
+                        <div className="videoSection">
+                            <h3>{section.title}</h3>
+
+                            {section.videos.length === 0 ? (
+                                <div className="mainPageStatus">
+                                    No videos in this category
+                                </div>
+                            ) : (
+                                <div className="videoGrid">
+                                    {section.videos.map((video) =>
+                                        renderVideoCard(video)
+                                    )}
+                                </div>
                             )}
                         </div>
-                        <hr className="sectionDivider"/>
-                        </>
-                    )}
-                </React.Fragment>
-            ))}
+
+                        <hr className="sectionDivider" />
+
+                        {index === 0 && (
+                            <>
+                                <div className="videoSection">
+                                    <h3>Continue Watching</h3>
+
+                                    {loadingHistory ? (
+                                        <div className="mainPageStatus">
+                                            Loading history...
+                                        </div>
+                                    ) : historyError ? (
+                                        <div className="mainPageStatus">
+                                            {historyError}
+                                        </div>
+                                    ) : filteredHistory.length === 0 ? (
+                                        <div className="mainPageStatus">
+                                            No recently watched videos
+                                        </div>
+                                    ) : (
+                                        <div className="videoGrid">
+                                            {filteredHistory.map((video) =>
+                                                renderVideoCard(video)
+                                            )}
+                                        </div>
+                                    )}
+                                </div>
+
+                                <hr className="sectionDivider" />
+                            </>
+                        )}
+                    </React.Fragment>
+                ))}
 
             <div className="videoSection">
                 <h3>Recommended videos</h3>
-                {loadingAllVideos? (<div className="mainPageStatus">Loading all videos...</div>) : allVideosError && filteredAllVideos.length === 0 ? (
+
+                {loadingAllVideos ? (
+                    <div className="mainPageStatus">Loading all videos...</div>
+                ) : allVideosError && filteredAllVideos.length === 0 ? (
                     <div className="mainPageStatus">{allVideosError}</div>
-                ): filteredAllVideos.length === 0 ? (<div className="mainPageStatus">No videos found</div>):(
+                ) : filteredAllVideos.length === 0 ? (
+                    <div className="mainPageStatus">No videos found</div>
+                ) : (
                     <>
                         <div className="videoGrid">
-                            {filteredAllVideos.map((video)=>renderVideoCard(video))}
+                            {filteredAllVideos.map((video) =>
+                                renderVideoCard(video)
+                            )}
                         </div>
-                        <div ref={loaderRef} style={{height: "1px"}}/>
+
+                        <div ref={loaderRef} style={{ height: "1px" }} />
 
                         {loadingMoreAllVideos && (
                             <div className="mainPageStatus">
                                 Loading more videos...
                             </div>
                         )}
+
                         {!hasMoreAllVideos && filteredAllVideos.length > 0 && (
-                            <div className="mainPageStatus">no more videos</div>
+                            <div className="mainPageStatus">No more videos</div>
                         )}
                     </>
                 )}
             </div>
         </div>
-    )
+    );
 }
-
