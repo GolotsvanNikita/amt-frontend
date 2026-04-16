@@ -44,10 +44,6 @@ export function VideoAndComments() {
     const loadInteractions = useCallback(
         async (pageToLoad = 1, append = false) => {
             if (!id) {
-                setComments([]);
-                setLikes(0);
-                setLoadingInteractions(false);
-                setLoadingMoreComments(false);
                 return;
             }
 
@@ -99,10 +95,6 @@ export function VideoAndComments() {
                 console.error("Failed to load interactions:", err);
                 setInteractionsError(err.message || "Failed to load interactions");
 
-                if (!append) {
-                    setComments([]);
-                    setLikes(0);
-                }
             } finally {
                 setLoadingInteractions(false);
                 setLoadingMoreComments(false);
