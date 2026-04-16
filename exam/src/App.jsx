@@ -12,7 +12,6 @@ import { EditProfile } from './components/EditProfile';
 import { ThemePage } from './components/ThemePage';
 import { ReelsPage } from './components/ReelsPage';
 import { FullReels } from './components/ReelDetailsPage';
-import { ReelCommentsPage } from './components/ReelCommentsPage';
 import './App.css';
 
 function ProtectedRoute({ children })
@@ -43,7 +42,6 @@ function App()
 
                         <Route path="reels-page" element={<ReelsPage />} />
                         <Route path="reels-page/:id" element={<FullReels />} />
-                        <Route path="reels-page/:id/comments" element={<ReelCommentsPage />} />
                     </Route>
 
                     <Route path="*" element={<Navigate to="/register" />} />

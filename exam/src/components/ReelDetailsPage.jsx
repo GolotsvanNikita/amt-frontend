@@ -91,12 +91,26 @@ function extractYoutubeId(value) {
     return "";
 }
 
-function normalizeReel(item) {
+function createFallbackId(item, index) {
+    return String(
+        item?.id ||
+        item?._id ||
+        item?.reelId ||
+        item?.videoId ||
+        item?.youtubeId ||
+        item?.slug ||
+        `reel-${index}`
+    );
+}
+
+function normalizeReel(item, index) {
     const rawVideoValue =
         item?.videoUrl ||
         item?.videoSrc ||
         item?.url ||
         item?.src ||
+        item?.file ||
+        item?.mediaUrl ||
         item?.youtubeUrl ||
         item?.youtubeId ||
         item?.videoId ||
@@ -106,11 +120,11 @@ function normalizeReel(item) {
     const youtubeId = directVideoUrl ? "" : extractYoutubeId(rawVideoValue);
 
     return {
-        id: String(item?.id || item?._id || item?.youtubeId || item?.videoId || ""),
+        id: createFallbackId(item, index),
         title: item?.title || "Untitled reel",
         videoUrl: directVideoUrl,
         youtubeId,
-        posterUrl: item?.posterUrl || item?.thumbnailUrl || item?.thumbnail || "",
+        posterUrl: item?.posterUrl || item?.thumbnailUrl || item?.thumbnail || item?.preview || "",
         avatarUrl: isValidImageSrc(item?.avatarUrl)
             ? item.avatarUrl
             : isValidImageSrc(item?.authorAvatar)
@@ -118,7 +132,7 @@ function normalizeReel(item) {
             : "/ava.png",
         author: item?.author || item?.channelName || item?.name || "Unknown author",
         username: item?.username || item?.handle || "@unknown",
-        description: item?.description || "",
+        description: item?.description || item?.caption || "",
         audioTitle: item?.audioTitle || item?.audio || "original audio",
         likes: Number(item?.likes ?? item?.likesCount) || 0,
         shares: Number(item?.shares ?? item?.sharesCount) || 0,
@@ -129,6 +143,7 @@ function normalizeReel(item) {
         isShared: Boolean(item?.isShared),
         isRemixed: Boolean(item?.isRemixed),
         isMuted: item?.isMuted ?? false,
+        rawItem: item,
     };
 }
 
@@ -248,6 +263,8 @@ export function FullReels() {
                     data = {};
                 }
 
+                console.log("REELS RESPONSE:", data);
+
                 if (!response.ok) {
                     throw new Error(data?.message || text || "Failed to load reels");
                 }
@@ -262,9 +279,11 @@ export function FullReels() {
                     ? data.items
                     : [];
 
-                const normalized = rawReels
-                    .map(normalizeReel)
-                    .filter((item) => item.id);
+                console.log("RAW REELS:", rawReels);
+
+                const normalized = rawReels.map((item, index) => normalizeReel(item, index));
+
+                console.log("NORMALIZED REELS:", normalized);
 
                 setReels((prev) =>
                     append ? mergeUniqueById(prev, normalized) : normalized
@@ -362,9 +381,13 @@ export function FullReels() {
     const goToNext = () => {
         if (!reels.length) return;
 
+        if (activeIndex >= reels.length - 2 && hasMore) {
+            loadMoreReels();
+        }
+
         setActiveIndex((prev) => {
-            const nextIndex = prev < reels.length - 1 ? prev + 1 : prev;
-            return nextIndex;
+            if (prev < reels.length - 1) return prev + 1;
+            return prev;
         });
     };
 
@@ -719,7 +742,7 @@ export function FullReels() {
                         </div>
 
                         {isFetchingMore && (
-                            <div className="reel-details-loading" style={{ marginTop: "12px" }}>
+                            <div className="reel-details-loading" style={{ marginTop: "12px", minHeight: "auto" }}>
                                 Loading more reels...
                             </div>
                         )}
