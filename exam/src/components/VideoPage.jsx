@@ -9,7 +9,7 @@ import Plus from "../assets/Component 170.svg";
 import ArrowDown from "../assets/ArrowDown.svg";
 import YouTube from "react-youtube";
 import "./VideoPage.css";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 
 function formatViews(views) {
     const numericViews = Number(views) || 0;
@@ -25,10 +25,45 @@ function formatViews(views) {
     return `${numericViews} views`;
 }
 
-export function YouTubeCustomPlayer() {
+function getVideoId(video) {
+    return String(video?.videoId || video?.id || "");
+}
+
+function normalizeVideo(video) {
+    return {
+        ...video,
+        resolvedId: getVideoId(video),
+        resolvedThumbnail:
+            video?.thumbnail ||
+            video?.thumbnailUrl ||
+            video?.snippet?.thumbnails?.high?.url ||
+            video?.snippet?.thumbnails?.medium?.url ||
+            video?.snippet?.thumbnails?.default?.url ||
+            "/1v.png",
+        resolvedChannelName:
+            video?.channelName ||
+            video?.author ||
+            video?.snippet?.channelTitle ||
+            "Unknown channel",
+        resolvedTitle:
+            video?.title ||
+            video?.snippet?.title ||
+            "Untitled video",
+        resolvedPublishedAt:
+            video?.publishedAt ||
+            video?.snippet?.publishedAt ||
+            "",
+        resolvedViews:
+            video?.views ||
+            video?.viewCount ||
+            video?.statistics?.viewCount ||
+            0,
+    };
+}
+
+export function YouTubeCustomPlayer({ initialVideo = null, routeVideoId = "" }) {
     const playerRef = useRef(null);
     const navigate = useNavigate();
-    const { id } = useParams();
 
     const [videos, setVideos] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -55,13 +90,13 @@ export function YouTubeCustomPlayer() {
 
                 const data = await response.json();
 
-                const normalizedVideos = Array.isArray(data?.videos)
+                const rawVideos = Array.isArray(data?.videos)
                     ? data.videos
                     : Array.isArray(data)
                     ? data
                     : [];
 
-                setVideos(normalizedVideos);
+                setVideos(rawVideos.map(normalizeVideo));
             } catch (err) {
                 setError(err.message || "Something went wrong");
                 setVideos([]);
@@ -73,14 +108,41 @@ export function YouTubeCustomPlayer() {
         loadVideos();
     }, []);
 
+    const normalizedInitialVideo = useMemo(() => {
+        return initialVideo ? normalizeVideo(initialVideo) : null;
+    }, [initialVideo]);
+
     const currentVideo = useMemo(() => {
-        if (!Array.isArray(videos) || videos.length === 0) return null;
-        return videos.find((video) => String(video.id) === String(id)) || videos[0];
-    }, [videos, id]);
+        if (!Array.isArray(videos) || videos.length === 0) {
+            return normalizedInitialVideo;
+        }
+
+        const foundByRoute = videos.find(
+            (video) => String(video.resolvedId) === String(routeVideoId)
+        );
+
+        if (foundByRoute) {
+            return foundByRoute;
+        }
+
+        if (
+            normalizedInitialVideo &&
+            String(normalizedInitialVideo.resolvedId) === String(routeVideoId)
+        ) {
+            return normalizedInitialVideo;
+        }
+
+        return normalizedInitialVideo || videos[0] || null;
+    }, [videos, routeVideoId, normalizedInitialVideo]);
 
     const recommendedVideos = useMemo(() => {
         if (!Array.isArray(videos) || videos.length === 0 || !currentVideo) return [];
-        return videos.filter((video) => String(video.id) !== String(currentVideo.id)).slice(0, 8);
+
+        return videos
+            .filter(
+                (video) => String(video.resolvedId) !== String(currentVideo.resolvedId)
+            )
+            .slice(0, 8);
     }, [videos, currentVideo]);
 
     const opts = {
@@ -121,7 +183,8 @@ export function YouTubeCustomPlayer() {
         setProgress(0);
         setCurrentTime(0);
         setDuration(0);
-    }, [currentVideo?.id]);
+        setShowVideo(true);
+    }, [currentVideo?.resolvedId]);
 
     const togglePlay = () => {
         const player = playerRef.current;
@@ -190,15 +253,15 @@ export function YouTubeCustomPlayer() {
         return `${minutes}:${seconds}`;
     };
 
-    if (loading) {
+    if (loading && !currentVideo) {
         return <div className="yt-page-status">Loading video...</div>;
     }
 
-    if (error) {
+    if (error && !currentVideo) {
         return <div className="yt-page-status">{error}</div>;
     }
 
-    if (!currentVideo) {
+    if (!currentVideo || !currentVideo.resolvedId) {
         return <div className="yt-page-status">Video not found</div>;
     }
 
@@ -210,20 +273,20 @@ export function YouTubeCustomPlayer() {
                         <div className="video-section">
                             {showVideo ? (
                                 <YouTube
-                                    videoId={currentVideo.id}
+                                    videoId={currentVideo.resolvedId}
                                     opts={opts}
                                     onReady={onReady}
                                 />
                             ) : (
                                 <div className="preview" onClick={togglePlay}>
                                     <img
-                                        src={currentVideo.thumbnailUrl}
-                                        alt={currentVideo.title}
+                                        src={currentVideo.resolvedThumbnail}
+                                        alt={currentVideo.resolvedTitle}
                                         className="preview-image"
                                     />
                                     <div className="overlay-text">
-                                        <h1>{currentVideo.channelName}</h1>
-                                        <p>{currentVideo.title}</p>
+                                        <h1>{currentVideo.resolvedChannelName}</h1>
+                                        <p>{currentVideo.resolvedTitle}</p>
                                     </div>
                                 </div>
                             )}
@@ -264,18 +327,18 @@ export function YouTubeCustomPlayer() {
                         </div>
                     </div>
 
-                    <h2 className="yt-main-title">{currentVideo.title}</h2>
+                    <h2 className="yt-main-title">{currentVideo.resolvedTitle}</h2>
 
                     <div className="video-actions-bar">
                         <div className="channel-info">
                             <img
-                                src={currentVideo.thumbnailUrl}
-                                alt={currentVideo.channelName}
+                                src={currentVideo.resolvedThumbnail}
+                                alt={currentVideo.resolvedChannelName}
                                 className="channel-avatar"
                             />
                             <div className="channel-text">
-                                <p className="channel-name">{currentVideo.channelName}</p>
-                                <p className="channel-subs">{currentVideo.publishedAt}</p>
+                                <p className="channel-name">{currentVideo.resolvedChannelName}</p>
+                                <p className="channel-subs">{currentVideo.resolvedPublishedAt}</p>
                             </div>
                             <button className="subscribe-btn">Subscribe</button>
                         </div>
@@ -283,7 +346,7 @@ export function YouTubeCustomPlayer() {
                         <div className="actions">
                             <button className="action-btn">
                                 <img src={Like} alt="like" width="34" height="34" />
-                                <span>{formatViews(currentVideo.views)}</span>
+                                <span>{formatViews(currentVideo.resolvedViews)}</span>
                             </button>
                             <button className="action-btn">
                                 <img src={Forward} alt="forward" width="34" height="34" />
@@ -303,14 +366,14 @@ export function YouTubeCustomPlayer() {
                 <div className="VideoFromThisChannel">
                     {recommendedVideos.slice(0, 5).map((video) => (
                         <div
-                            key={video.id}
+                            key={video.resolvedId}
                             className="RecomendVideo"
-                            onClick={() => navigate(`/video/${video.id}`)}
+                            onClick={() => navigate(`/video/${video.resolvedId}`, { state: { video } })}
                         >
-                            <img src={video.thumbnailUrl} alt={video.title} />
+                            <img src={video.resolvedThumbnail} alt={video.resolvedTitle} />
                             <div className="RecomendVideo-text">
-                                <p>{video.title}</p>
-                                <p>{video.channelName}</p>
+                                <p>{video.resolvedTitle}</p>
+                                <p>{video.resolvedChannelName}</p>
                             </div>
                         </div>
                     ))}
@@ -319,9 +382,11 @@ export function YouTubeCustomPlayer() {
 
             <div className="AboutAvtor">
                 <div className="firstInfo">
-                    <p>{formatViews(currentVideo.views)} • {currentVideo.publishedAt}</p>
                     <p>
-                        {currentVideo.title}
+                        {formatViews(currentVideo.resolvedViews)} • {currentVideo.resolvedPublishedAt}
+                    </p>
+                    <p>
+                        {currentVideo.resolvedTitle}
                         <span>
                             Show more
                             <button className="action-btn1">
@@ -338,31 +403,31 @@ export function YouTubeCustomPlayer() {
                 <div className="yt-cards">
                     {recommendedVideos.map((video) => (
                         <div
-                            key={video.id}
+                            key={video.resolvedId}
                             className="yt-card"
-                            onClick={() => navigate(`/video/${video.id}`)}
+                            onClick={() => navigate(`/video/${video.resolvedId}`, { state: { video } })}
                         >
                             <img
-                                src={video.thumbnailUrl}
-                                alt={video.title}
+                                src={video.resolvedThumbnail}
+                                alt={video.resolvedTitle}
                                 className="yt-thumbnail"
                             />
 
                             <div className="yt-info">
                                 <div className="yt-channel-info">
                                     <img
-                                        src={video.thumbnailUrl}
-                                        alt={video.channelName}
+                                        src={video.resolvedThumbnail}
+                                        alt={video.resolvedChannelName}
                                         className="yt-avatar"
                                     />
                                     <div>
-                                        <p className="yt-video-title">{video.title}</p>
-                                        <p className="yt-channel">{video.channelName}</p>
+                                        <p className="yt-video-title">{video.resolvedTitle}</p>
+                                        <p className="yt-channel">{video.resolvedChannelName}</p>
                                     </div>
                                 </div>
 
                                 <p className="yt-meta">
-                                    {formatViews(video.views)} • {video.publishedAt}
+                                    {formatViews(video.resolvedViews)} • {video.resolvedPublishedAt}
                                 </p>
                             </div>
                         </div>
