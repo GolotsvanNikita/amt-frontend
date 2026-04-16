@@ -130,7 +130,6 @@ export function YouTubeCustomPlayer({ routeVideoId = "", initialVideo = null, li
             } catch (err) {
                 console.error(err);
                 setError(err.message || "Something went wrong");
-                setVideos([]);
             } finally {
                 setLoading(false);
             }

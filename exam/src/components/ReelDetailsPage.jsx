@@ -301,9 +301,6 @@ export function FullReels() {
             } catch (error) {
                 console.error("Failed to load reels:", error);
 
-                if (!append) {
-                    setReels([]);
-                }
             } finally {
                 setLoading(false);
                 setIsFetchingMore(false);
