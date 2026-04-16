@@ -154,6 +154,7 @@ export function YouTubeCustomPlayer({ initialVideo = null, routeVideoId = "" }) 
             modestbranding: 1,
             rel: 0,
             fs: 0,
+            origin: typeof window !== "undefined" ? window.location.origin : "",
         },
     };
 
