@@ -11,10 +11,11 @@ import { MyAccount } from './components/MyAccount';
 import { EditProfile } from './components/EditProfile';
 import { ThemePage } from './components/ThemePage';
 import { ReelsPage } from './components/ReelsPage';
-import {FullReels} from './components/ReelDetailsPage'
+import { FullReels } from './components/ReelDetailsPage';
+import { ReelCommentsPage } from './components/ReelCommentsPage';
 import './App.css';
 
- function ProtectedRoute({ children })
+function ProtectedRoute({ children })
 {
     const { isLoggedIn } = useContext(UserContext);
     return isLoggedIn ? children : <Navigate to="/login" />;
@@ -25,37 +26,28 @@ function App()
     return (
         <UserProvider>
             <BrowserRouter>
-
                 <Routes>
-
                     <Route path="/register" element={<RegForm />} />
                     <Route path="/login" element={<FormFloatingBasicExample />} />
 
                     <Route path="/" element={<ProtectedRoute><Layout /></ProtectedRoute>}>
-
                         <Route index element={<MainPage />} />
 
                         <Route path="video" element={<VideoAndComments />} />
                         <Route path="video/:id" element={<VideoAndComments />} />
 
                         <Route path="author" element={<AuthorPage />} />
-
                         <Route path="my-account" element={<MyAccount />} />
-
                         <Route path="edit-profile" element={<EditProfile />} />
+                        <Route path="theme-page" element={<ThemePage />} />
 
-                        <Route path="theme-page" element={<ThemePage/>} />
-                         
-                         <Route path="reels-page" element={<ReelsPage/>} />
-
-                         <Route path="reels-page/:id" element={<FullReels />} />
-
+                        <Route path="reels-page" element={<ReelsPage />} />
+                        <Route path="reels-page/:id" element={<FullReels />} />
+                        <Route path="reels-page/:id/comments" element={<ReelCommentsPage />} />
                     </Route>
 
                     <Route path="*" element={<Navigate to="/register" />} />
-
                 </Routes>
-
             </BrowserRouter>
         </UserProvider>
     );

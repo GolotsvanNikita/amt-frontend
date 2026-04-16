@@ -91,37 +91,6 @@ function extractYoutubeId(value) {
     return "";
 }
 
-function normalizeReply(reply) {
-    return {
-        id: String(reply?.id || reply?._id || Math.random().toString(36).slice(2)),
-        user: reply?.user || reply?.name || reply?.author || reply?.username || "Unknown user",
-        avatar: isValidImageSrc(reply?.avatar)
-            ? reply.avatar
-            : isValidImageSrc(reply?.authorAvatar)
-            ? reply.authorAvatar
-            : "/ava.png",
-        text: reply?.text || reply?.content || "",
-        time: reply?.time || reply?.createdAt || "just now",
-    };
-}
-
-function normalizeComment(comment) {
-    return {
-        id: String(comment?.id || comment?._id || Math.random().toString(36).slice(2)),
-        user: comment?.user || comment?.name || comment?.author || comment?.username || "Unknown user",
-        avatar: isValidImageSrc(comment?.avatar)
-            ? comment.avatar
-            : isValidImageSrc(comment?.authorAvatar)
-            ? comment.authorAvatar
-            : "/ava.png",
-        text: comment?.text || comment?.content || "",
-        time: comment?.time || comment?.createdAt || "just now",
-        replies: Array.isArray(comment?.replies)
-            ? comment.replies.map(normalizeReply)
-            : [],
-    };
-}
-
 function normalizeReel(item) {
     const rawVideoValue =
         item?.videoUrl ||
@@ -134,14 +103,6 @@ function normalizeReel(item) {
 
     const directVideoUrl = isDirectVideoUrl(rawVideoValue) ? rawVideoValue : "";
     const youtubeId = directVideoUrl ? "" : extractYoutubeId(rawVideoValue);
-
-    const rawComments = Array.isArray(item?.comments)
-        ? item.comments
-        : Array.isArray(item?.comments?.items)
-        ? item.comments.items
-        : Array.isArray(item?.comments?.data)
-        ? item.comments.data
-        : [];
 
     return {
         id: String(item?.id || item?._id || item?.youtubeId || item?.videoId || ""),
@@ -161,12 +122,12 @@ function normalizeReel(item) {
         likes: Number(item?.likes ?? item?.likesCount) || 0,
         shares: Number(item?.shares ?? item?.sharesCount) || 0,
         remix: Number(item?.remix ?? item?.remixCount) || 0,
+        commentsCount: Number(item?.commentsCount ?? item?.comments?.length) || 0,
         isSubscribed: Boolean(item?.isSubscribed),
         isLiked: Boolean(item?.isLiked),
         isShared: Boolean(item?.isShared),
         isRemixed: Boolean(item?.isRemixed),
         isMuted: item?.isMuted ?? false,
-        comments: rawComments.map(normalizeComment),
     };
 }
 
@@ -239,6 +200,7 @@ function ReelMedia({
                 autoPlay={isActive}
                 muted={Boolean(reel.isMuted)}
                 loop
+                preload="metadata"
                 onClick={onMediaClick}
             />
         );
@@ -256,12 +218,7 @@ export function FullReels() {
     const [isFetchingMore, setIsFetchingMore] = useState(false);
     const [page, setPage] = useState(1);
     const [hasMore, setHasMore] = useState(true);
-
     const [activeReelId, setActiveReelId] = useState(id ? String(id) : "");
-    const [commentText, setCommentText] = useState("");
-    const [replyTo, setReplyTo] = useState("");
-    const [replyToCommentId, setReplyToCommentId] = useState(null);
-    const [expandedReplies, setExpandedReplies] = useState({});
 
     const feedRef = useRef(null);
     const sectionRefs = useRef({});
@@ -269,6 +226,7 @@ export function FullReels() {
     const videoRefs = useRef({});
     const youtubePlayerRefs = useRef({});
     const playerShellRefs = useRef({});
+    const lastNavigatedIdRef = useRef("");
 
     const loadReels = useCallback(
         async (pageToLoad = 1, append = false) => {
@@ -295,9 +253,6 @@ export function FullReels() {
                     ? data
                     : [];
 
-                console.log("RAW REELS:", rawReels);
-                console.log("FIRST REEL COMMENTS:", rawReels?.[0]?.comments);
-
                 const normalized = rawReels
                     .map(normalizeReel)
                     .filter((item) => item.id);
@@ -316,6 +271,7 @@ export function FullReels() {
 
                 if (pageToLoad === 1 && !id && normalized.length > 0) {
                     setActiveReelId(normalized[0].id);
+                    lastNavigatedIdRef.current = normalized[0].id;
                     navigate(`/reels-page/${normalized[0].id}`, { replace: true });
                 }
             } catch (error) {
@@ -347,63 +303,59 @@ export function FullReels() {
     }, [id]);
 
     useEffect(() => {
-        if (!reels.length || !activeReelId) return;
-
-        const currentSection = sectionRefs.current[activeReelId];
-        if (currentSection) {
-            currentSection.scrollIntoView({
-                behavior: "smooth",
-                block: "start",
-            });
-        }
-    }, [reels.length, activeReelId]);
-
-    useEffect(() => {
         if (!reels.length) return;
 
         const options = {
             root: feedRef.current,
-            threshold: 0.65,
+            threshold: 0.7,
         };
+
+        observerRef.current?.disconnect();
 
         observerRef.current = new IntersectionObserver((entries) => {
             entries.forEach((entry) => {
+                if (!entry.isIntersecting) return;
+
                 const reelId = String(entry.target.dataset.reelId);
                 const htmlVideo = videoRefs.current[reelId];
                 const youtubePlayer = youtubePlayerRefs.current[reelId];
 
-                if (entry.isIntersecting) {
-                    setActiveReelId(reelId);
+                setActiveReelId((prev) => (prev === reelId ? prev : reelId));
+
+                if (lastNavigatedIdRef.current !== reelId) {
+                    lastNavigatedIdRef.current = reelId;
                     navigate(`/reels-page/${reelId}`, { replace: true });
-
-                    const currentIndex = reels.findIndex(
-                        (item) => String(item.id) === reelId
-                    );
-
-                    if (currentIndex >= reels.length - 2) {
-                        loadMoreReels();
-                    }
-
-                    if (htmlVideo && typeof htmlVideo.play === "function") {
-                        htmlVideo.play().catch(() => {});
-                    }
-
-                    if (youtubePlayer) {
-                        try {
-                            youtubePlayer.playVideo?.();
-                        } catch {}
-                    }
-                } else {
-                    if (htmlVideo && typeof htmlVideo.pause === "function") {
-                        htmlVideo.pause();
-                    }
-
-                    if (youtubePlayer) {
-                        try {
-                            youtubePlayer.pauseVideo?.();
-                        } catch {}
-                    }
                 }
+
+                const currentIndex = reels.findIndex(
+                    (item) => String(item.id) === reelId
+                );
+
+                if (currentIndex >= reels.length - 2) {
+                    loadMoreReels();
+                }
+
+                Object.entries(videoRefs.current).forEach(([id, video]) => {
+                    if (!video || typeof video.pause !== "function") return;
+
+                    if (id === reelId) {
+                        video.play?.().catch(() => {});
+                    } else {
+                        video.pause();
+                    }
+                });
+
+                Object.entries(youtubePlayerRefs.current).forEach(([id, player]) => {
+                    if (!player) return;
+
+                    try {
+                        if (id === reelId) {
+                            player.playVideo?.();
+                        } else {
+                            player.pauseVideo?.();
+                        }
+                    } catch {}
+                });
             });
         }, options);
 
@@ -646,60 +598,6 @@ export function FullReels() {
         }
     };
 
-    const handleReplyClick = (commentId, commentUser) => {
-        setReplyTo(commentUser);
-        setReplyToCommentId(commentId);
-        setCommentText(`@${commentUser} `);
-    };
-
-    const toggleReplies = (commentId) => {
-        setExpandedReplies((prev) => ({
-            ...prev,
-            [commentId]: !prev[commentId],
-        }));
-    };
-
-    const handleCommentSubmit = async (e) => {
-        e.preventDefault();
-
-        if (!activeReel) return;
-
-        const trimmed = commentText.trim();
-        if (!trimmed) return;
-
-        const token = getAuthToken();
-
-        try {
-            const response = await fetch(
-                `${import.meta.env.VITE_API_URL}/api/reels/${activeReel.id}/comments`,
-                {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                        ...(token ? { Authorization: `Bearer ${token}` } : {}),
-                    },
-                    body: JSON.stringify({
-                        text: trimmed,
-                        parentCommentId: replyToCommentId,
-                    }),
-                }
-            );
-
-            if (!response.ok) {
-                const errorData = await response.json().catch(() => ({}));
-                throw new Error(errorData?.message || "Failed to add comment");
-            }
-
-            await loadReels(1, false);
-
-            setCommentText("");
-            setReplyTo("");
-            setReplyToCommentId(null);
-        } catch (error) {
-            console.error("Add reel comment error:", error);
-        }
-    };
-
     if (loading) {
         return <div className="reel-details-loading">Loading reels...</div>;
     }
@@ -787,6 +685,15 @@ export function FullReels() {
 
                                 <button
                                     type="button"
+                                    className="reel-side-action"
+                                    onClick={() => navigate(`/reels-page/${reel.id}/comments`)}
+                                >
+                                    <span>💬</span>
+                                    <small>{formatCount(reel.commentsCount)}</small>
+                                </button>
+
+                                <button
+                                    type="button"
                                     className={`reel-side-action ${reel.isShared ? "is-active" : ""}`}
                                     onClick={() => handleShare(reel.id)}
                                 >
@@ -838,129 +745,15 @@ export function FullReels() {
                                     </div>
                                 </div>
 
-                                <div className="reel-comments-list">
-                                    {reel.comments.length === 0 ? (
-                                        <p className="reel-no-comments">No comments yet</p>
-                                    ) : (
-                                        reel.comments.map((comment) => {
-                                            const replies = comment.replies || [];
-                                            const isExpanded = !!expandedReplies[comment.id];
+                                <button
+                                    type="button"
+                                    className="open-comments-page-btn"
+                                    onClick={() => navigate(`/reels-page/${reel.id}/comments`)}
+                                >
+                                    Open comments
+                                </button>
 
-                                            return (
-                                                <div key={comment.id} className="reel-comment-thread">
-                                                    <div className="reel-comment-item">
-                                                        <img
-                                                            src={comment.avatar}
-                                                            alt={comment.user}
-                                                            className="reel-comment-avatar"
-                                                            onError={(e) => {
-                                                                e.currentTarget.src = "/ava.png";
-                                                            }}
-                                                        />
-
-                                                        <div className="reel-comment-body">
-                                                            <div className="reel-comment-head">
-                                                                <strong>{comment.user}</strong>
-                                                                <span>{comment.time}</span>
-                                                            </div>
-
-                                                            <p>{comment.text}</p>
-
-                                                            <div className="reel-comment-actions-row">
-                                                                <button
-                                                                    type="button"
-                                                                    className="reel-comment-reply"
-                                                                    onClick={() =>
-                                                                        handleReplyClick(comment.id, comment.user)
-                                                                    }
-                                                                >
-                                                                    Answer
-                                                                </button>
-
-                                                                {replies.length > 0 && (
-                                                                    <button
-                                                                        type="button"
-                                                                        className="reel-comment-toggle"
-                                                                        onClick={() => toggleReplies(comment.id)}
-                                                                    >
-                                                                        {isExpanded
-                                                                            ? "Hide replies"
-                                                                            : `Show replies (${replies.length})`}
-                                                                    </button>
-                                                                )}
-                                                            </div>
-
-                                                            {replies.length > 0 && isExpanded && (
-                                                                <div className="reel-comment-replies">
-                                                                    {replies.map((reply) => (
-                                                                        <div
-                                                                            key={reply.id}
-                                                                            className="reel-comment-item reel-comment-item--reply"
-                                                                        >
-                                                                            <img
-                                                                                src={reply.avatar}
-                                                                                alt={reply.user}
-                                                                                className="reel-comment-avatar reel-comment-avatar--reply"
-                                                                                onError={(e) => {
-                                                                                    e.currentTarget.src = "/ava.png";
-                                                                                }}
-                                                                            />
-
-                                                                            <div className="reel-comment-body">
-                                                                                <div className="reel-comment-head">
-                                                                                    <strong>{reply.user}</strong>
-                                                                                    <span>{reply.time}</span>
-                                                                                </div>
-
-                                                                                <p>{reply.text}</p>
-                                                                            </div>
-                                                                        </div>
-                                                                    ))}
-                                                                </div>
-                                                            )}
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            );
-                                        })
-                                    )}
-                                </div>
-
-                                {replyTo && (
-                                    <div className="reel-replying-to">
-                                        Replying to <strong>{replyTo}</strong>
-
-                                        <button
-                                            type="button"
-                                            className="reel-reply-cancel"
-                                            onClick={() => {
-                                                setReplyTo("");
-                                                setReplyToCommentId(null);
-                                                setCommentText("");
-                                            }}
-                                        >
-                                            Cancel
-                                        </button>
-                                    </div>
-                                )}
-
-                                {isActive && (
-                                    <form
-                                        className="reel-comment-form"
-                                        onSubmit={handleCommentSubmit}
-                                    >
-                                        <input
-                                            type="text"
-                                            placeholder="Place your comment"
-                                            value={commentText}
-                                            onChange={(e) => setCommentText(e.target.value)}
-                                        />
-
-                                        <button type="submit">➤</button>
-                                    </form>
-                                )}
-
-                                {isFetchingMore && (
+                                {isFetchingMore && isActive && (
                                     <div className="reel-details-loading" style={{ marginTop: "12px" }}>
                                         Loading more reels...
                                     </div>

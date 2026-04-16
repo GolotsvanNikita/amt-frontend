@@ -1,0 +1,144 @@
+.reel-comments {
+    display: flex;
+    flex-direction: column;
+    min-height: 60vh;
+}
+
+.reel-comments-list {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    padding-bottom: 24px;
+}
+
+.reel-no-comments {
+    color: #9d9d9d;
+    font-size: 18px;
+}
+
+.reel-comment-block {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.reel-comment,
+.reel-comment-reply-item {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+}
+
+.reel-comment img,
+.reel-reply-form img {
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.reel-comment-body {
+    flex: 1;
+}
+
+.reel-comment-meta {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 6px;
+}
+
+.reel-comment-name {
+    font-weight: 600;
+    color: #fff;
+}
+
+.reel-comment-time {
+    font-size: 13px;
+    color: #8a8a8a;
+}
+
+.reel-comment-body p {
+    margin: 0;
+    color: #e8e8e8;
+    line-height: 1.5;
+}
+
+.reel-comment-actions {
+    margin-top: 8px;
+}
+
+.reel-reply-btn {
+    font-size: 14px;
+    color: #8ea2ff;
+    cursor: pointer;
+}
+
+.reel-replies {
+    margin-left: 54px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.reel-reply-form {
+    margin-left: 54px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.reel-reply-form input {
+    flex: 1;
+    height: 42px;
+    border-radius: 12px;
+    border: 1px solid #1d2740;
+    background: #0d1529;
+    color: #fff;
+    padding: 0 14px;
+    outline: none;
+}
+
+.reel-reply-form button {
+    width: 42px;
+    height: 42px;
+    border: none;
+    border-radius: 50%;
+    background: #111;
+    color: #fff;
+    cursor: pointer;
+}
+
+.reel-comment-form {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-top: auto;
+    padding-top: 16px;
+    border-top: 1px solid #1a1a1a;
+    position: sticky;
+    bottom: 0;
+    background: #000;
+}
+
+.reel-comment-form input {
+    flex: 1;
+    height: 48px;
+    border-radius: 14px;
+    border: 1px solid #1d2740;
+    background: linear-gradient(90deg, #101626 0%, #0b1735 100%);
+    color: #fff;
+    padding: 0 16px;
+    outline: none;
+}
+
+.reel-comment-form button {
+    width: 44px;
+    height: 44px;
+    border: none;
+    border-radius: 50%;
+    background: #111;
+    color: #fff;
+    cursor: pointer;
+}

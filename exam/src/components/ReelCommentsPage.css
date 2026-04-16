@@ -1,0 +1,70 @@
+.reel-comments-page {
+    min-height: 100vh;
+    background: #000;
+    color: #fff;
+    padding: 40px 24px;
+}
+
+.reel-comments-page-inner {
+    max-width: 860px;
+    margin: 0 auto;
+    min-height: calc(100vh - 80px);
+    display: flex;
+    flex-direction: column;
+}
+
+.reel-comments-page-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 28px;
+}
+
+.reel-comments-back {
+    border: 1px solid #1a1a1a;
+    background: transparent;
+    color: #fff;
+    border-radius: 12px;
+    padding: 10px 16px;
+    cursor: pointer;
+}
+
+.reel-comments-page-title {
+    flex: 1;
+    margin-left: 12px;
+}
+
+.reel-comments-page-title h2 {
+    margin: 0;
+    font-size: 30px;
+    font-weight: 700;
+}
+
+.reel-comments-page-title p {
+    margin: 4px 0 0;
+    color: #a0a0a0;
+    font-size: 16px;
+}
+
+.reel-comments-subscribe {
+    border: none;
+    background: #6f85ff;
+    color: #fff;
+    border-radius: 999px;
+    padding: 12px 24px;
+    cursor: pointer;
+}
+
+.reel-comments-page-audio {
+    margin-bottom: 22px;
+    color: #fff;
+    font-size: 18px;
+}
+
+.reel-comments-divider {
+    width: 100%;
+    height: 1px;
+    background: #1a1a1a;
+    margin-bottom: 22px;
+}
