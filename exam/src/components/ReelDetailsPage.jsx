@@ -214,14 +214,13 @@ function ReelMedia({
                         const player = event.target;
                         setYoutubePlayer(player);
 
-                        try {
-                            player.setVolume?.(100);
-                            player.mute?.();
-
-                            if (isActive) {
-                                player.playVideo?.();
-                            }
-                        } catch {}
+                        if (isActive) {
+                            setTimeout(() => {
+                                try {
+                                    player.playVideo();
+                                } catch {}
+                            }, 100);
+                        }
                     }}
                 />
             </div>
@@ -296,7 +295,12 @@ export function FullReels() {
                     ? data
                     : [];
 
-                const normalized = rawReels.map(normalizeReel).filter((item) => item.id);
+                console.log("RAW REELS:", rawReels);
+                console.log("FIRST REEL COMMENTS:", rawReels?.[0]?.comments);
+
+                const normalized = rawReels
+                    .map(normalizeReel)
+                    .filter((item) => item.id);
 
                 setReels((prev) =>
                     append ? mergeUniqueById(prev, normalized) : normalized
@@ -323,10 +327,7 @@ export function FullReels() {
                 setLoading(false);
                 setIsFetchingMore(false);
             }
-            console.log("RAW REELS:", rawReels);
-            console.log("FIRST REEL COMMENTS:", rawReels?.[0]?.comments);
         },
-        
         [id, navigate]
     );
 
