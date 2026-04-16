@@ -408,6 +408,85 @@
     background: #000;
 }
 
+
+.volume-slider {
+    width: 90px;
+}
+
+.settings-menu {
+    position: absolute;
+    right: 20px;
+    bottom: 90px;
+    z-index: 20;
+    width: 220px;
+    padding: 14px;
+    border-radius: 14px;
+    background: #111;
+    border: 1px solid #2c2c2c;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.35);
+}
+
+.settings-section + .settings-section {
+    margin-top: 14px;
+    padding-top: 14px;
+    border-top: 1px solid #232323;
+}
+
+.settings-title {
+    margin: 0 0 10px 0;
+    font-size: 14px;
+    font-weight: 600;
+    color: white;
+}
+
+.settings-info {
+    margin: 0;
+    font-size: 13px;
+    color: #b9b9b9;
+}
+
+.settings-option {
+    display: block;
+    width: 100%;
+    margin-bottom: 8px;
+    padding: 8px 10px;
+    border: 1px solid #2a2a2a;
+    border-radius: 10px;
+    background: #1a1a1a;
+    color: white;
+    text-align: left;
+    cursor: pointer;
+}
+
+.settings-option.active {
+    border-color: #6f95ff;
+    background: #1d2742;
+}
+
+.video-description-block {
+    margin-top: 10px;
+}
+
+.video-description {
+    max-height: 44px;
+    overflow: hidden;
+    line-height: 1.5;
+    transition: max-height 0.2s ease;
+}
+
+.video-description.expanded {
+    max-height: 500px;
+}
+
+.video-comments-preview {
+    margin-top: 24px;
+}
+
+.comment-item {
+    padding: 10px 0;
+    border-bottom: 1px solid #2a2a2a;
+}
+
 @media (max-width: 1200px) {
     .yt-page {
         flex-direction: column;

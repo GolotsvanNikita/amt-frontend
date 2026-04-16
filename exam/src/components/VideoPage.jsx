@@ -1,4 +1,4 @@
-import { useRef, useState, useEffect, useMemo } from "react";
+import { useRef, useState, useEffect, useMemo, useCallback } from "react";
 import skipPrevious from "../assets/skip_previous.svg";
 import playArrow from "../assets/play_arrow.svg";
 import skipNext from "../assets/skip_next.svg";
@@ -78,6 +78,12 @@ export function YouTubeCustomPlayer({ routeVideoId = "", initialVideo = null }) 
     const [videos, setVideos] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
+
+    const [volume, setVolume] = useState(100);
+    const [showSetting, setShowSettings] = useState(false);
+    const [availableRates, setAvailableRates] = useState([1]);
+    const[playbackRate, setPlayBackRate] = useState(1);
+    const [captionsAvailable,setCaptionsAbailable] = useState(false);
 
     const [isPlaying, setIsPlaying] = useState(false);
     const [muted, setIsMuted] = useState(false);
@@ -202,13 +208,36 @@ export function YouTubeCustomPlayer({ routeVideoId = "", initialVideo = null }) 
             rel: 0,
             fs: 0,
             enablejsapi: 1,
+            origin: window.location.origin,
+            cc_load_policy: 0,
         },
     };
 
     const onReady = (e) => {
         playerRef.current = e.target;
         setDuration(e.target.getDuration());
+
+        if(e.target.getAvailablePlaybackRates){
+            const rates = e.target.getAvailablePlaybackRates();
+            if(Array.isArray(rates) && rates.length > 0){
+                setAvailableRates(rates);
+            }
+        }
+        if(e.target.getVolume){
+            setVolume(e.target.getVolume());
+        }
     };
+
+    const checkCaptionsAbailability = useCallback(()=>{
+        const player = playerRef.current;
+        if(!player || !player.getOptions) return;
+        try{
+            const options = player.getOptions();
+            setCaptionsAbailable(Array.isArray(options) && options.includes("captions"));
+        }catch{
+            setCaptionsAbailable(false);
+        }
+    }, [])
 
     useEffect(() => {
         const interval = setInterval(() => {
@@ -232,7 +261,12 @@ export function YouTubeCustomPlayer({ routeVideoId = "", initialVideo = null }) 
         setCurrentTime(0);
         setDuration(0);
         setShowVideo(true);
-    }, [currentVideo?.resolvedId]);
+        setShowSettings(false);
+
+        setTimeout(()=>{
+            checkCaptionsAbailability();
+        }, 700)
+    }, [currentVideo?.resolvedId, checkCaptionsAbailability]);
 
     const togglePlay = () => {
         const player = playerRef.current;
@@ -260,6 +294,23 @@ export function YouTubeCustomPlayer({ routeVideoId = "", initialVideo = null }) 
         }
     };
 
+    const handleVolumeChange = (e) =>{
+        const newVolume = Number(e.target.value);
+        setVolume(newVolume);
+
+        const player = playerRef.current;
+        if(!player || !player.setVolume) return;
+        player.setVolume(newVolume);
+
+        if(newVolume === 0){
+            player.mute();
+            setIsMuted(true);
+        }else{
+            player.UnMute();
+            setIsMuted(false);
+        }
+    }
+
     const handleSeek = (e) => {
         const value = Number(e.target.value);
         const newTime = (value / 100) * duration;
@@ -271,6 +322,15 @@ export function YouTubeCustomPlayer({ routeVideoId = "", initialVideo = null }) 
         setCurrentTime(newTime);
         setProgress(value);
     };
+
+    const handlePlayBackRateChange = (rate) =>{
+        const player = playerRef.current;
+        if(!player || !player.setPlayBackRate) return;
+
+        player.setPlayBackRate(raye);
+        setPlayBackRate(rate);
+        setShowSettings(false)
+    }
 
     const rewind = () => {
         if (!playerRef.current) return;
@@ -336,6 +396,40 @@ export function YouTubeCustomPlayer({ routeVideoId = "", initialVideo = null }) 
                                     </div>
                                 </div>
                             )}
+                            {showSettings && (
+                                <div className="settings-menu">
+                                    <div className="settings-section">
+                                        <p className="settings-title">Playback speed</p>
+
+                                        {availableRates.map((rate) => (
+                                            <button
+                                                key={rate}
+                                                type="button"
+                                                className={`settings-option ${
+                                                    playbackRate === rate ? "active" : ""
+                                                }`}
+                                                onClick={() => handlePlaybackRateChange(rate)}
+                                            >
+                                                {rate}x
+                                            </button>
+                                        ))}
+                                    </div>
+
+                                    <div className="settings-section">
+                                        <p className="settings-title">Subtitles</p>
+                                        <p className="settings-info">
+                                            {captionsAvailable
+                                                ? "Available on this video"
+                                                : "Not available"}
+                                        </p>
+                                    </div>
+
+                                    <div className="settings-section">
+                                        <p className="settings-title">Quality</p>
+                                        <p className="settings-info">Auto by YouTube</p>
+                                    </div>
+                                </div>
+                            )}
                         </div>
 
                         <div className="controls">
@@ -351,6 +445,7 @@ export function YouTubeCustomPlayer({ routeVideoId = "", initialVideo = null }) 
                             <button onClick={toggleMute}>
                                 <img src={muteSvg} alt="mute" width="34" height="34" />
                             </button>
+                            <imput type = "range" min = "0" max = "0" value={volume} onChange={handleVolumeChange} className = "volume-slider"/>
 
                             <input
                                 type="range"
@@ -368,7 +463,7 @@ export function YouTubeCustomPlayer({ routeVideoId = "", initialVideo = null }) 
                             <button onClick={toggleFullscreen} title="Fullscreen">
                                 ⛶
                             </button>
-                            <button title="Settings">⚙</button>
+                            <button title="Settings" onClick={()=>setShowSettings((prev)=> !prev)}>⚙</button>
                             <button title="Subtitles">🄲</button>
                         </div>
                     </div>
