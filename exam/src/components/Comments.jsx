@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import "./Comments.css";
 import Send from "../assets/Send.svg";
 import Emoji from "../assets/emoji.svg";
@@ -60,15 +60,21 @@ function normalizeReply(reply, index) {
 }
 
 function normalizeComment(comment, index) {
+    const rawReplies = Array.isArray(comment?.replies)
+        ? comment.replies
+        : Array.isArray(comment?.replies?.items)
+        ? comment.replies.items
+        : Array.isArray(comment?.replies?.data)
+        ? comment.replies.data
+        : [];
+
     return {
         id: String(comment?.id || comment?._id || `comment-${index}-${Math.random().toString(36).slice(2)}`),
         name: comment?.name || comment?.author || comment?.username || "Unknown user",
         avatar: getSafeAvatar(comment),
         text: comment?.text || comment?.content || "",
         time: comment?.time || comment?.createdAt || "just now",
-        replies: Array.isArray(comment?.replies)
-            ? comment.replies.map((reply, replyIndex) => normalizeReply(reply, replyIndex))
-            : [],
+        replies: rawReplies.map((reply, replyIndex) => normalizeReply(reply, replyIndex)),
     };
 }
 
@@ -83,12 +89,43 @@ export function Comments({
     const [text, setText] = useState("");
     const [replyText, setReplyText] = useState("");
     const [replyTo, setReplyTo] = useState(null);
+    const loadMoreRef = useRef(null);
 
     const normalizedComments = useMemo(() => {
         return Array.isArray(comments)
             ? comments.map((comment, index) => normalizeComment(comment, index))
             : [];
     }, [comments]);
+
+    useEffect(() => {
+        if (!hasMoreComments || loadingMoreComments || typeof onLoadMoreComments !== "function") {
+            return;
+        }
+
+        const node = loadMoreRef.current;
+        if (!node) return;
+
+        const observer = new IntersectionObserver(
+            (entries) => {
+                entries.forEach((entry) => {
+                    if (entry.isIntersecting) {
+                        onLoadMoreComments();
+                    }
+                });
+            },
+            {
+                root: null,
+                threshold: 0.2,
+                rootMargin: "200px",
+            }
+        );
+
+        observer.observe(node);
+
+        return () => {
+            observer.disconnect();
+        };
+    }, [hasMoreComments, loadingMoreComments, onLoadMoreComments, normalizedComments.length]);
 
     const handleAddComment = async () => {
         const trimmedText = text.trim();
@@ -291,6 +328,8 @@ export function Comments({
                     </div>
                 ))}
             </div>
+
+            {hasMoreComments && <div ref={loadMoreRef} style={{ height: 1 }} />}
 
             {hasMoreComments && (
                 <div style={{ marginTop: "16px", textAlign: "center" }}>

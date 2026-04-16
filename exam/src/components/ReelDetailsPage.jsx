@@ -135,6 +135,14 @@ function normalizeReel(item) {
     const directVideoUrl = isDirectVideoUrl(rawVideoValue) ? rawVideoValue : "";
     const youtubeId = directVideoUrl ? "" : extractYoutubeId(rawVideoValue);
 
+    const rawComments = Array.isArray(item?.comments)
+        ? item.comments
+        : Array.isArray(item?.comments?.items)
+        ? item.comments.items
+        : Array.isArray(item?.comments?.data)
+        ? item.comments.data
+        : [];
+
     return {
         id: String(item?.id || item?._id || item?.youtubeId || item?.videoId || ""),
         title: item?.title || "Untitled reel",
@@ -158,9 +166,7 @@ function normalizeReel(item) {
         isShared: Boolean(item?.isShared),
         isRemixed: Boolean(item?.isRemixed),
         isMuted: item?.isMuted ?? false,
-        comments: Array.isArray(item?.comments)
-            ? item.comments.map(normalizeComment)
-            : [],
+        comments: rawComments.map(normalizeComment),
     };
 }
 
@@ -317,7 +323,10 @@ export function FullReels() {
                 setLoading(false);
                 setIsFetchingMore(false);
             }
+            console.log("RAW REELS:", rawReels);
+            console.log("FIRST REEL COMMENTS:", rawReels?.[0]?.comments);
         },
+        
         [id, navigate]
     );
 
