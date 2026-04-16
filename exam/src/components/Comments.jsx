@@ -4,6 +4,60 @@ import Send from '../assets/Send.svg';
 import Emoji from '../assets/emoji.svg';
 import Notif from '../assets/notif.svg';
 
+function getToken() {
+  return (
+    localStorage.getItem('token') ||
+    localStorage.getItem('authToken') ||
+    localStorage.getItem('accessToken') ||
+    localStorage.getItem('jwt') ||
+    sessionStorage.getItem('token') ||
+    sessionStorage.getItem('authToken') ||
+    sessionStorage.getItem('accessToken') ||
+    sessionStorage.getItem('jwt') ||
+    ''
+  );
+}
+
+function isValidImageSrc(value) {
+  if (!value || typeof value !== 'string') return false;
+
+  return (
+    value.startsWith('http://') ||
+    value.startsWith('https://') ||
+    value.startsWith('/') ||
+    value.startsWith('data:image/')
+  );
+}
+
+function getSafeAvatar(comment) {
+  const rawAvatar = comment?.avatar || comment?.authorAvatar || '';
+
+  return isValidImageSrc(rawAvatar) ? rawAvatar : '/ava.png';
+}
+
+function normalizeReply(reply) {
+  return {
+    id: reply?.id || reply?._id || Math.random().toString(36),
+    name: reply?.name || reply?.author || reply?.username || 'Unknown user',
+    avatar: getSafeAvatar(reply),
+    text: reply?.text || reply?.content || '',
+    time: reply?.time || reply?.createdAt || 'just now',
+  };
+}
+
+function normalizeComment(comment) {
+  return {
+    id: comment?.id || comment?._id || Math.random().toString(36),
+    name: comment?.name || comment?.author || comment?.username || 'Unknown user',
+    avatar: getSafeAvatar(comment),
+    text: comment?.text || comment?.content || '',
+    time: comment?.time || comment?.createdAt || 'just now',
+    replies: Array.isArray(comment?.replies)
+      ? comment.replies.map(normalizeReply)
+      : [],
+  };
+}
+
 export function Comments({
   comments = [],
   setComments,
@@ -14,35 +68,8 @@ export function Comments({
   const [replyText, setReplyText] = useState('');
   const [replyTo, setReplyTo] = useState(null);
 
-  const getToken = () => {
-    return (
-      localStorage.getItem('token') ||
-      localStorage.getItem('accessToken') ||
-      sessionStorage.getItem('token') ||
-      sessionStorage.getItem('accessToken') ||
-      ''
-    );
-  };
-
-  const formatComment = (comment) => ({
-    id: comment.id,
-    name: comment.name || comment.author || comment.username || 'Unknown user',
-    avatar: comment.avatar || comment.authorAvatar || '/ava.png',
-    text: comment.text || comment.content || '',
-    time: comment.time || comment.createdAt || 'just now',
-    replies: Array.isArray(comment.replies)
-      ? comment.replies.map((reply) => ({
-          id: reply.id,
-          name: reply.name || reply.author || reply.username || 'Unknown user',
-          avatar: reply.avatar || reply.authorAvatar || '/ava.png',
-          text: reply.text || reply.content || '',
-          time: reply.time || reply.createdAt || 'just now',
-        }))
-      : [],
-  });
-
   const normalizedComments = Array.isArray(comments)
-    ? comments.map(formatComment)
+    ? comments.map(normalizeComment)
     : [];
 
   const handleAddComment = async () => {
@@ -55,6 +82,12 @@ export function Comments({
     }
 
     try {
+      console.log('COMMENT videoId:', videoId);
+      console.log(
+        'COMMENT URL:',
+        `${import.meta.env.VITE_API_URL}/api/interactions/comment/${videoId}`
+      );
+
       const response = await fetch(
         `${import.meta.env.VITE_API_URL}/api/interactions/comment/${videoId}`,
         {
@@ -94,8 +127,13 @@ export function Comments({
     }
 
     try {
-      console.log("COMMENT videoId:", videoId);
-      console.log("COMMENT URL:", `${import.meta.env.VITE_API_URL}/api/interactions/comment/${videoId}`);
+      console.log('REPLY videoId:', videoId);
+      console.log('REPLY parentId:', parentId);
+      console.log(
+        'REPLY URL:',
+        `${import.meta.env.VITE_API_URL}/api/interactions/comment/${videoId}`
+      );
+
       const response = await fetch(
         `${import.meta.env.VITE_API_URL}/api/interactions/comment/${videoId}`,
         {
@@ -160,7 +198,13 @@ export function Comments({
         {normalizedComments.map((comment) => (
           <div key={comment.id} className="comment-block">
             <div className="comment">
-              <img src={comment.avatar} alt="avatar" />
+              <img
+                src={comment.avatar}
+                alt="avatar"
+                onError={(e) => {
+                  e.currentTarget.src = '/ava.png';
+                }}
+              />
 
               <div className="comment-body">
                 <div className="comment-meta">
@@ -203,7 +247,13 @@ export function Comments({
               <div className="replies">
                 {comment.replies.map((reply) => (
                   <div key={reply.id} className="comment reply">
-                    <img src={reply.avatar} alt="avatar" />
+                    <img
+                      src={reply.avatar}
+                      alt="avatar"
+                      onError={(e) => {
+                        e.currentTarget.src = '/ava.png';
+                      }}
+                    />
 
                     <div className="comment-body">
                       <div className="comment-meta">

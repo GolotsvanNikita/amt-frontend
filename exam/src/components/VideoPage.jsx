@@ -474,7 +474,7 @@ export function YouTubeCustomPlayer({ routeVideoId = "", initialVideo = null, li
                                                 }`}
                                                 onClick={() => handlePlaybackRateChange(rate)}
                                             >
-                                                {rate}x
+                                                {rate}
                                             </button>
                                         ))}
                                     </div>
