@@ -11,6 +11,24 @@ import YouTube from "react-youtube";
 import "./VideoPage.css";
 import { useNavigate } from "react-router-dom";
 
+function parseViewsToNumber(views) {
+    if (typeof views === "number") return views;
+
+    if (!views || typeof views !== "string") return 0;
+
+    const match = views.match(/([\d.,]+)\s*([KMB])?/i);
+    if (!match) return 0;
+
+    let value = parseFloat(match[1].replace(/,/g, ""));
+    const suffix = (match[2] || "").toUpperCase();
+
+    if (suffix === "K") value *= 1_000;
+    if (suffix === "M") value *= 1_000_000;
+    if (suffix === "B") value *= 1_000_000_000;
+
+    return Math.floor(value);
+}
+
 function formatViews(views) {
     const numericViews = Number(views) || 0;
 
@@ -37,8 +55,20 @@ function normalizeVideo(video) {
         resolvedChannelName: video?.channelName || video?.author || "Unknown channel",
         resolvedThumbnail: video?.thumbnailUrl || video?.thumbnail || "/1v.png",
         resolvedPublishedAt: video?.publishedAt || "",
-        resolvedViews: video?.views || 0,
+        resolvedViews: parseViewsToNumber(video?.views || video?.viewCount || 0),
+        category: video?.category || video?.genre || video?.type || "",
     };
+}
+
+function shuffleArray(arr) {
+    const copy = [...arr];
+
+    for (let i = copy.length - 1; i > 0; i--) {
+        const randomIndex = Math.floor(Math.random() * (i + 1));
+        [copy[i], copy[randomIndex]] = [copy[randomIndex], copy[i]];
+    }
+
+    return copy;
 }
 
 export function YouTubeCustomPlayer({ routeVideoId = "", initialVideo = null }) {
@@ -120,34 +150,47 @@ export function YouTubeCustomPlayer({ routeVideoId = "", initialVideo = null }) 
     }, [videos, routeVideoId, normalizedInitialVideo]);
 
     const recommendedVideos = useMemo(() => {
-        if(!currentVideo) return [];
+        if (!currentVideo || !Array.isArray(videos)) return [];
+
         const filtered = videos.filter(
-            (video) => String(video.resolvedId) !== String(currentVideo.resolvedId)
+            (video) =>
+                video &&
+                video.resolvedId &&
+                String(video.resolvedId) !== String(currentVideo.resolvedId)
         );
 
         const sameChannel = filtered.filter(
-            (video) => video.resolvedChannelName && currentVideo.resolvedChannelName && video.resolvedChannelName === currentVideo.resolvedChannelName
+            (video) =>
+                video.resolvedChannelName &&
+                currentVideo.resolvedChannelName &&
+                video.resolvedChannelName === currentVideo.resolvedChannelName
         );
 
-        const sameCategory = filtered.filter((video)=> video.category && currentVideo.category && video.category === currentVideo.category && video.resolvedChannelName !== currentVideo.resolvedChannelName);
+        const sameCategory = filtered.filter(
+            (video) =>
+                video.category &&
+                currentVideo.category &&
+                video.category === currentVideo.category &&
+                video.resolvedChannelName !== currentVideo.resolvedChannelName
+        );
 
-        const others = filtered.filter((video)=>video.resolvedChannelName !== currentVideo.resolvedChannelName && video.category !== currentVideo.category);
+        const others = filtered.filter(
+            (video) =>
+                !sameChannel.some((item) => item.resolvedId === video.resolvedId) &&
+                !sameCategory.some((item) => item.resolvedId === video.resolvedId)
+        );
 
-        const shuffleArray = (arr) => {
-            const copy = [...arr];
-
-            for(let i = copy.length - 1; i>0 ; i--){
-                const randomIndex = Math.floor(Math.random() * (i+1));
-                [copy[i], copy[randomIndex]] = [copy[randomIndex], copy[i]];
-            }
-            return copy;
-        };
         return [
             ...shuffleArray(sameChannel),
             ...shuffleArray(sameCategory),
             ...shuffleArray(others),
         ];
-    }, [videos, currentVideo?.resolvedId, currentVideo?.resolvedChannelName, currentVideo?.category]);
+    }, [
+        videos,
+        currentVideo?.resolvedId,
+        currentVideo?.resolvedChannelName,
+        currentVideo?.category,
+    ]);
 
     const opts = {
         height: "525",
