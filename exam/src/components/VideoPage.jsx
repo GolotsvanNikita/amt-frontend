@@ -147,7 +147,7 @@ export function YouTubeCustomPlayer({ routeVideoId = "", initialVideo = null }) 
             ...shuffleArray(sameCategory),
             ...shuffleArray(others),
         ];
-    }, [videos, currentVideo]);
+    }, [videos, currentVideo?.resolvedId, currentVideo?.resolvedChannelName, currentVideo?.category]);
 
     const opts = {
         height: "525",
