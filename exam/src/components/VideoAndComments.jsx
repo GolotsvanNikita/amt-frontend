@@ -35,7 +35,8 @@ export function VideoAndComments() {
             setInteractionsError("");
 
             const token = getAuthToken();
-
+            console.log("INTERACTIONS id:", id);
+            console.log("INTERACTIONS URL:", `${import.meta.env.VITE_API_URL}/api/interactions/video/${id}`);
             const response = await fetch(
                 `${import.meta.env.VITE_API_URL}/api/interactions/video/${id}`,
                 {

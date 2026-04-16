@@ -94,6 +94,8 @@ export function Comments({
     }
 
     try {
+      console.log("COMMENT videoId:", videoId);
+      console.log("COMMENT URL:", `${import.meta.env.VITE_API_URL}/api/interactions/comment/${videoId}`);
       const response = await fetch(
         `${import.meta.env.VITE_API_URL}/api/interactions/comment/${videoId}`,
         {
