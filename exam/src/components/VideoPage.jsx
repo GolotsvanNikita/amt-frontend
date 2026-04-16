@@ -442,7 +442,7 @@ export function YouTubeCustomPlayer({ routeVideoId = "", initialVideo = null, li
                     <div className="yt-wrapper">
                         <div className="video-section">
                             {showVideo ? (
-                                <YouTube margin-bottom = "10px"
+                                <YouTube
                                     videoId={currentVideo.resolvedId}
                                     opts={opts}
                                     onReady={onReady}
