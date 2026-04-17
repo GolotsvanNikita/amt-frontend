@@ -12,14 +12,28 @@ import "./VideoPage.css";
 import { useNavigate } from "react-router-dom";
 
 function parseViewsToNumber(views) {
-    if (typeof views === "number") return views;
-    if (!views || typeof views !== "string") return 0;
+    if (typeof views === "number" && Number.isFinite(views)) {
+        return Math.floor(views);
+    }
 
-    const match = views.match(/([\d.,]+)\s*([KMB])?/i);
-    if (!match) return 0;
+    if (!views || typeof views !== "string") {
+        return 0;
+    }
+
+    const cleaned = views.trim();
+    const match = cleaned.match(/([\d.,]+)\s*([KMB])?/i);
+
+    if (!match) {
+        const plainNumber = Number(cleaned.replace(/[^\d.]/g, ""));
+        return Number.isFinite(plainNumber) ? Math.floor(plainNumber) : 0;
+    }
 
     let value = parseFloat(match[1].replace(/,/g, ""));
     const suffix = (match[2] || "").toUpperCase();
+
+    if (!Number.isFinite(value)) {
+        return 0;
+    }
 
     if (suffix === "K") value *= 1_000;
     if (suffix === "M") value *= 1_000_000;
@@ -56,10 +70,6 @@ function formatLikes(value) {
     return String(numericValue);
 }
 
-function getResolvedId(video) {
-    return String(video?.videoId || video?.id || video?._id || "");
-}
-
 function getAuthToken() {
     return (
         localStorage.getItem("token") ||
@@ -87,67 +97,166 @@ function isValidImageSrc(value) {
     );
 }
 
-function normalizeVideo(video) {
-    const resolvedCustomUrl = String(
-        video?.channel?.customUrl ||
-        video?.customUrl ||
-        ""
-    ).trim();
+function getFirstNonEmptyString(...values) {
+    for (const value of values) {
+        if (typeof value === "string" && value.trim()) {
+            return value.trim();
+        }
+    }
 
-    const resolvedChannelId = String(
-        video?.channelId ||
-        video?.authorId ||
-        video?.channel?.id ||
-        video?.channel?._id ||
-        video?.snippet?.channelId ||
-        video?.authorChannelId ||
-        video?.uploaderId ||
-        video?.ownerId ||
-        ""
-    ).trim();
+    return "";
+}
 
-    const resolvedChannelName =
-        video?.channelName ||
-        video?.author ||
-        video?.channel?.title ||
-        video?.channel?.name ||
-        video?.ownerName ||
-        "Unknown channel";
+function getFirstValidImage(...values) {
+    for (const value of values) {
+        if (isValidImageSrc(value)) {
+            return value.trim();
+        }
+    }
 
-    const resolvedThumbnail =
-        video?.thumbnailUrl ||
-        video?.thumbnail ||
-        video?.preview ||
-        "/1v.png";
+    return "";
+}
 
-    const resolvedChannelAvatar =
-        video?.channel?.avatarUrl ||
-        video?.channelAvatar ||
-        video?.authorAvatar ||
-        video?.avatarUrl ||
-        video?.ownerAvatar ||
-        "/ava.png";
+function getResolvedId(video) {
+    return getFirstNonEmptyString(
+        String(video?.videoId ?? ""),
+        String(video?.id ?? ""),
+        String(video?._id ?? ""),
+        String(video?.youtubeId ?? ""),
+        String(video?.resolvedId ?? "")
+    );
+}
+
+function normalizeVideo(video = {}) {
+    const resolvedId = getResolvedId(video);
+
+    const resolvedChannelId = getFirstNonEmptyString(
+        video?.channelId,
+        video?.authorId,
+        video?.channel?.id,
+        video?.channel?._id,
+        video?.snippet?.channelId,
+        video?.authorChannelId,
+        video?.uploaderId,
+        video?.ownerId
+    );
+
+    const resolvedCustomUrl = getFirstNonEmptyString(
+        video?.customUrl,
+        video?.resolvedCustomUrl,
+        video?.channel?.customUrl,
+        video?.channelCustomUrl,
+        video?.authorCustomUrl
+    );
+
+    const resolvedChannelName = getFirstNonEmptyString(
+        video?.channelName,
+        video?.author,
+        video?.channel?.title,
+        video?.channel?.name,
+        video?.ownerName,
+        video?.snippet?.channelTitle,
+        "Unknown channel"
+    );
+
+    const resolvedTitle = getFirstNonEmptyString(
+        video?.title,
+        video?.snippet?.title,
+        video?.name,
+        "Untitled video"
+    );
+
+    const resolvedThumbnail = getFirstValidImage(
+        video?.thumbnailUrl,
+        video?.thumbnail,
+        video?.preview,
+        video?.imageUrl,
+        video?.snippet?.thumbnails?.high?.url,
+        video?.snippet?.thumbnails?.medium?.url,
+        video?.snippet?.thumbnails?.default?.url,
+        "/1v.png"
+    ) || "/1v.png";
+
+    const resolvedChannelAvatar = getFirstValidImage(
+        video?.channel?.avatarUrl,
+        video?.channelAvatar,
+        video?.authorAvatar,
+        video?.ownerAvatar,
+        video?.channel?.thumbnailUrl,
+        "/ava.png"
+    ) || "/ava.png";
+
+    const resolvedPublishedAt = getFirstNonEmptyString(
+        video?.publishedAt,
+        video?.time,
+        video?.published,
+        video?.createdAt,
+        video?.snippet?.publishedAt
+    );
+
+    const resolvedDescription = getFirstNonEmptyString(
+        video?.description,
+        video?.snippet?.description,
+        " "
+    );
+
+    const resolvedSubscriberCount = getFirstNonEmptyString(
+        typeof video?.channel?.subscriberCount === "number"
+            ? String(video.channel.subscriberCount)
+            : video?.channel?.subscriberCount,
+        typeof video?.subscriberCount === "number"
+            ? String(video.subscriberCount)
+            : video?.subscriberCount,
+        typeof video?.channelSubscribers === "number"
+            ? String(video.channelSubscribers)
+            : video?.channelSubscribers
+    );
+
+    const resolvedViewsRaw =
+        video?.viewsCount ??
+        video?.viewCount ??
+        video?.views ??
+        video?.snippet?.viewCount ??
+        0;
+
+    const resolvedViews =
+        typeof resolvedViewsRaw === "number"
+            ? Math.floor(resolvedViewsRaw)
+            : parseViewsToNumber(resolvedViewsRaw);
+
+    const channelRouteValue = getFirstNonEmptyString(
+        resolvedChannelId,
+        resolvedCustomUrl
+    );
 
     return {
         ...video,
+
         channelId: resolvedChannelId,
+        resolvedChannelId,
         resolvedCustomUrl,
-        resolvedId: getResolvedId(video),
-        resolvedTitle: video?.title || "Untitled video",
         resolvedChannelName,
+        resolvedChannelAvatar,
+        resolvedChannelRouteValue: channelRouteValue,
+
+        resolvedId,
+        resolvedTitle,
         resolvedThumbnail,
-        resolvedChannelAvatar: isValidImageSrc(resolvedChannelAvatar)
-            ? resolvedChannelAvatar
-            : "/ava.png",
-        resolvedPublishedAt: video?.publishedAt || video?.time || "",
-        resolvedViews: parseViewsToNumber(video?.views || video?.viewCount || 0),
-        resolvedDescription: video?.description || " ",
-        resolvedSubscriberCount:
-            video?.channel?.subscriberCount ||
-            video?.subscriberCount ||
-            "",
-        isSubscribed: Boolean(video?.isSubscribed),
-        category: video?.category || video?.genre || video?.type || "",
+        resolvedPublishedAt,
+        resolvedViews,
+        resolvedDescription,
+        resolvedSubscriberCount,
+
+        isSubscribed:
+            typeof video?.isSubscribed === "boolean"
+                ? video.isSubscribed
+                : false,
+
+        category: getFirstNonEmptyString(
+            video?.category,
+            video?.genre,
+            video?.type
+        ),
     };
 }
 
@@ -424,9 +533,7 @@ export function YouTubeCustomPlayer({
 
     const openChannelPage = () => {
         const rawChannelId = String(
-            currentVideo?.channelId ||
-            currentVideo?.resolvedCustomUrl ||
-            ""
+            currentVideo?.resolvedChannelRouteValue || ""
         ).trim();
 
         console.log("OPEN CHANNEL:", {
@@ -602,13 +709,7 @@ export function YouTubeCustomPlayer({
         return `${minutes}:${seconds}`;
     };
 
-    const canOpenChannel = Boolean(
-        String(
-            currentVideo?.channelId ||
-            currentVideo?.resolvedCustomUrl ||
-            ""
-        ).trim()
-    );
+    const canOpenChannel = Boolean(currentVideo?.resolvedChannelRouteValue);
 
     if (loading && !currentVideo) {
         return <div className="yt-page-status">Loading video...</div>;
@@ -750,7 +851,10 @@ export function YouTubeCustomPlayer({
                                 onError={(e) => {
                                     e.currentTarget.src = "/ava.png";
                                 }}
-                                style={{ cursor: canOpenChannel ? "pointer" : "default", opacity: canOpenChannel ? 1 : 0.85 }}
+                                style={{
+                                    cursor: canOpenChannel ? "pointer" : "default",
+                                    opacity: canOpenChannel ? 1 : 0.85,
+                                }}
                             />
 
                             <div
