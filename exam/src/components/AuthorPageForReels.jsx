@@ -93,6 +93,10 @@ function getFirstNonEmptyString(...values) {
 }
 
 function formatCount(value) {
+    if (typeof value === "string" && /[a-zA-Z]/.test(value.trim())) {
+        return value.trim();
+    }
+
     const numericValue = Number(value) || 0;
 
     if (numericValue >= 1000000) return `${(numericValue / 1000000).toFixed(1)}M`;
@@ -115,6 +119,30 @@ function normalizeReel(item, index = 0) {
 
     const youtubeId = extractYoutubeId(rawVideoValue) || String(rawVideoValue || "").trim();
 
+    const resolvedLikes =
+        item?.likesFormatted ??
+        item?.likesCountFormatted ??
+        item?.formattedLikes ??
+        item?.formattedLikeCount ??
+        item?.likes ??
+        item?.likesCount ??
+        item?.likeCount ??
+        item?.interactions?.likesCount ??
+        0;
+
+    const resolvedComments =
+        item?.commentsCountFormatted ??
+        item?.commentCountFormatted ??
+        item?.formattedComments ??
+        item?.formattedCommentCount ??
+        item?.commentsCount ??
+        item?.commentCount ??
+        item?.comments_count ??
+        item?.totalComments ??
+        item?.interactions?.commentsCount ??
+        item?.comments?.length ??
+        0;
+
     return {
         id: String(
             item?.id ??
@@ -130,18 +158,12 @@ function normalizeReel(item, index = 0) {
             item?.thumbnailUrl ||
             item?.thumbnail ||
             item?.preview ||
+            item?.imageUrl ||
             "/1.jpg",
         videoUrl: youtubeId,
         description: item?.description || item?.caption || "",
-        likes: item?.likes ?? item?.likesCount ?? 0,
-        commentsCount:
-            item?.commentsCount ??
-            item?.commentCount ??
-            item?.comments_count ??
-            item?.totalComments ??
-            item?.interactions?.commentsCount ??
-            item?.comments?.length ??
-            0,
+        likes: resolvedLikes,
+        commentsCount: resolvedComments,
         shares: item?.shares ?? item?.sharesCount ?? 0,
         publishedAt: item?.publishedAt || item?.createdAt || item?.time || "",
         channelId: getFirstNonEmptyString(
@@ -307,9 +329,11 @@ export function AuthorPageForReels() {
                 console.error("Failed to load reels for author page:", error);
             }
 
-            const normalizedReels = reelsPayload
-                .map((item, index) => normalizeReel(item, index))
-                .filter((item) => String(item.channelId || "").trim() === String(normalizedChannel.id || "").trim());
+        const normalizedReels = reelsPayload
+            .map((item, index) => normalizeReel(item, index))
+            .filter((item) => String(item.channelId || "").trim() === String(normalizedChannel.id || "").trim());
+
+        console.log("AUTHOR PAGE REELS NORMALIZED:", normalizedReels);
 
             setChannel(normalizedChannel);
             setReels(normalizedReels);
