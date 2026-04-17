@@ -399,13 +399,17 @@ export function MainPage() {
 
     return (
         <div className="mainPage">
-            <div className="ads">
-                <div
-                    className="ads"
-                    style={{
-                        backgroundImage: `url(${video?.thumbnailUrl || "/backimage2.jpg"})`
-                    }}
-                ></div>
+            <div
+                className="ads"
+                style={{
+                    backgroundImage: `url(${
+                        featuredVideo?.thumbnail ||
+                        (featuredVideo?.id
+                            ? `https://i.ytimg.com/vi/${featuredVideo.id}/hqdefault.jpg`
+                            : "/backimage2.jpg")
+                    })`,
+                }}
+            >
                 <div className="topContent">
                     <h2>{featuredVideo?.title || "Featured video"}</h2>
                     <p>{featuredVideo?.channelName || "Channel"}</p>
