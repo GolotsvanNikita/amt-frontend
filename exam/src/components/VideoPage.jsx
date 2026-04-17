@@ -29,8 +29,6 @@ function parseCompactNumber(value) {
 
         const lower = cleaned.toLowerCase();
 
-        // ловим строки типа:
-        // "1.2K", "1.2K views", "1,234 views", "12M likes", "34 subscribers"
         const compactMatch = lower.match(/([\d.,]+)\s*([kmb])\b/);
         if (compactMatch) {
             let num = parseFloat(compactMatch[1].replace(/,/g, ""));
@@ -45,7 +43,6 @@ function parseCompactNumber(value) {
             return Math.floor(num);
         }
 
-        // строки типа "1,234", "1,234 views", "123 likes"
         const plainMatch = lower.match(/[\d.,]+/);
         if (plainMatch) {
             const normalizedNumber = plainMatch[0].replace(/,/g, "");
@@ -145,41 +142,6 @@ function getResolvedId(video) {
     );
 }
 
-function extractLikesFromResponse(data, fallbackValue = 0) {
-    const candidates = [
-        data?.likesCount,
-        data?.interactions?.likesCount,
-        data?.data?.likesCount,
-        data?.video?.likesCount,
-        data?.video?.interactions?.likesCount,
-        data?.result?.likesCount,
-        fallbackValue,
-    ];
-
-    const firstDefined = candidates.find(
-        (value) => value !== undefined && value !== null && value !== ""
-    );
-
-    const parsed = parseCompactNumber(firstDefined ?? 0);
-
-    console.log("LIKES FIELD CHECK:", {
-        rawResponse: data,
-        candidates: {
-            likesCount: data?.likesCount,
-            interactionsLikesCount: data?.interactions?.likesCount,
-            dataLikesCount: data?.data?.likesCount,
-            videoLikesCount: data?.video?.likesCount,
-            videoInteractionsLikesCount: data?.video?.interactions?.likesCount,
-            resultLikesCount: data?.result?.likesCount,
-            fallbackValue,
-        },
-        selectedRawValue: firstDefined ?? 0,
-        parsedLikes: parsed,
-    });
-
-    return parsed;
-}
-
 function extractViewsFromVideo(video = {}) {
     const candidates = [
         video?.viewsCount,
@@ -210,6 +172,39 @@ function extractViewsFromVideo(video = {}) {
         },
         selectedRawValue: firstDefined ?? 0,
         parsedViews: parsed,
+    });
+
+    return parsed;
+}
+
+function extractLikesFromVideo(video = {}) {
+    const candidates = [
+        video?.likesCount,
+        video?.likeCount,
+        video?.likes,
+        video?.statistics?.likeCount,
+        video?.interactions?.likesCount,
+        video?.video?.likesCount,
+    ];
+
+    const firstDefined = candidates.find(
+        (value) => value !== undefined && value !== null && value !== ""
+    );
+
+    const parsed = parseCompactNumber(firstDefined ?? 0);
+
+    console.log("LIKES FROM VIDEO CHECK:", {
+        title: video?.title || video?.snippet?.title,
+        candidates: {
+            likesCount: video?.likesCount,
+            likeCount: video?.likeCount,
+            likes: video?.likes,
+            statisticsLikeCount: video?.statistics?.likeCount,
+            interactionsLikesCount: video?.interactions?.likesCount,
+            nestedVideoLikesCount: video?.video?.likesCount,
+        },
+        selectedRawValue: firstDefined ?? 0,
+        parsedLikes: parsed,
     });
 
     return parsed;
@@ -258,6 +253,19 @@ function extractLikesFromResponse(data, fallbackValue = 0) {
     });
 
     return parsed;
+}
+
+function mergeVideoAndInteractionLikes(videoLikesValue = 0, interactionResponse = null) {
+    const baseLikes = parseCompactNumber(videoLikesValue);
+    const interactionLikes = interactionResponse
+        ? extractLikesFromResponse(interactionResponse, 0)
+        : 0;
+
+    if (baseLikes > 0 && interactionLikes > 0) {
+        return baseLikes + interactionLikes;
+    }
+
+    return Math.max(baseLikes, interactionLikes);
 }
 
 function normalizeVideo(video = {}) {
@@ -318,7 +326,8 @@ function normalizeVideo(video = {}) {
         video?.channel?.photoUrl,
         video?.channelAvatar,
         video?.authorAvatar,
-        video?.ownerAvatar
+        video?.ownerAvatar,
+        video?.channelAvatarUrl
     ) || "/ava.png";
 
     const resolvedPublishedAt = getFirstNonEmptyString(
@@ -346,6 +355,11 @@ function normalizeVideo(video = {}) {
 
     const resolvedViews = extractViewsFromVideo(video);
     const resolvedLikes = extractLikesFromVideo(video);
+
+    const channelRouteValue = getFirstNonEmptyString(
+        resolvedChannelId,
+        resolvedCustomUrl
+    );
 
     return {
         ...video,
@@ -442,15 +456,23 @@ export function YouTubeCustomPlayer({
 
                 console.log("ROUTE VIDEO ID:", routeVideoId);
                 console.log("VIDEOS:", normalized.slice(0, 5));
-                console.log("CURRENT VIDEO LIKES FROM /api/video/all SAMPLE:", normalized.slice(0, 5).map((item) => ({
-                    id: item.resolvedId,
-                    title: item.resolvedTitle,
-                    resolvedLikes: item.resolvedLikes,
-                    rawLikesCount: item.likesCount,
-                    rawLikeCount: item.likeCount,
-                    rawLikes: item.likes,
-                    rawInteractionsLikesCount: item.interactions?.likesCount,
-                })));
+                console.log(
+                    "CURRENT VIDEO LIKES FROM /api/video/all SAMPLE:",
+                    normalized.slice(0, 5).map((item) => ({
+                        id: item.resolvedId,
+                        title: item.resolvedTitle,
+                        resolvedViews: item.resolvedViews,
+                        resolvedLikes: item.resolvedLikes,
+                        rawLikesCount: item.likesCount,
+                        rawLikeCount: item.likeCount,
+                        rawLikes: item.likes,
+                        rawViewsCount: item.viewsCount,
+                        rawViewCount: item.viewCount,
+                        rawViews: item.views,
+                        rawMeta: item.meta,
+                        rawInteractionsLikesCount: item.interactions?.likesCount,
+                    }))
+                );
 
                 setVideos(normalized);
             } catch (err) {
@@ -497,15 +519,19 @@ export function YouTubeCustomPlayer({
 
     useEffect(() => {
         const parsedIncomingLikes = parseCompactNumber(likes);
+        const baseLikes = parseCompactNumber(currentVideo?.resolvedLikes ?? 0);
+        const nextLikes = Math.max(parsedIncomingLikes, baseLikes);
 
         console.log("LIKES PROP CHECK:", {
             incomingLikesProp: likes,
             parsedIncomingLikes,
+            baseLikes,
+            nextLikes,
             currentVideoResolvedId: currentVideo?.resolvedId,
         });
 
-        setLocalLikes(parsedIncomingLikes);
-    }, [likes, currentVideo?.resolvedId]);
+        setLocalLikes(nextLikes);
+    }, [likes, currentVideo?.resolvedId, currentVideo?.resolvedLikes]);
 
     useEffect(() => {
         const loadInteractions = async () => {
@@ -526,15 +552,20 @@ export function YouTubeCustomPlayer({
                 console.log("OPEN CHANNEL FULL VIDEO:", JSON.stringify(currentVideo, null, 2));
                 console.log("VIDEO PAGE INTERACTIONS RAW:", data);
 
-                const parsedLikes = extractLikesFromResponse(
-                    data,
-                    currentVideo?.resolvedLikes ?? 0
+                const mergedLikes = mergeVideoAndInteractionLikes(
+                    currentVideo?.resolvedLikes ?? 0,
+                    data
                 );
 
-                setLocalLikes(parsedLikes);
+                console.log("MERGED LIKES AFTER INTERACTIONS:", {
+                    currentVideoResolvedLikes: currentVideo?.resolvedLikes ?? 0,
+                    mergedLikes,
+                });
+
+                setLocalLikes(mergedLikes);
 
                 if (typeof setLikes === "function") {
-                    setLikes(parsedLikes);
+                    setLikes(mergedLikes);
                 }
 
                 if (typeof data?.isSubscribed === "boolean") {
@@ -708,10 +739,7 @@ export function YouTubeCustomPlayer({
         return () => {
             cancelled = true;
         };
-    }, [
-        currentVideo?.resolvedChannelRouteValue,
-        recommendedVideos,
-    ]);
+    }, [currentVideo?.resolvedChannelRouteValue, recommendedVideos]);
 
     const opts = {
         height: "525",
@@ -924,9 +952,9 @@ export function YouTubeCustomPlayer({
                 );
             }
 
-            const refreshedLikes = extractLikesFromResponse(
-                refreshData,
-                currentVideo?.resolvedLikes ?? localLikes
+            const refreshedLikes = mergeVideoAndInteractionLikes(
+                currentVideo?.resolvedLikes ?? 0,
+                refreshData
             );
 
             console.log("LIKE FINAL APPLY:", {
@@ -1067,7 +1095,8 @@ export function YouTubeCustomPlayer({
             video?.channelAvatar,
             video?.authorAvatar,
             video?.ownerAvatar,
-            video?.resolvedChannelAvatar
+            video?.resolvedChannelAvatar,
+            video?.channelAvatarUrl
         );
 
         console.log("RECOMMEND AVATAR CHECK:", {
@@ -1094,12 +1123,13 @@ export function YouTubeCustomPlayer({
     if (!currentVideo?.resolvedId) {
         return <div className="yt-page-status">Video not found</div>;
     }
+
     console.log("CURRENT VIDEO FINAL VALUES:", {
-    id: currentVideo?.resolvedId,
-    title: currentVideo?.resolvedTitle,
-    resolvedViews: currentVideo?.resolvedViews,
-    resolvedLikes: currentVideo?.resolvedLikes,
-    rawVideo: currentVideo,
+        id: currentVideo?.resolvedId,
+        title: currentVideo?.resolvedTitle,
+        resolvedViews: currentVideo?.resolvedViews,
+        resolvedLikes: currentVideo?.resolvedLikes,
+        rawVideo: currentVideo,
     });
 
     return (
