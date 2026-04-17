@@ -12,7 +12,8 @@ import { EditProfile } from './components/EditProfile';
 import { ThemePage } from './components/ThemePage';
 import { ReelsPage } from './components/ReelsPage';
 import { FullReels } from './components/ReelDetailsPage';
-import {ReelCommentsPage} from './components/ReelCommentsPage'
+import {ReelCommentsPage} from './components/ReelCommentsPage';
+import { OAuthSuccess } from './components/OAuthSuccess';
 import './App.css';
 
 function ProtectedRoute({ children })
@@ -29,6 +30,7 @@ function App()
                 <Routes>
                     <Route path="/register" element={<RegForm />} />
                     <Route path="/login" element={<FormFloatingBasicExample />} />
+                    <Route path ="/oauth-success" element={<OAuthSuccess/>} /> 
 
                     <Route path="/" element={<ProtectedRoute><Layout /></ProtectedRoute>}>
                         <Route index element={<MainPage />} />
