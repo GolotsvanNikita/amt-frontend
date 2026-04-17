@@ -398,28 +398,48 @@ export function MainPage() {
     }, [allVideos]);
 
     const [carouselVideos, setCarouselVideos] = useState([]);
+    const [carouselIndex, setCarouselIndex] = useState(0);
+    const [carouselKey, setCarouselKey] = useState(0);
 
-    const getRandomVideos = useCallback(() => {
+    const getRandomVideos = useCallback((excludeIds = []) => {
         if (!allVideos.length) return [];
 
-        const shuffled = [...allVideos].sort(() => 0.5 - Math.random());
+        const filtered = allVideos.filter((video) => !excludeIds.includes(video.id));
+        const source = filtered.length >= 5 ? filtered : allVideos;
+
+        const shuffled = [...source].sort(() => Math.random() - 0.5);
 
         return shuffled.slice(0, 5);
     }, [allVideos]);
 
     useEffect(() => {
-        if (allVideos.length) {
-            setCarouselVideos(getRandomVideos());
-        }
+        if (!allVideos.length) return;
+
+        const firstPack = getRandomVideos();
+        setCarouselVideos(firstPack);
+        setCarouselIndex(0);
+        setCarouselKey((prev) => prev + 1);
     }, [allVideos, getRandomVideos]);
 
     const handleCarouselSelect = (selectedIndex) => {
-        if (selectedIndex === carouselVideos.length - 1) {
-            console.log("CAROUSEL: LOAD NEW RANDOM");
+        setCarouselIndex(selectedIndex);
+
+        if (
+            carouselVideos.length === 5 &&
+            selectedIndex === carouselVideos.length - 1
+        ) {
+            const currentIds = carouselVideos.map((video) => video.id);
 
             setTimeout(() => {
-                setCarouselVideos(getRandomVideos());
-            }, 300);
+                const nextPack = getRandomVideos(currentIds);
+
+                console.log("OLD CAROUSEL IDS:", currentIds);
+                console.log("NEW CAROUSEL PACK:", nextPack);
+
+                setCarouselVideos(nextPack);
+                setCarouselIndex(0);
+                setCarouselKey((prev) => prev + 1);
+            }, 250);
         }
     };
 
@@ -453,12 +473,15 @@ export function MainPage() {
 
                     <div className="carousel" style={{ flex: 1 }}>
                         <Carousel
-                            data-bs-theme="dark"
-                            interval={2500}
+                            key={carouselKey}
+                            activeIndex={carouselIndex}
                             onSelect={handleCarouselSelect}
+                            interval={2500}
+                            data-bs-theme="dark"
+                            indicators={true}
                         >
                             {carouselVideos.map((video, index) => (
-                                <Carousel.Item key={video.id || index}>
+                                <Carousel.Item key={`${video.id}-${index}`}>
                                     <img
                                         className="d-block w-100"
                                         src={
@@ -469,11 +492,14 @@ export function MainPage() {
                                         style={{
                                             width: "100%",
                                             objectFit: "cover",
-                                            height: "140px",
-                                            borderRadius: "20px",
+                                            height: "170px",
+                                            borderRadius: "22px",
                                             cursor: "pointer",
                                         }}
                                         onClick={() => handleVideoClick(video)}
+                                        onError={(e) => {
+                                            e.currentTarget.src = "/1v.png";
+                                        }}
                                     />
 
                                     <Carousel.Caption>
