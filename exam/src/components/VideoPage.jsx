@@ -13,7 +13,6 @@ import { useNavigate } from "react-router-dom";
 
 function parseViewsToNumber(views) {
     if (typeof views === "number") return views;
-
     if (!views || typeof views !== "string") return 0;
 
     const match = views.match(/([\d.,]+)\s*([KMB])?/i);
@@ -32,44 +31,101 @@ function parseViewsToNumber(views) {
 function formatViews(views) {
     const numericViews = Number(views) || 0;
 
-    if (numericViews >= 1000000) {
-        return `${(numericViews / 1000000).toFixed(1)}M views`;
+    if (numericViews >= 1_000_000) {
+        return `${(numericViews / 1_000_000).toFixed(1)}M views`;
     }
 
-    if (numericViews >= 1000) {
-        return `${(numericViews / 1000).toFixed(1)}K views`;
+    if (numericViews >= 1_000) {
+        return `${(numericViews / 1_000).toFixed(1)}K views`;
     }
 
     return `${numericViews} views`;
 }
 
 function getResolvedId(video) {
-    return String(video?.videoId || video?.id || "");
+    return String(video?.videoId || video?.id || video?._id || "");
 }
 
-function getAuthToken(){
-    return(
-        localStorage.getItem("token") || localStorage.getItem("authToken") || localStorage.getItem("jwt") || ""
+function getAuthToken() {
+    return (
+        localStorage.getItem("token") ||
+        localStorage.getItem("authToken") ||
+        localStorage.getItem("jwt") ||
+        localStorage.getItem("accessToken") ||
+        sessionStorage.getItem("token") ||
+        sessionStorage.getItem("authToken") ||
+        sessionStorage.getItem("jwt") ||
+        sessionStorage.getItem("accessToken") ||
+        ""
+    );
+}
+
+function isValidImageSrc(value) {
+    if (!value || typeof value !== "string") return false;
+
+    const trimmed = value.trim();
+
+    return (
+        trimmed.startsWith("http://") ||
+        trimmed.startsWith("https://") ||
+        trimmed.startsWith("/") ||
+        trimmed.startsWith("data:image/")
     );
 }
 
 function normalizeVideo(video) {
+    const resolvedChannelId = String(
+        video?.channelId ||
+        video?.authorId ||
+        video?.channel?.id ||
+        video?.channel?._id ||
+        video?.snippet?.channelId ||
+        video?.authorChannelId ||
+        video?.channel?.customUrl ||
+        video?.customUrl ||
+        ""
+    ).trim();
+
+    const resolvedChannelName =
+        video?.channelName ||
+        video?.author ||
+        video?.channel?.title ||
+        video?.channel?.name ||
+        "Unknown channel";
+
+    const resolvedThumbnail =
+        video?.thumbnailUrl ||
+        video?.thumbnail ||
+        video?.preview ||
+        "/1v.png";
+
+    const resolvedChannelAvatar =
+        video?.channel?.avatarUrl ||
+        video?.channelAvatar ||
+        video?.authorAvatar ||
+        video?.avatarUrl ||
+        resolvedThumbnail ||
+        "/ava.png";
+
     return {
         ...video,
-        channelId: String(
-            video?.channelId ||
-            video?.authorId ||
-            video?.channel?.id ||
-            video?.channel?._id ||
-            ""
-        ),
+        channelId: resolvedChannelId,
         resolvedId: getResolvedId(video),
         resolvedTitle: video?.title || "Untitled video",
-        resolvedChannelName: video?.channelName || video?.author || "Unknown channel",
-        resolvedThumbnail: video?.thumbnailUrl || video?.thumbnail || "/1v.png",
-        resolvedPublishedAt: video?.publishedAt || "",
+        resolvedChannelName,
+        resolvedThumbnail,
+        resolvedChannelAvatar: isValidImageSrc(resolvedChannelAvatar) ? resolvedChannelAvatar : "/ava.png",
+        resolvedPublishedAt: video?.publishedAt || video?.time || "",
         resolvedViews: parseViewsToNumber(video?.views || video?.viewCount || 0),
         resolvedDescription: video?.description || " ",
+        resolvedSubscriberCount:
+            video?.channel?.subscriberCount ||
+            video?.subscriberCount ||
+            "",
+        resolvedCustomUrl:
+            video?.channel?.customUrl ||
+            video?.customUrl ||
+            "",
         category: video?.category || video?.genre || video?.type || "",
     };
 }
@@ -85,7 +141,12 @@ function shuffleArray(arr) {
     return copy;
 }
 
-export function YouTubeCustomPlayer({ routeVideoId = "", initialVideo = null, likes = 0, setLikes = null, }) {
+export function YouTubeCustomPlayer({
+    routeVideoId = "",
+    initialVideo = null,
+    likes = 0,
+    setLikes = null,
+}) {
     const playerRef = useRef(null);
     const navigate = useNavigate();
 
@@ -97,9 +158,10 @@ export function YouTubeCustomPlayer({ routeVideoId = "", initialVideo = null, li
     const [showSettings, setShowSettings] = useState(false);
     const [availableRates, setAvailableRates] = useState([1]);
     const [playbackRate, setPlayBackRate] = useState(1);
-    const [captionsAvailable,setCaptionsAbailable] = useState(false);
+    const [captionsAvailable, setCaptionsAbailable] = useState(false);
 
     const [expandedDescription, setExpandedDescription] = useState(false);
+    const [isSubscribed, setIsSubscribed] = useState(false);
 
     const [isPlaying, setIsPlaying] = useState(false);
     const [muted, setIsMuted] = useState(false);
@@ -145,7 +207,6 @@ export function YouTubeCustomPlayer({ routeVideoId = "", initialVideo = null, li
         loadVideos();
     }, [routeVideoId]);
 
-
     const normalizedInitialVideo = useMemo(() => {
         return initialVideo ? normalizeVideo(initialVideo) : null;
     }, [initialVideo]);
@@ -168,8 +229,12 @@ export function YouTubeCustomPlayer({ routeVideoId = "", initialVideo = null, li
             return normalizedInitialVideo;
         }
 
-        return null;
+        return normalizedInitialVideo || null;
     }, [videos, routeVideoId, normalizedInitialVideo]);
+
+    useEffect(() => {
+        setIsSubscribed(Boolean(currentVideo?.isSubscribed));
+    }, [currentVideo?.resolvedId, currentVideo?.isSubscribed]);
 
     const recommendedVideos = useMemo(() => {
         if (!currentVideo || !Array.isArray(videos)) return [];
@@ -233,27 +298,29 @@ export function YouTubeCustomPlayer({ routeVideoId = "", initialVideo = null, li
         playerRef.current = e.target;
         setDuration(e.target.getDuration());
 
-        if(e.target.getAvailablePlaybackRates){
+        if (e.target.getAvailablePlaybackRates) {
             const rates = e.target.getAvailablePlaybackRates();
-            if(Array.isArray(rates) && rates.length > 0){
+            if (Array.isArray(rates) && rates.length > 0) {
                 setAvailableRates(rates);
             }
         }
-        if(e.target.getVolume){
+
+        if (e.target.getVolume) {
             setVolume(e.target.getVolume());
         }
     };
 
-    const checkCaptionsAbailability = useCallback(()=>{
+    const checkCaptionsAbailability = useCallback(() => {
         const player = playerRef.current;
-        if(!player || !player.getOptions) return;
-        try{
+        if (!player || !player.getOptions) return;
+
+        try {
             const options = player.getOptions();
             setCaptionsAbailable(Array.isArray(options) && options.includes("captions"));
-        }catch{
+        } catch {
             setCaptionsAbailable(false);
         }
-    }, [])
+    }, []);
 
     useEffect(() => {
         const interval = setInterval(() => {
@@ -279,10 +346,28 @@ export function YouTubeCustomPlayer({ routeVideoId = "", initialVideo = null, li
         setShowVideo(true);
         setShowSettings(false);
 
-        setTimeout(()=>{
+        const timer = setTimeout(() => {
             checkCaptionsAbailability();
-        }, 700)
+        }, 700);
+
+        return () => clearTimeout(timer);
     }, [currentVideo?.resolvedId, checkCaptionsAbailability]);
+
+    const openChannelPage = () => {
+        const rawChannelId = String(currentVideo?.channelId || "").trim();
+
+        console.log("OPEN CHANNEL:", {
+            rawChannelId,
+            currentVideo,
+        });
+
+        if (!rawChannelId) {
+            console.warn("channelId is empty");
+            return;
+        }
+
+        navigate(`/channel/${encodeURIComponent(rawChannelId)}`);
+    };
 
     const togglePlay = () => {
         const player = playerRef.current;
@@ -310,22 +395,23 @@ export function YouTubeCustomPlayer({ routeVideoId = "", initialVideo = null, li
         }
     };
 
-    const handleVolumeChange = (e) =>{
+    const handleVolumeChange = (e) => {
         const newVolume = Number(e.target.value);
         setVolume(newVolume);
 
         const player = playerRef.current;
-        if(!player || !player.setVolume) return;
+        if (!player || !player.setVolume) return;
+
         player.setVolume(newVolume);
 
-        if(newVolume === 0){
+        if (newVolume === 0) {
             player.mute();
             setIsMuted(true);
-        }else{
+        } else {
             player.unMute();
             setIsMuted(false);
         }
-    }
+    };
 
     const handleSeek = (e) => {
         const value = Number(e.target.value);
@@ -375,12 +461,22 @@ export function YouTubeCustomPlayer({ routeVideoId = "", initialVideo = null, li
         }
     };
 
-    const handleSubscribe = async () =>{
+    const handleSubscribe = async () => {
         const token = getAuthToken();
 
-        if(!token || !currentVideo?.resolvedChannelName) return;
+        if (!token) {
+            navigate("/login");
+            return;
+        }
 
-        try{
+        if (!currentVideo?.resolvedChannelName) return;
+
+        const previousValue = isSubscribed;
+        const nextValue = !previousValue;
+
+        try {
+            setIsSubscribed(nextValue);
+
             const response = await fetch(
                 `${import.meta.env.VITE_API_URL}/api/interactions/subscribe`,
                 {
@@ -394,13 +490,15 @@ export function YouTubeCustomPlayer({ routeVideoId = "", initialVideo = null, li
                     }),
                 }
             );
-            if(!response.ok){
+
+            if (!response.ok) {
                 throw new Error("Failed to subscribe");
             }
-        }catch(err){
+        } catch (err) {
             console.error("Subscribe error", err);
+            setIsSubscribed(previousValue);
         }
-    }
+    };
 
     const rewind = () => {
         if (!playerRef.current) return;
@@ -466,6 +564,7 @@ export function YouTubeCustomPlayer({ routeVideoId = "", initialVideo = null, li
                                     </div>
                                 </div>
                             )}
+
                             {showSettings && (
                                 <div className="settings-menu">
                                     <div className="settings-section">
@@ -506,21 +605,27 @@ export function YouTubeCustomPlayer({ routeVideoId = "", initialVideo = null, li
                             <button onClick={rewind}>
                                 <img src={skipPrevious} alt="rewind" width="34" height="34" />
                             </button>
+
                             <button onClick={togglePlay}>
                                 <img src={playArrow} alt="play" width="34" height="34" />
                             </button>
+
                             <button onClick={forward}>
                                 <img src={skipNext} alt="forward" width="34" height="34" />
                             </button>
+
                             <button onClick={toggleMute}>
                                 <img src={muteSvg} alt="mute" width="34" height="34" />
                             </button>
-                            <input type="range"
-                             min ="0" 
-                             max ="100" 
-                             value={volume} 
-                             onChange={handleVolumeChange}
-                            className = "volume-slider"/>
+
+                            <input
+                                type="range"
+                                min="0"
+                                max="100"
+                                value={volume}
+                                onChange={handleVolumeChange}
+                                className="volume-slider"
+                            />
 
                             <input
                                 type="range"
@@ -538,7 +643,14 @@ export function YouTubeCustomPlayer({ routeVideoId = "", initialVideo = null, li
                             <button onClick={toggleFullscreen} title="Fullscreen">
                                 ⛶
                             </button>
-                            <button title="Settings" onClick={()=>setShowSettings((prev)=> !prev)}>⚙</button>
+
+                            <button
+                                title="Settings"
+                                onClick={() => setShowSettings((prev) => !prev)}
+                            >
+                                ⚙
+                            </button>
+
                             <button title="Subtitles">🄲</button>
                         </div>
                     </div>
@@ -548,32 +660,31 @@ export function YouTubeCustomPlayer({ routeVideoId = "", initialVideo = null, li
                     <div className="video-actions-bar">
                         <div className="channel-info">
                             <img
-                                src={currentVideo.resolvedThumbnail}
+                                src={currentVideo.resolvedChannelAvatar}
                                 alt={currentVideo.resolvedChannelName}
                                 className="channel-avatar"
-                                onClick={() => {
-                                    if (currentVideo.channelId) {
-                                        navigate(`/channel/${currentVideo.channelId}`);
-                                    }
+                                onClick={openChannelPage}
+                                onError={(e) => {
+                                    e.currentTarget.src = "/ava.png";
                                 }}
                                 style={{ cursor: currentVideo.channelId ? "pointer" : "default" }}
                             />
 
                             <div
                                 className="channel-text"
-                                onClick={() => {
-                                    if (currentVideo.channelId) {
-                                        navigate(`/channel/${currentVideo.channelId}`);
-                                    }
-                                }}
+                                onClick={openChannelPage}
                                 style={{ cursor: currentVideo.channelId ? "pointer" : "default" }}
                             >
                                 <p className="channel-name">{currentVideo.resolvedChannelName}</p>
-                                <p className="channel-subs">{currentVideo.resolvedPublishedAt}</p>
+                                <p className="channel-subs">
+                                    {currentVideo.resolvedSubscriberCount ||
+                                        currentVideo.resolvedPublishedAt ||
+                                        currentVideo.resolvedCustomUrl}
+                                </p>
                             </div>
 
                             <button className="subscribe-btn" onClick={handleSubscribe}>
-                                Subscribe
+                                {isSubscribed ? "Subscribed" : "Subscribe"}
                             </button>
                         </div>
 
@@ -582,14 +693,17 @@ export function YouTubeCustomPlayer({ routeVideoId = "", initialVideo = null, li
                                 <img src={Like} alt="like" width="34" height="34" />
                                 <span>{likes}</span>
                             </button>
+
                             <button className="action-btn">
                                 <img src={Forward} alt="forward" width="34" height="34" />
                                 Forward
                             </button>
+
                             <button className="action-btn">
                                 <img src={Plus} alt="add to playlist" width="34" height="34" />
                                 Add to Playlist
                             </button>
+
                             <button className="action-btn">
                                 More <img src={ArrowDown} alt="more" width="34" height="34" />
                             </button>
@@ -623,19 +737,20 @@ export function YouTubeCustomPlayer({ routeVideoId = "", initialVideo = null, li
                     <p>
                         {formatViews(currentVideo.resolvedViews)} • {currentVideo.resolvedPublishedAt}
                     </p>
-                        <div className="video-description-block">
-                            <p className={expandedDescription ? "video-description expanded" : "video-description"}>
-                                {currentVideo.resolvedDescription || currentVideo.resolvedTitle}
-                            </p>
 
-                            <button
-                                className="action-btn1"
-                                onClick={() => setExpandedDescription((prev) => !prev)}
-                            >
-                                {expandedDescription ? "Show less" : "Show more"}
-                                <img src={ArrowDown} alt="more" width="24" height="14" />
-                            </button>
-                        </div>
+                    <div className="video-description-block">
+                        <p className={expandedDescription ? "video-description expanded" : "video-description"}>
+                            {currentVideo.resolvedDescription || currentVideo.resolvedTitle}
+                        </p>
+
+                        <button
+                            className="action-btn1"
+                            onClick={() => setExpandedDescription((prev) => !prev)}
+                        >
+                            {expandedDescription ? "Show less" : "Show more"}
+                            <img src={ArrowDown} alt="more" width="24" height="14" />
+                        </button>
+                    </div>
                 </div>
             </div>
 
@@ -662,9 +777,12 @@ export function YouTubeCustomPlayer({ routeVideoId = "", initialVideo = null, li
                             <div className="yt-info">
                                 <div className="yt-channel-info">
                                     <img
-                                        src={video.resolvedThumbnail}
+                                        src={video.resolvedChannelAvatar}
                                         alt={video.resolvedChannelName}
                                         className="yt-avatar"
+                                        onError={(e) => {
+                                            e.currentTarget.src = "/ava.png";
+                                        }}
                                     />
                                     <div>
                                         <p className="yt-video-title">{video.resolvedTitle}</p>
