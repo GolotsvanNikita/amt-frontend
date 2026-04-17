@@ -32,7 +32,7 @@ button {
 
 .reels-content {
     width: 100%;
-    max-width: 1400px;
+    max-width: 1120px;
     margin: 0 auto;
     padding: 0 24px;
     display: flex;
@@ -45,7 +45,7 @@ button {
     flex-wrap: wrap;
     gap: 12px;
     align-items: center;
-    justify-content: flex-start;
+    justify-content: center;
     width: 100%;
     margin: 0 0 22px;
 }
@@ -82,17 +82,22 @@ button {
 
 .reels-grid {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(4, 280px);
     gap: 20px;
-    width: 100%;
+    width: max-content;
+    max-width: 100%;
+    justify-content: center;
 }
 
 .reel-card {
-    width: 100%;
-    aspect-ratio: 9 / 16;
-    border-radius: 16px;
-    overflow: hidden;
     position: relative;
+    width: 280px;
+    aspect-ratio: 9 / 16;
+    overflow: hidden;
+    border-radius: 14px;
+    background: #111;
+    cursor: pointer;
+    transition: transform 0.2s ease;
 }
 
 .reel-card:hover {
