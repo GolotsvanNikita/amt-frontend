@@ -602,6 +602,14 @@ export function YouTubeCustomPlayer({
         return `${minutes}:${seconds}`;
     };
 
+    const canOpenChannel = Boolean(
+        String(
+            currentVideo?.channelId ||
+            currentVideo?.resolvedCustomUrl ||
+            ""
+        ).trim()
+    );
+
     if (loading && !currentVideo) {
         return <div className="yt-page-status">Loading video...</div>;
     }
