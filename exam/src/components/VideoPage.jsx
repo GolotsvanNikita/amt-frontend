@@ -27,27 +27,36 @@ function parseCompactNumber(value) {
             return 0;
         }
 
-        const normalized = cleaned.replace(/\s+/g, "");
-        const match = normalized.match(/^([\d.,]+)([KMB])?$/i);
+        const lower = cleaned.toLowerCase();
 
-        if (match) {
-            let numberPart = match[1].replace(/,/g, "");
-            let parsed = parseFloat(numberPart);
-            const suffix = (match[2] || "").toUpperCase();
+        // ловим строки типа:
+        // "1.2K", "1.2K views", "1,234 views", "12M likes", "34 subscribers"
+        const compactMatch = lower.match(/([\d.,]+)\s*([kmb])\b/);
+        if (compactMatch) {
+            let num = parseFloat(compactMatch[1].replace(/,/g, ""));
+            const suffix = compactMatch[2].toUpperCase();
 
-            if (!Number.isFinite(parsed)) {
-                return 0;
-            }
+            if (!Number.isFinite(num)) return 0;
 
-            if (suffix === "K") parsed *= 1_000;
-            if (suffix === "M") parsed *= 1_000_000;
-            if (suffix === "B") parsed *= 1_000_000_000;
+            if (suffix === "K") num *= 1_000;
+            if (suffix === "M") num *= 1_000_000;
+            if (suffix === "B") num *= 1_000_000_000;
 
-            return Math.floor(parsed);
+            return Math.floor(num);
         }
 
-        const fallback = Number(cleaned.replace(/[^\d.]/g, ""));
-        return Number.isFinite(fallback) ? Math.floor(fallback) : 0;
+        // строки типа "1,234", "1,234 views", "123 likes"
+        const plainMatch = lower.match(/[\d.,]+/);
+        if (plainMatch) {
+            const normalizedNumber = plainMatch[0].replace(/,/g, "");
+            const parsed = parseFloat(normalizedNumber);
+
+            if (Number.isFinite(parsed)) {
+                return Math.floor(parsed);
+            }
+        }
+
+        return 0;
     }
 
     return 0;
@@ -171,6 +180,86 @@ function extractLikesFromResponse(data, fallbackValue = 0) {
     return parsed;
 }
 
+function extractViewsFromVideo(video = {}) {
+    const candidates = [
+        video?.viewsCount,
+        video?.viewCount,
+        video?.views,
+        video?.statistics?.viewCount,
+        video?.snippet?.viewCount,
+        video?.meta,
+        video?.viewsText,
+    ];
+
+    const firstDefined = candidates.find(
+        (value) => value !== undefined && value !== null && value !== ""
+    );
+
+    const parsed = parseCompactNumber(firstDefined ?? 0);
+
+    console.log("VIEWS FIELD CHECK:", {
+        title: video?.title || video?.snippet?.title,
+        candidates: {
+            viewsCount: video?.viewsCount,
+            viewCount: video?.viewCount,
+            views: video?.views,
+            statisticsViewCount: video?.statistics?.viewCount,
+            snippetViewCount: video?.snippet?.viewCount,
+            meta: video?.meta,
+            viewsText: video?.viewsText,
+        },
+        selectedRawValue: firstDefined ?? 0,
+        parsedViews: parsed,
+    });
+
+    return parsed;
+}
+
+function extractLikesFromResponse(data, fallbackValue = 0) {
+    const candidates = [
+        data?.likesCount,
+        data?.likeCount,
+        data?.likes,
+        data?.interactions?.likesCount,
+        data?.data?.likesCount,
+        data?.data?.likeCount,
+        data?.video?.likesCount,
+        data?.video?.likeCount,
+        data?.video?.likes,
+        data?.video?.interactions?.likesCount,
+        data?.result?.likesCount,
+        fallbackValue,
+    ];
+
+    const firstDefined = candidates.find(
+        (value) => value !== undefined && value !== null && value !== ""
+    );
+
+    const parsed = parseCompactNumber(firstDefined ?? 0);
+
+    console.log("LIKES FIELD CHECK:", {
+        rawResponse: data,
+        candidates: {
+            likesCount: data?.likesCount,
+            likeCount: data?.likeCount,
+            likes: data?.likes,
+            interactionsLikesCount: data?.interactions?.likesCount,
+            dataLikesCount: data?.data?.likesCount,
+            dataLikeCount: data?.data?.likeCount,
+            videoLikesCount: data?.video?.likesCount,
+            videoLikeCount: data?.video?.likeCount,
+            videoLikes: data?.video?.likes,
+            videoInteractionsLikesCount: data?.video?.interactions?.likesCount,
+            resultLikesCount: data?.result?.likesCount,
+            fallbackValue,
+        },
+        selectedRawValue: firstDefined ?? 0,
+        parsedLikes: parsed,
+    });
+
+    return parsed;
+}
+
 function normalizeVideo(video = {}) {
     const resolvedId = getResolvedId(video);
 
@@ -255,29 +344,8 @@ function normalizeVideo(video = {}) {
 
     const resolvedSubscriberCount = parseCompactNumber(resolvedSubscriberCountRaw);
 
-    const resolvedViewsRaw =
-        video?.viewsCount ??
-        video?.viewCount ??
-        video?.views ??
-        video?.snippet?.viewCount ??
-        0;
-
-    const resolvedViews = parseCompactNumber(resolvedViewsRaw);
-
-    const resolvedLikesRaw =
-        video?.likesCount ??
-        video?.likeCount ??
-        video?.likes ??
-        video?.interactions?.likesCount ??
-        video?.statistics?.likeCount ??
-        0;
-
-    const resolvedLikes = parseCompactNumber(resolvedLikesRaw);
-
-    const channelRouteValue = getFirstNonEmptyString(
-        resolvedChannelId,
-        resolvedCustomUrl
-    );
+    const resolvedViews = extractViewsFromVideo(video);
+    const resolvedLikes = extractLikesFromVideo(video);
 
     return {
         ...video,
@@ -1026,6 +1094,13 @@ export function YouTubeCustomPlayer({
     if (!currentVideo?.resolvedId) {
         return <div className="yt-page-status">Video not found</div>;
     }
+    console.log("CURRENT VIDEO FINAL VALUES:", {
+    id: currentVideo?.resolvedId,
+    title: currentVideo?.resolvedTitle,
+    resolvedViews: currentVideo?.resolvedViews,
+    resolvedLikes: currentVideo?.resolvedLikes,
+    rawVideo: currentVideo,
+    });
 
     return (
         <div className="yt-page-root">
