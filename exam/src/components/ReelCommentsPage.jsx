@@ -100,7 +100,7 @@ export function ReelCommentsPage() {
                     Authorization: `Bearer ${token}`,
                 },
                 body: JSON.stringify({
-                    channelName: author?.title || author?.name || "",
+                    channelName: author?.title || "",
                 }),
             });
 

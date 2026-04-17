@@ -95,6 +95,8 @@ function normalizeVideo(video) {
         video?.channel?._id ||
         video?.snippet?.channelId ||
         video?.authorChannelId ||
+        video?.uploaderId ||
+        video?.ownerId ||
         video?.customUrl ||
         video?.channel?.customUrl ||
         ""
@@ -105,6 +107,7 @@ function normalizeVideo(video) {
         video?.author ||
         video?.channel?.title ||
         video?.channel?.name ||
+        video?.ownerName ||
         "Unknown channel";
 
     const resolvedThumbnail =
@@ -118,6 +121,7 @@ function normalizeVideo(video) {
         video?.channelAvatar ||
         video?.authorAvatar ||
         video?.avatarUrl ||
+        video?.ownerAvatar ||
         "/ava.png";
 
     return {
@@ -272,6 +276,8 @@ export function YouTubeCustomPlayer({
                     throw new Error(data?.message || "Failed to load interactions");
                 }
 
+                console.log("VIDEO INTERACTIONS:", data);
+
                 const likesCount =
                     data?.likesCount ??
                     data?.interactions?.likesCount ??
@@ -286,6 +292,8 @@ export function YouTubeCustomPlayer({
 
                 if (typeof data?.isSubscribed === "boolean") {
                     setIsSubscribed(data.isSubscribed);
+                } else if (typeof data?.video?.isSubscribed === "boolean") {
+                    setIsSubscribed(data.video.isSubscribed);
                 }
             } catch (err) {
                 console.error("Failed to load video interactions:", err);
