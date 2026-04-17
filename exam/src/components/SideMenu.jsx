@@ -27,15 +27,28 @@ function isValidImageSrc(value) {
     );
 }
 
-function getSubscriptionRoute(sub) {
-    return encodeURIComponent(
-        sub?.channelId ||
-            sub?.customUrl ||
+function normalizeSubscription(sub, index) {
+    const routeValue =
+        (typeof sub?.channelId === "string" && sub.channelId.trim()) ||
+        (typeof sub?.customUrl === "string" && sub.customUrl.trim()) ||
+        "";
+
+    return {
+        id:
+            sub?.id ||
+            sub?.channelId ||
+            sub?._id ||
+            `sub-${index}`,
+        channelId: sub?.channelId || "",
+        customUrl: sub?.customUrl || "",
+        routeValue,
+        channelName:
             sub?.channelName ||
             sub?.name ||
             sub?.title ||
-            "author"
-    );
+            "Unknown channel",
+        avatarUrl: isValidImageSrc(sub?.avatarUrl) ? sub.avatarUrl : "/ava.png",
+    };
 }
 
 export function SideMenu() {
@@ -74,25 +87,10 @@ export function SideMenu() {
                 ? data
                 : [];
 
-            const normalized = rawSubscriptions.map((sub, index) => ({
-                id:
-                    sub?.id ||
-                    sub?.channelId ||
-                    sub?._id ||
-                    `${sub?.channelName || sub?.name || "sub"}-${index}`,
-                channelId: sub?.channelId || sub?.id || sub?._id || "",
-                channelName:
-                    sub?.channelName ||
-                    sub?.name ||
-                    sub?.title ||
-                    "Unknown channel",
-                customUrl: sub?.customUrl || "",
-                AvatarUrl: isValidImageSrc(sub?.AvatarUrl)
-                    ? sub.AvatarUrl
-                    : "/ava.png",
-            }));
+            const normalized = rawSubscriptions.map(normalizeSubscription);
 
-            console.log("SIDEMENU SUBSCRIPTIONS:", normalized);
+            console.log("SIDEMENU SUBSCRIPTIONS RAW:", rawSubscriptions);
+            console.log("SIDEMENU SUBSCRIPTIONS NORMALIZED:", normalized);
 
             setSubscriptions(normalized);
         } catch (error) {
@@ -115,10 +113,7 @@ export function SideMenu() {
         window.addEventListener("subscriptionsUpdated", handleSubscriptionsUpdated);
 
         return () => {
-            window.removeEventListener(
-                "subscriptionsUpdated",
-                handleSubscriptionsUpdated
-            );
+            window.removeEventListener("subscriptionsUpdated", handleSubscriptionsUpdated);
         };
     }, [loadSubscriptions]);
 
@@ -128,16 +123,12 @@ export function SideMenu() {
                 <ul className="firstSection">
                     <li>
                         <img src="/home.png" alt="home" />
-                        <Link to="/">
-                            <span>Home</span>
-                        </Link>
+                        <Link to="/"><span>Home</span></Link>
                     </li>
 
                     <li>
                         <img src="/shorts.png" alt="shorts" />
-                        <Link to="/reels-page">
-                            <span>Playme</span>
-                        </Link>
+                        <Link to="/reels-page"><span>Playme</span></Link>
                     </li>
 
                     <li>
@@ -155,22 +146,10 @@ export function SideMenu() {
 
             <nav className="sidebarSection">
                 <ul className="secondSection">
-                    <li>
-                        <img src="/libra.png" alt="libra" />
-                        <span>Library</span>
-                    </li>
-                    <li>
-                        <img src="/history.png" alt="history" />
-                        <span>History</span>
-                    </li>
-                    <li>
-                        <img src="/playlists.png" alt="playlists" />
-                        <span>Playlists</span>
-                    </li>
-                    <li>
-                        <img src="/heart.png" alt="heart" />
-                        <span>Favorite</span>
-                    </li>
+                    <li><img src="/libra.png" alt="libra" /><span>Library</span></li>
+                    <li><img src="/history.png" alt="history" /><span>History</span></li>
+                    <li><img src="/playlists.png" alt="playlists" /><span>Playlists</span></li>
+                    <li><img src="/heart.png" alt="heart" /><span>Favorite</span></li>
                 </ul>
                 <hr />
             </nav>
@@ -187,16 +166,21 @@ export function SideMenu() {
                         subscriptions.map((sub) => (
                             <li key={sub.id}>
                                 <img
-                                    src={sub.AvatarUrl || "/ava.png"}
+                                    src={sub.avatarUrl || "/ava.png"}
                                     alt={sub.channelName}
                                     className="imgS"
                                     onError={(e) => {
                                         e.currentTarget.src = "/ava.png";
                                     }}
                                 />
-                                <Link to={`/channel/${getSubscriptionRoute(sub)}`}>
+
+                                {sub.routeValue ? (
+                                    <Link to={`/channel/${encodeURIComponent(sub.routeValue)}`}>
+                                        <span>{sub.channelName}</span>
+                                    </Link>
+                                ) : (
                                     <span>{sub.channelName}</span>
-                                </Link>
+                                )}
                             </li>
                         ))
                     ) : (
@@ -216,56 +200,23 @@ export function SideMenu() {
             <div className="sidebarSection">
                 <h4>Categories</h4>
                 <ul className="categories">
-                    <li>
-                        <img src="/Shape.png" alt="shape" />
-                        <span>Games</span>
-                    </li>
-                    <li>
-                        <img src="/Shape.png" alt="shape" />
-                        <span>Podcast</span>
-                    </li>
-                    <li>
-                        <img src="/Shape.png" alt="shape" />
-                        <span>Education</span>
-                    </li>
-                    <li>
-                        <img src="/Shape.png" alt="shape" />
-                        <span>Music</span>
-                    </li>
-                    <li>
-                        <img src="/Shape.png" alt="shape" />
-                        <span>Films</span>
-                    </li>
-                    <li>
-                        <img src="/Shape.png" alt="shape" />
-                        <span>Mixed</span>
-                    </li>
-                    <li>
-                        <img src="/Shape.png" alt="shape" />
-                        <span>Cybersport</span>
-                    </li>
+                    <li><img src="/Shape.png" alt="shape" /><span>Games</span></li>
+                    <li><img src="/Shape.png" alt="shape" /><span>Podcast</span></li>
+                    <li><img src="/Shape.png" alt="shape" /><span>Education</span></li>
+                    <li><img src="/Shape.png" alt="shape" /><span>Music</span></li>
+                    <li><img src="/Shape.png" alt="shape" /><span>Films</span></li>
+                    <li><img src="/Shape.png" alt="shape" /><span>Mixed</span></li>
+                    <li><img src="/Shape.png" alt="shape" /><span>Cybersport</span></li>
                     <hr />
                 </ul>
             </div>
 
             <div className="sidebarSection">
                 <ul className="thirdSection">
-                    <li>
-                        <img src="/settings.png" alt="settings" />
-                        <span>Settings</span>
-                    </li>
-                    <li>
-                        <img src="/report.png" alt="report" />
-                        <span>Help</span>
-                    </li>
-                    <li>
-                        <img src="/help.png" alt="help" />
-                        <span>Report history</span>
-                    </li>
-                    <li>
-                        <img src="/feedback.png" alt="feedback" />
-                        <span>Send feedback</span>
-                    </li>
+                    <li><img src="/settings.png" alt="settings" /><span>Settings</span></li>
+                    <li><img src="/report.png" alt="report" /><span>Help</span></li>
+                    <li><img src="/help.png" alt="help" /><span>Report history</span></li>
+                    <li><img src="/feedback.png" alt="feedback" /><span>Send feedback</span></li>
                 </ul>
             </div>
         </aside>
