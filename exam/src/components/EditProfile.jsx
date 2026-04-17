@@ -126,25 +126,36 @@ export function EditProfile() {
 
     const trySaveProfile = useCallback(
         async (payload) => {
-            const methods = ["PUT", "POST", "PATCH"];
+            const candidates = [
+                { url: `${apiBaseUrl}/api/account/profile`, methods: ["PUT", "POST", "PATCH"] },
+                { url: `${apiBaseUrl}/api/account/profile/update`, methods: ["POST", "PUT", "PATCH"] },
+                { url: `${apiBaseUrl}/api/account/update-profile`, methods: ["POST", "PUT", "PATCH"] },
+                { url: `${apiBaseUrl}/api/profile/update`, methods: ["POST", "PUT", "PATCH"] },
+                { url: `${apiBaseUrl}/api/account/edit-profile`, methods: ["POST", "PUT", "PATCH"] }
+            ];
+
             let lastError = null;
 
-            for (const method of methods) {
-                try {
-                    return await fetchJson(`${apiBaseUrl}/api/account/profile`, {
-                        method,
-                        body: JSON.stringify(payload)
-                    });
-                } catch (err) {
-                    lastError = err;
+            for (const candidate of candidates) {
+                for (const method of candidate.methods) {
+                    try {
+                        return await fetchJson(candidate.url, {
+                            method,
+                            body: JSON.stringify(payload)
+                        });
+                    } catch (err) {
+                        lastError = err;
+                        const message = String(err?.message || "");
 
-                    const message = String(err?.message || "");
-                    const isMethodError =
-                        message.includes("405") ||
-                        message.includes("Method Not Allowed");
+                        const retryable =
+                            message.includes("404") ||
+                            message.includes("405") ||
+                            message.includes("Method Not Allowed") ||
+                            message.includes("Not Found");
 
-                    if (!isMethodError) {
-                        throw err;
+                        if (!retryable) {
+                            throw err;
+                        }
                     }
                 }
             }
