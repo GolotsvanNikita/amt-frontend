@@ -183,35 +183,10 @@ function normalizeVideo(video = {}) {
         video?.channel?.imageUrl,
         video?.channel?.thumbnailUrl,
         video?.channel?.photoUrl,
-
         video?.channelAvatar,
         video?.authorAvatar,
-        video?.ownerAvatar,
-        video?.avatar,
-        video?.avatarUrl,
-        video?.imageUrl,
-        video?.photoUrl,
-
-        video?.snippet?.thumbnails?.high?.url,
-        video?.snippet?.thumbnails?.medium?.url,
-        video?.snippet?.thumbnails?.default?.url,
-
-        "/ava.png"
+        video?.ownerAvatar
     ) || "/ava.png";
-
-    console.log("CHANNEL AVATAR DEBUG:", {
-        title: video?.title,
-        channelName: video?.channelName,
-        channelObject: video?.channel,
-        channelAvatar: video?.channelAvatar,
-        authorAvatar: video?.authorAvatar,
-        ownerAvatar: video?.ownerAvatar,
-        avatar: video?.avatar,
-        avatarUrl: video?.avatarUrl,
-        imageUrl: video?.imageUrl,
-        photoUrl: video?.photoUrl,
-        resolvedChannelAvatar,
-    });
 
     const resolvedPublishedAt = getFirstNonEmptyString(
         video?.publishedAt,
@@ -221,11 +196,12 @@ function normalizeVideo(video = {}) {
         video?.snippet?.publishedAt
     );
 
-    const resolvedDescription = getFirstNonEmptyString(
-        video?.description,
-        video?.snippet?.description,
-        " "
-    );
+    const resolvedDescription =
+        typeof video?.description === "string"
+            ? video.description
+            : typeof video?.snippet?.description === "string"
+            ? video.snippet.description
+            : " ";
 
     const resolvedSubscriberCount = getFirstNonEmptyString(
         typeof video?.channel?.subscriberCount === "number"
@@ -258,7 +234,6 @@ function normalizeVideo(video = {}) {
 
     return {
         ...video,
-
         channelId: resolvedChannelId,
         resolvedChannelId,
         resolvedCustomUrl,
@@ -320,6 +295,7 @@ export function YouTubeCustomPlayer({
     const [expandedDescription, setExpandedDescription] = useState(false);
     const [isSubscribed, setIsSubscribed] = useState(false);
     const [localLikes, setLocalLikes] = useState(Number(likes) || 0);
+    const [channelDetails, setChannelDetails] = useState(null);
 
     const [isPlaying, setIsPlaying] = useState(false);
     const [muted, setIsMuted] = useState(false);
@@ -415,6 +391,7 @@ export function YouTubeCustomPlayer({
 
                 console.log("VIDEO INTERACTIONS:", data);
                 console.log("OPEN CHANNEL FULL VIDEO:", JSON.stringify(currentVideo, null, 2));
+                console.log("VIDEO PAGE INTERACTIONS RAW:", data);
 
                 const likesCount =
                     data?.likesCount ??
@@ -440,6 +417,38 @@ export function YouTubeCustomPlayer({
 
         loadInteractions();
     }, [currentVideo?.resolvedId, setLikes]);
+
+    useEffect(() => {
+        const loadChannelDetails = async () => {
+            if (!currentVideo?.resolvedChannelRouteValue) {
+                setChannelDetails(null);
+                return;
+            }
+
+            try {
+                const response = await fetch(
+                    `${import.meta.env.VITE_API_URL}/api/channel/${encodeURIComponent(
+                        currentVideo.resolvedChannelRouteValue
+                    )}`
+                );
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data?.message || "Failed to load channel details");
+                }
+
+                console.log("VIDEO PAGE CHANNEL DETAILS:", data);
+
+                setChannelDetails(data?.channel || null);
+            } catch (err) {
+                console.error("Failed to load channel details:", err);
+                setChannelDetails(null);
+            }
+        };
+
+        loadChannelDetails();
+    }, [currentVideo?.resolvedChannelRouteValue]);
 
     const recommendedVideos = useMemo(() => {
         if (!currentVideo || !Array.isArray(videos)) return [];
@@ -736,6 +745,21 @@ export function YouTubeCustomPlayer({
         return `${minutes}:${seconds}`;
     };
 
+    const displayChannelAvatar =
+        (isValidImageSrc(channelDetails?.avatarUrl) && channelDetails.avatarUrl) ||
+        currentVideo?.resolvedChannelAvatar ||
+        "/ava.png";
+
+    const displaySubscriberCount =
+        channelDetails?.subscriberCount ||
+        currentVideo?.resolvedSubscriberCount ||
+        "";
+
+    const displayCustomUrl =
+        channelDetails?.customUrl ||
+        currentVideo?.resolvedCustomUrl ||
+        "";
+
     const canOpenChannel = Boolean(currentVideo?.resolvedChannelRouteValue);
 
     if (loading && !currentVideo) {
@@ -871,7 +895,7 @@ export function YouTubeCustomPlayer({
                     <div className="video-actions-bar">
                         <div className="channel-info">
                             <img
-                                src={currentVideo.resolvedChannelAvatar}
+                                src={displayChannelAvatar}
                                 alt={currentVideo.resolvedChannelName}
                                 className="channel-avatar"
                                 onClick={canOpenChannel ? openChannelPage : undefined}
@@ -891,9 +915,9 @@ export function YouTubeCustomPlayer({
                             >
                                 <p className="channel-name">{currentVideo.resolvedChannelName}</p>
                                 <p className="channel-subs">
-                                    {currentVideo.resolvedSubscriberCount ||
-                                        currentVideo.resolvedPublishedAt ||
-                                        currentVideo.resolvedCustomUrl}
+                                    {displaySubscriberCount ||
+                                        displayCustomUrl ||
+                                        currentVideo.resolvedPublishedAt}
                                 </p>
                             </div>
 
