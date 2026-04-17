@@ -87,8 +87,8 @@ export function SideMenu() {
                     sub?.title ||
                     "Unknown channel",
                 customUrl: sub?.customUrl || "",
-                avatarUrl: isValidImageSrc(sub?.avatarUrl)
-                    ? sub.avatarUrl
+                AvatarUrl: isValidImageSrc(sub?.AvatarUrl)
+                    ? sub.AvatarUrl
                     : "/ava.png",
             }));
 
@@ -187,7 +187,7 @@ export function SideMenu() {
                         subscriptions.map((sub) => (
                             <li key={sub.id}>
                                 <img
-                                    src={sub.avatarUrl || "/ava.png"}
+                                    src={sub.AvatarUrl || "/ava.png"}
                                     alt={sub.channelName}
                                     className="imgS"
                                     onError={(e) => {
