@@ -906,10 +906,9 @@ export function YouTubeCustomPlayer({
                     },
                     body: JSON.stringify({
                         channelName: currentVideo.resolvedChannelName,
-                        avatarUrl: avatarToSend,
-                        channelId: currentVideo.resolvedChannelId,
-                        customUrl: currentVideo.resolvedCustomUrl,
-                    }),
+                        avatarUrl: displayChannelAvatar,
+                        channelId: currentVideo.resolvedChannelId || "",
+                    })
                 }
             );
 

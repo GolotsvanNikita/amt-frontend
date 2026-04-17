@@ -245,11 +245,25 @@ export function AuthorPage() {
                         Authorization: `Bearer ${token}`,
                     },
                     body: JSON.stringify({
-                            channelName: currentVideo.resolvedChannelName,
-                            avatarUrl: avatarToSend,
-                            channelId: currentVideo.resolvedChannelId,
-                            customUrl: currentVideo.resolvedCustomUrl,
-                    }),
+                        channelName:
+                            author?.channelName ||
+                            author?.name ||
+                            authorData?.channelName ||
+                            authorData?.name ||
+                            "",
+
+                        avatarUrl:
+                            author?.avatarUrl ||
+                            author?.avatar ||
+                            authorData?.avatarUrl ||
+                            authorData?.avatar ||
+                            "/ava.png",
+
+                        channelId:
+                            author?.channelId ||
+                            authorData?.channelId ||
+                            "",
+                    })
                 }
             );
 
