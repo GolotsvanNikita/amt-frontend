@@ -3,12 +3,12 @@ import "./EditProfile.css";
 import { UserContext } from "../UserContext";
 
 const DEFAULT_PROFILE = {
-    name: "User",
-    username: "user",
-    about: "",
-    color: "#B26E6E",
-    avatar: "/ava.png",
-    bannerUrl: "/backimage.jpg"
+    Name: "User",
+    Username: "user",
+    About: "",
+    Color: "#B26E6E",
+    AvatarUrl: "/ava.png",
+    BannerUrl: "/backimage.jpg"
 };
 
 export function EditProfile() {
@@ -26,10 +26,10 @@ export function EditProfile() {
     const [profile, setProfile] = useState(DEFAULT_PROFILE);
 
     const [form, setForm] = useState({
-        displayName: "",
-        username: "",
-        about: "",
-        color: "#B26E6E"
+        DisplayName: "",
+        Username: "",
+        About: "",
+        Color: "#B26E6E"
     });
 
     const [loading, setLoading] = useState(true);
@@ -75,6 +75,7 @@ export function EditProfile() {
         if (!raw) return "#B26E6E";
 
         const withHash = raw.startsWith("#") ? raw : `#${raw}`;
+
         if (/^#[0-9A-F]{6}$/.test(withHash)) {
             return withHash;
         }
@@ -84,12 +85,12 @@ export function EditProfile() {
 
     const normalizeProfile = useCallback((data) => {
         return {
-            name: data?.name || data?.displayName || data?.fullName || "User",
-            username: data?.username || data?.userName || data?.login || "user",
-            about: data?.about || data?.bio || data?.description || "",
-            color: normalizeHexColor(data?.color || "#B26E6E"),
-            avatar: data?.avatar || data?.avatarUrl || data?.profileImage || "/ava.png",
-            bannerUrl: data?.bannerUrl || data?.banner || data?.backgroundImage || "/backimage.jpg"
+            Name: data?.Name || data?.name || data?.displayName || data?.fullName || "User",
+            Username: data?.Username || data?.username || data?.userName || data?.login || "user",
+            About: data?.About || data?.about || data?.bio || data?.description || "",
+            Color: normalizeHexColor(data?.Color || data?.color || "#B26E6E"),
+            AvatarUrl: data?.AvatarUrl || data?.avatarUrl || data?.avatar || data?.profileImage || "/ava.png",
+            BannerUrl: data?.BannerUrl || data?.bannerUrl || data?.banner || data?.backgroundImage || "/backimage.jpg"
         };
     }, []);
 
@@ -139,14 +140,14 @@ export function EditProfile() {
 
             setProfile(normalized);
             setForm({
-                displayName: normalized.name,
-                username: normalized.username,
-                about: normalized.about,
-                color: normalized.color
+                DisplayName: normalized.Name,
+                Username: normalized.Username,
+                About: normalized.About,
+                Color: normalized.Color
             });
 
-            setAvatarPreview(normalized.avatar || "/ava.png");
-            setBannerPreview(normalized.bannerUrl || "/backimage.jpg");
+            setAvatarPreview(normalized.AvatarUrl || "/ava.png");
+            setBannerPreview(normalized.BannerUrl || "/backimage.jpg");
         } catch (err) {
             console.error("Failed to load profile:", err);
             setError(err?.message || "Failed to load profile");
@@ -185,7 +186,7 @@ export function EditProfile() {
     const handleColor = (color) => {
         setForm((prev) => ({
             ...prev,
-            color: normalizeHexColor(color)
+            Color: normalizeHexColor(color)
         }));
 
         setSuccess("");
@@ -194,7 +195,7 @@ export function EditProfile() {
     const handleColorBlur = () => {
         setForm((prev) => ({
             ...prev,
-            color: normalizeHexColor(prev.color)
+            Color: normalizeHexColor(prev.Color)
         }));
     };
 
@@ -260,13 +261,13 @@ export function EditProfile() {
             );
         }
 
-        return data?.url || data?.avatarUrl || data?.bannerUrl || data?.path || null;
+        return data?.Url || data?.url || data?.AvatarUrl || data?.BannerUrl || data?.avatarUrl || data?.bannerUrl || data?.path || null;
     };
 
     const trySaveProfile = useCallback(
         async (payload) => {
             const candidates = [
-                { url: `${apiBaseUrl}/api/account/profile`, methods: ["PUT", "POST", "PATCH"] },
+                { url: `${apiBaseUrl}/api/account/profile`, methods: ["POST", "PUT", "PATCH"] },
                 { url: `${apiBaseUrl}/api/account/profile/update`, methods: ["POST", "PUT", "PATCH"] },
                 { url: `${apiBaseUrl}/api/account/update-profile`, methods: ["POST", "PUT", "PATCH"] },
                 { url: `${apiBaseUrl}/api/profile/update`, methods: ["POST", "PUT", "PATCH"] },
@@ -314,8 +315,8 @@ export function EditProfile() {
                 throw new Error("No auth token found");
             }
 
-            let avatarUrl = profile.avatar;
-            let bannerUrl = profile.bannerUrl;
+            let AvatarUrl = profile.AvatarUrl;
+            let BannerUrl = profile.BannerUrl;
 
             if (avatarFile) {
                 const uploadedAvatarUrl = await uploadSingleFile(
@@ -323,7 +324,7 @@ export function EditProfile() {
                     "/api/account/upload-avatar"
                 );
                 if (uploadedAvatarUrl) {
-                    avatarUrl = uploadedAvatarUrl;
+                    AvatarUrl = uploadedAvatarUrl;
                 }
             }
 
@@ -333,17 +334,17 @@ export function EditProfile() {
                     "/api/account/upload-banner"
                 );
                 if (uploadedBannerUrl) {
-                    bannerUrl = uploadedBannerUrl;
+                    BannerUrl = uploadedBannerUrl;
                 }
             }
 
             const payload = {
-                name: form.displayName?.trim() || "User",
-                username: form.username?.trim() || profile.username,
-                about: form.about?.trim() || "",
-                color: normalizeHexColor(form.color),
-                avatarUrl,
-                bannerUrl
+                Name: form.DisplayName?.trim() || "User",
+                Username: form.Username?.trim() || profile.Username,
+                About: form.About?.trim() || "",
+                Color: normalizeHexColor(form.Color),
+                AvatarUrl,
+                BannerUrl
             };
 
             const responseData = await trySaveProfile(payload);
@@ -355,14 +356,14 @@ export function EditProfile() {
 
             setProfile(normalized);
             setForm({
-                displayName: normalized.name,
-                username: normalized.username,
-                about: normalized.about,
-                color: normalized.color
+                DisplayName: normalized.Name,
+                Username: normalized.Username,
+                About: normalized.About,
+                Color: normalized.Color
             });
 
-            setAvatarPreview(normalized.avatar || "/ava.png");
-            setBannerPreview(normalized.bannerUrl || "/backimage.jpg");
+            setAvatarPreview(normalized.AvatarUrl || "/ava.png");
+            setBannerPreview(normalized.BannerUrl || "/backimage.jpg");
             setAvatarFile(null);
             setBannerFile(null);
             setSuccess("Profile saved successfully");
@@ -370,9 +371,9 @@ export function EditProfile() {
             if (typeof setUserData === "function") {
                 setUserData((prev) => ({
                     ...prev,
-                    name: normalized.name,
-                    username: normalized.username,
-                    avatar: normalized.avatar
+                    name: normalized.Name,
+                    username: normalized.Username,
+                    avatar: normalized.AvatarUrl
                 }));
             }
         } catch (err) {
@@ -403,7 +404,7 @@ export function EditProfile() {
 
                 <div className="edit-banner-inner">
                     <div className="edit-avatar">
-                        <img src={avatarPreview || "/ava.png"} alt={form.username || "avatar"} />
+                        <img src={avatarPreview || "/ava.png"} alt={form.Username || "avatar"} />
 
                         <input
                             ref={avatarFileInputRef}
@@ -428,31 +429,31 @@ export function EditProfile() {
                 <div className="edit-main">
                     <div className="edit-card">
                         <div className="edit-header">
-                            <h2>{form.displayName || profile.name}</h2>
-                            <p>@{form.username || profile.username}</p>
+                            <h2>{form.DisplayName || profile.Name}</h2>
+                            <p>@{form.Username || profile.Username}</p>
                         </div>
 
                         <div className="edit-body">
                             <label>DISPLAY NAME</label>
                             <input
                                 type="text"
-                                name="displayName"
-                                value={form.displayName}
+                                name="DisplayName"
+                                value={form.DisplayName}
                                 onChange={handleChange}
                             />
 
                             <label>USERNAME</label>
                             <input
                                 type="text"
-                                name="username"
-                                value={form.username}
+                                name="Username"
+                                value={form.Username}
                                 onChange={handleChange}
                             />
 
                             <label>ABOUT ME</label>
                             <textarea
-                                name="about"
-                                value={form.about}
+                                name="About"
+                                value={form.About}
                                 onChange={handleChange}
                                 placeholder="Tell something about you"
                             />
@@ -464,7 +465,7 @@ export function EditProfile() {
                                     ref={colorInputRef}
                                     type="color"
                                     className="native-color-input"
-                                    value={normalizeHexColor(form.color)}
+                                    value={normalizeHexColor(form.Color)}
                                     onChange={(e) => handleColor(e.target.value)}
                                 />
 
@@ -486,15 +487,15 @@ export function EditProfile() {
                                     <input
                                         type="text"
                                         className="color-code"
-                                        name="color"
-                                        value={form.color || ""}
+                                        name="Color"
+                                        value={form.Color || ""}
                                         onChange={handleChange}
                                         onBlur={handleColorBlur}
                                     />
 
                                     <div
                                         className="color-preview"
-                                        style={{ background: normalizeHexColor(form.color) }}
+                                        style={{ background: normalizeHexColor(form.Color) }}
                                     ></div>
                                 </div>
 
@@ -503,7 +504,7 @@ export function EditProfile() {
                                         <button
                                             key={c}
                                             type="button"
-                                            className={`color-box ${normalizeHexColor(form.color) === c ? "active" : ""}`}
+                                            className={`color-box ${normalizeHexColor(form.Color) === c ? "active" : ""}`}
                                             style={{ background: c }}
                                             onClick={() => handleColor(c)}
                                             aria-label={c}
