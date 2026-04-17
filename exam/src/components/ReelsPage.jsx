@@ -44,15 +44,38 @@ function normalizeReel(item, index) {
         item?.category ||
         'all';
 
-    return {
+    const resolvedLikes =
+        item?.likesFormatted ??
+        item?.likesCountFormatted ??
+        item?.formattedLikes ??
+        item?.formattedLikeCount ??
+        item?.likes ??
+        item?.likesCount ??
+        item?.likeCount ??
+        item?.interactions?.likesCount ??
+        '0';
+
+    const resolvedComments =
+        item?.commentsCountFormatted ??
+        item?.commentCountFormatted ??
+        item?.formattedComments ??
+        item?.formattedCommentCount ??
+        item?.commentsCount ??
+        item?.commentCount ??
+        item?.comments_count ??
+        item?.totalComments ??
+        item?.interactions?.commentsCount ??
+        (Array.isArray(item?.comments) ? item.comments.length : 0);
+
+    const normalized = {
         id: fallbackId,
         channelId: String(
             item?.channelId ||
             item?.authorId ||
             item?.channel?.id ||
             item?.channel?._id ||
-            ""
-        ),
+            ''
+        ).trim(),
         title: item?.title || 'Untitled reel',
         imageUrl:
             item?.imageUrl ||
@@ -69,11 +92,16 @@ function normalizeReel(item, index) {
         username: item?.username || item?.handle || '@unknown',
         description: item?.description || item?.caption || '',
         audioTitle: item?.audioTitle || item?.audio || 'original audio',
-        likes: item?.likes ?? item?.likesCount ?? '0',
+        likes: resolvedLikes,
         shares: item?.shares ?? item?.sharesCount ?? '0',
         remix: item?.remix ?? item?.remixCount ?? '0',
+        commentsCount: resolvedComments,
         comments: Array.isArray(item?.comments) ? item.comments : [],
     };
+
+    console.log('REELS PAGE NORMALIZED REEL:', normalized);
+
+    return normalized;
 }
 
 function extractArray(data, keys = []) {
@@ -106,6 +134,24 @@ export function ReelsPage() {
     const [activeCategory, setActiveCategory] = useState('all');
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
+
+    const openReel = useCallback((item) => {
+        const reelId = String(item?.id || '').trim();
+
+        if (!reelId) {
+            console.warn('REELS PAGE: missing reel id', item);
+            return;
+        }
+
+        console.log('OPEN REEL FROM REELS PAGE:', {
+            reelId,
+            reel: item,
+        });
+
+        navigate(`/reels-page/${reelId}`, {
+            state: { reel: item },
+        });
+    }, [navigate]);
 
     const loadReelsPage = useCallback(async () => {
         try {
@@ -163,6 +209,9 @@ export function ReelsPage() {
                 }
 
                 const rawReels = extractArray(reelsData, ['reels', 'data', 'items']);
+
+                console.log(`REELS PAGE RAW PAGE ${page}:`, rawReels);
+
                 const normalizedPage = rawReels.map((item, index) =>
                     normalizeReel(item, index + (page - 1) * PAGE_LIMIT)
                 );
@@ -184,8 +233,12 @@ export function ReelsPage() {
                 page += 1;
             }
 
+            const uniqueReels = mergeUniqueById(loadedReels);
+
+            console.log('REELS PAGE FINAL REELS:', uniqueReels);
+
             setServerCategories(normalizedCategories);
-            setReels(mergeUniqueById(loadedReels));
+            setReels(uniqueReels);
         } catch (err) {
             console.error('LOAD REELS PAGE ERROR:', err);
             setError(err.message || 'Something went wrong');
@@ -283,13 +336,13 @@ export function ReelsPage() {
                             <article
                                 key={item.id}
                                 className="reel-card reel-card--uniform"
-                                onClick={() => navigate(`/reels-page/${String(item.id)}`)}
+                                onClick={() => openReel(item)}
                                 role="button"
                                 tabIndex={0}
                                 onKeyDown={(e) => {
                                     if (e.key === 'Enter' || e.key === ' ') {
                                         e.preventDefault();
-                                        navigate(`/reels-page/${String(item.id)}`);
+                                        openReel(item);
                                     }
                                 }}
                             >
