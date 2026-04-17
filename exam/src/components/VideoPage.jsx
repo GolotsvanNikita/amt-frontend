@@ -389,6 +389,60 @@ function normalizeVideo(video = {}) {
     };
 }
 
+function mergeNormalizedVideos(primary = null, fallback = null) {
+    if (!primary && !fallback) return null;
+    if (!primary) return fallback;
+    if (!fallback) return primary;
+
+    return {
+        ...primary,
+        ...fallback,
+
+        id: primary.id || fallback.id,
+        channelId: primary.channelId || fallback.channelId,
+        resolvedChannelId: primary.resolvedChannelId || fallback.resolvedChannelId,
+        resolvedCustomUrl: primary.resolvedCustomUrl || fallback.resolvedCustomUrl,
+        resolvedChannelRouteValue:
+            primary.resolvedChannelRouteValue || fallback.resolvedChannelRouteValue,
+        resolvedId: primary.resolvedId || fallback.resolvedId,
+
+        resolvedTitle: primary.resolvedTitle || fallback.resolvedTitle,
+        resolvedThumbnail: primary.resolvedThumbnail || fallback.resolvedThumbnail,
+        resolvedChannelName: primary.resolvedChannelName || fallback.resolvedChannelName,
+        resolvedChannelAvatar:
+            primary.resolvedChannelAvatar !== "/ava.png"
+                ? primary.resolvedChannelAvatar
+                : fallback.resolvedChannelAvatar || primary.resolvedChannelAvatar,
+
+        resolvedDescription:
+            primary.resolvedDescription && primary.resolvedDescription.trim() !== ""
+                ? primary.resolvedDescription
+                : fallback.resolvedDescription,
+
+        resolvedPublishedAt:
+            primary.resolvedPublishedAt || fallback.resolvedPublishedAt,
+
+        resolvedViews: Math.max(
+            parseCompactNumber(primary.resolvedViews),
+            parseCompactNumber(fallback.resolvedViews)
+        ),
+
+        resolvedLikes: Math.max(
+            parseCompactNumber(primary.resolvedLikes),
+            parseCompactNumber(fallback.resolvedLikes)
+        ),
+
+        resolvedSubscriberCount: Math.max(
+            parseCompactNumber(primary.resolvedSubscriberCount),
+            parseCompactNumber(fallback.resolvedSubscriberCount)
+        ),
+
+        isSubscribed: Boolean(primary.isSubscribed || fallback.isSubscribed),
+
+        category: primary.category || fallback.category,
+    };
+}
+
 function shuffleArray(arr) {
     const copy = [...arr];
 
@@ -491,24 +545,29 @@ export function YouTubeCustomPlayer({
     }, [initialVideo]);
 
     const currentVideo = useMemo(() => {
-        if (videos.length > 0) {
-            const found = videos.find(
-                (video) => String(video.resolvedId) === String(routeVideoId)
-            );
+        const foundFromVideos =
+            videos.length > 0
+                ? videos.find(
+                    (video) => String(video.resolvedId) === String(routeVideoId)
+                )
+                : null;
 
-            if (found) {
-                return found;
-            }
-        }
-
-        if (
+        const matchedInitial =
             normalizedInitialVideo &&
             String(normalizedInitialVideo.resolvedId) === String(routeVideoId)
-        ) {
-            return normalizedInitialVideo;
-        }
+                ? normalizedInitialVideo
+                : null;
 
-        return normalizedInitialVideo || null;
+        const merged = mergeNormalizedVideos(foundFromVideos, matchedInitial);
+
+        console.log("CURRENT VIDEO MERGE CHECK:", {
+            routeVideoId,
+            foundFromVideos,
+            matchedInitial,
+            merged,
+        });
+
+        return merged || matchedInitial || foundFromVideos || null;
     }, [videos, routeVideoId, normalizedInitialVideo]);
 
     useEffect(() => {
@@ -531,8 +590,12 @@ export function YouTubeCustomPlayer({
         });
 
         setLocalLikes(nextLikes);
-    }, [likes, currentVideo?.resolvedId, currentVideo?.resolvedLikes]);
-
+    }, [
+        likes,
+        currentVideo?.resolvedId,
+        currentVideo?.resolvedLikes,
+        currentVideo?.resolvedViews,
+    ]);
     useEffect(() => {
         const loadInteractions = async () => {
             if (!currentVideo?.resolvedId) return;
