@@ -88,17 +88,9 @@ function isValidImageSrc(value) {
 }
 
 function normalizeVideo(video) {
-    const resolvedChannelId = String(
-        video?.channelId ||
-        video?.authorId ||
-        video?.channel?.id ||
-        video?.channel?._id ||
-        video?.snippet?.channelId ||
-        video?.authorChannelId ||
-        video?.uploaderId ||
-        video?.ownerId ||
-        video?.customUrl ||
+    const resolvedCustomUrl = String(
         video?.channel?.customUrl ||
+        video?.customUrl ||
         ""
     ).trim();
 
@@ -109,6 +101,20 @@ function normalizeVideo(video) {
         video?.channel?.name ||
         video?.ownerName ||
         "Unknown channel";
+
+    const resolvedChannelId = String(
+        video?.channelId ||
+        video?.authorId ||
+        video?.channel?.id ||
+        video?.channel?._id ||
+        video?.snippet?.channelId ||
+        video?.authorChannelId ||
+        video?.uploaderId ||
+        video?.ownerId ||
+        resolvedCustomUrl ||
+        resolvedChannelName ||
+        ""
+    ).trim();
 
     const resolvedThumbnail =
         video?.thumbnailUrl ||
@@ -141,10 +147,7 @@ function normalizeVideo(video) {
             video?.channel?.subscriberCount ||
             video?.subscriberCount ||
             "",
-        resolvedCustomUrl:
-            video?.channel?.customUrl ||
-            video?.customUrl ||
-            "",
+        resolvedCustomUrl,
         isSubscribed: Boolean(video?.isSubscribed),
         category: video?.category || video?.genre || video?.type || "",
     };
@@ -421,7 +424,12 @@ export function YouTubeCustomPlayer({
     }, [currentVideo?.resolvedId, checkCaptionsAbailability]);
 
     const openChannelPage = () => {
-        const rawChannelId = String(currentVideo?.channelId || "").trim();
+        const rawChannelId = String(
+            currentVideo?.channelId ||
+            currentVideo?.resolvedCustomUrl ||
+            currentVideo?.resolvedChannelName ||
+            ""
+        ).trim();
 
         console.log("OPEN CHANNEL:", {
             rawChannelId,
