@@ -496,18 +496,24 @@ export function YouTubeCustomPlayer({
                     currentVideo.resolvedChannelRouteValue
                 );
 
+                console.log("CURRENT CHANNEL DETAILS:", currentChannel);
+
                 if (!cancelled) {
                     setChannelDetails(currentChannel);
                 }
 
-                if (
-                    !cancelled &&
-                    currentChannel?.id &&
-                    isValidImageSrc(currentChannel?.avatarUrl)
-                ) {
+                const currentChannelAvatar = getFirstValidImage(
+                    currentChannel?.avatarUrl,
+                    currentChannel?.avatar,
+                    currentChannel?.thumbnailUrl,
+                    currentChannel?.imageUrl,
+                    currentChannel?.photoUrl
+                );
+
+                if (!cancelled && currentChannel?.id && currentChannelAvatar) {
                     setChannelAvatarsMap((prev) => ({
                         ...prev,
-                        [String(currentChannel.id)]: currentChannel.avatarUrl,
+                        [String(currentChannel.id)]: currentChannelAvatar,
                     }));
                 }
             } else if (!cancelled) {
@@ -520,9 +526,9 @@ export function YouTubeCustomPlayer({
                         .map((video) =>
                             String(
                                 video?.resolvedChannelId ||
-                                    video?.channelId ||
-                                    video?.resolvedChannelRouteValue ||
-                                    ""
+                                video?.channelId ||
+                                video?.resolvedChannelRouteValue ||
+                                ""
                             ).trim()
                         )
                         .filter(Boolean)
@@ -540,14 +546,23 @@ export function YouTubeCustomPlayer({
 
                 const recommendedChannel = await loadSingleChannel(channelId);
 
-                if (
-                    !cancelled &&
-                    recommendedChannel?.id &&
-                    isValidImageSrc(recommendedChannel?.avatarUrl)
-                ) {
+                console.log("RECOMMENDED CHANNEL DETAILS:", {
+                    channelId,
+                    recommendedChannel,
+                });
+
+                const recommendedChannelAvatar = getFirstValidImage(
+                    recommendedChannel?.avatarUrl,
+                    recommendedChannel?.avatar,
+                    recommendedChannel?.thumbnailUrl,
+                    recommendedChannel?.imageUrl,
+                    recommendedChannel?.photoUrl
+                );
+
+                if (!cancelled && recommendedChannel?.id && recommendedChannelAvatar) {
                     setChannelAvatarsMap((prev) => ({
                         ...prev,
-                        [String(recommendedChannel.id)]: recommendedChannel.avatarUrl,
+                        [String(recommendedChannel.id)]: recommendedChannelAvatar,
                     }));
                 }
             }
@@ -837,14 +852,23 @@ export function YouTubeCustomPlayer({
     const getRecommendedChannelAvatar = (video) => {
         const channelId = String(
             video?.resolvedChannelId ||
-                video?.channelId ||
-                video?.resolvedChannelRouteValue ||
-                ""
+            video?.channelId ||
+            video?.resolvedChannelRouteValue ||
+            ""
         ).trim();
 
         return (
             channelAvatarsMap[channelId] ||
-            video?.resolvedChannelAvatar ||
+            getFirstValidImage(
+                video?.channel?.avatarUrl,
+                video?.channel?.avatar,
+                video?.channel?.thumbnailUrl,
+                video?.channel?.imageUrl,
+                video?.channel?.photoUrl,
+                video?.channelAvatar,
+                video?.authorAvatar,
+                video?.ownerAvatar
+            ) ||
             "/ava.png"
         );
     };
