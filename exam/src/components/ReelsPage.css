@@ -81,23 +81,18 @@ button {
 }
 
 .reels-grid {
-    width: 100%;
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-    gap: 18px;
-    align-items: start;
-    justify-items: stretch;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 20px;
+    width: 100%;
 }
 
 .reel-card {
-    position: relative;
     width: 100%;
     aspect-ratio: 9 / 16;
+    border-radius: 16px;
     overflow: hidden;
-    border-radius: 14px;
-    background: #111;
-    cursor: pointer;
-    transition: transform 0.2s ease;
+    position: relative;
 }
 
 .reel-card:hover {
@@ -235,7 +230,7 @@ button {
     }
 
     .reels-grid {
-        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        grid-template-columns: repeat(3, 1fr);
         gap: 16px;
     }
 

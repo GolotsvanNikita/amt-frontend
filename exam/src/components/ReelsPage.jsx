@@ -191,48 +191,33 @@ export function ReelsPage() {
         loadReelsPage();
     }, [loadReelsPage]);
 
-    const categoryCounts = useMemo(() => {
-        const counts = new Map();
-
-        reels.forEach((item) => {
-            const slug = String(item.categorySlug || 'all').toLowerCase();
-            counts.set(slug, (counts.get(slug) || 0) + 1);
-        });
-
-        return counts;
-    }, [reels]);
-
     const categories = useMemo(() => {
-        const usedSlugs = new Set(['all']);
+        const map = new Map();
 
-        const filteredServerCategories = serverCategories.filter((category) => {
-            const slug = String(category.slug || 'all').toLowerCase();
+        map.set('all', { id: 'all', title: 'All', slug: 'all' });
 
-            if (slug === 'all') return false;
-            if (usedSlugs.has(slug)) return false;
-            if (!categoryCounts.get(slug)) return false;
-
-            usedSlugs.add(slug);
-            return true;
+        serverCategories.forEach((category) => {
+            const slug = String(category.slug || '').toLowerCase();
+            if (!slug || slug === 'all') return;
+            map.set(slug, category);
         });
 
-        const categoriesFromReels = Array.from(categoryCounts.keys())
-            .filter((slug) => slug !== 'all' && !usedSlugs.has(slug))
-            .map((slug, index) => ({
+        reels.forEach((item, index) => {
+            const slug = String(item.categorySlug || '').toLowerCase();
+            if (!slug || slug === 'all' || map.has(slug)) return;
+
+            map.set(slug, {
                 id: `generated-${slug}-${index}`,
                 title: slug
                     .split('-')
                     .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
                     .join(' '),
                 slug,
-            }));
+            });
+        });
 
-        return [
-            { id: 'all', title: 'All', slug: 'all' },
-            ...filteredServerCategories,
-            ...categoriesFromReels,
-        ];
-    }, [serverCategories, categoryCounts]);
+        return Array.from(map.values());
+    }, [serverCategories, reels]);
 
     const filteredReels = useMemo(() => {
         if (activeCategory === 'all') return reels;
@@ -272,23 +257,16 @@ export function ReelsPage() {
             <div className="reels-content">
                 {!!categories.length && (
                     <div className="reels-categories">
-                        {categories.map((category) => {
-                            const count =
-                                category.slug === 'all'
-                                    ? reels.length
-                                    : categoryCounts.get(category.slug) || 0;
-
-                            return (
-                                <button
-                                    key={category.id}
-                                    className={`reels-category-item ${activeCategory === category.slug ? 'is-active' : ''}`}
-                                    onClick={() => setActiveCategory(category.slug)}
-                                    type="button"
-                                >
-                                    {category.title}
-                                </button>
-                            );
-                        })}
+                        {categories.map((category) => (
+                            <button
+                                key={category.id}
+                                className={`reels-category-item ${activeCategory === category.slug ? 'is-active' : ''}`}
+                                onClick={() => setActiveCategory(category.slug)}
+                                type="button"
+                            >
+                                {category.title}
+                            </button>
+                        ))}
                     </div>
                 )}
 

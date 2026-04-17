@@ -284,19 +284,22 @@ export function FullReels() {
     }, [id]);
 
     useEffect(() => {
-        if (!reels.length) return;
+        if (!id || !reels.length) return;
 
-        let nextIndex = 0;
+        const foundIndex = reels.findIndex(
+            (item) => String(item.id) === String(id)
+        );
 
-        if (id) {
-            const foundIndex = reels.findIndex((item) => String(item.id) === String(id));
-            if (foundIndex !== -1) {
-                nextIndex = foundIndex;
-            }
+        if (foundIndex !== -1) {
+            setActiveIndex(foundIndex);
+            return;
         }
 
-        setActiveIndex(nextIndex);
-    }, [id, reels]);
+        if (hasMore && !isFetchingMore) {
+            loadMoreReels();
+        }
+
+    }, [id, reels, hasMore, isFetchingMore, loadMoreReels]);
 
     const activeReel = useMemo(() => {
         if (!reels.length) return null;
@@ -306,8 +309,10 @@ export function FullReels() {
     useEffect(() => {
         if (!activeReel) return;
 
-        setActiveReelId(String(activeReel.id));
-        navigate(`/reels-page/${activeReel.id}`, { replace: true });
+        if (String(activeReelId) !== String(activeReel.id)) {
+            setActiveReelId(String(activeReel.id));
+            navigate(`/reels-page/${activeReel.id}`, { replace: true });
+        }
 
         Object.entries(youtubePlayerRefs.current).forEach(([reelId, player]) => {
             if (!player) return;
