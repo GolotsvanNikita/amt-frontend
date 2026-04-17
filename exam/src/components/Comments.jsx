@@ -1,5 +1,8 @@
-import { useMemo, useState } from "react";
-import "./ReelComments.css";
+import { useEffect, useMemo, useRef, useState } from "react";
+import "./Comments.css";
+import Send from "../assets/Send.svg";
+import Emoji from "../assets/emoji.svg";
+import Notif from "../assets/notif.svg";
 
 function getToken() {
     return (
@@ -137,14 +140,18 @@ function normalizeComment(comment, index) {
     };
 }
 
-export function ReelComments({
+export function Comments({
     comments = [],
-    reelId,
-    reloadComments,
+    videoId,
+    reloadInteractions,
+    hasMoreComments = false,
+    loadingMoreComments = false,
+    onLoadMoreComments,
 }) {
     const [text, setText] = useState("");
     const [replyText, setReplyText] = useState("");
     const [replyTo, setReplyTo] = useState(null);
+    const loadMoreRef = useRef(null);
 
     const normalizedComments = useMemo(() => {
         return Array.isArray(comments)
@@ -152,9 +159,39 @@ export function ReelComments({
             : [];
     }, [comments]);
 
+    useEffect(() => {
+        if (!hasMoreComments || loadingMoreComments || typeof onLoadMoreComments !== "function") {
+            return;
+        }
+
+        const node = loadMoreRef.current;
+        if (!node) return;
+
+        const observer = new IntersectionObserver(
+            (entries) => {
+                entries.forEach((entry) => {
+                    if (entry.isIntersecting) {
+                        onLoadMoreComments();
+                    }
+                });
+            },
+            {
+                root: null,
+                threshold: 0.2,
+                rootMargin: "200px",
+            }
+        );
+
+        observer.observe(node);
+
+        return () => {
+            observer.disconnect();
+        };
+    }, [hasMoreComments, loadingMoreComments, onLoadMoreComments, normalizedComments.length]);
+
     const handleAddComment = async () => {
         const trimmedText = text.trim();
-        if (!trimmedText || !reelId) return;
+        if (!trimmedText || !videoId) return;
 
         const token = getToken();
         if (!token) {
@@ -164,7 +201,7 @@ export function ReelComments({
 
         try {
             const response = await fetch(
-                `${import.meta.env.VITE_API_URL}/api/interactions/comment/${reelId}`,
+                `${import.meta.env.VITE_API_URL}/api/interactions/comment/${videoId}`,
                 {
                     method: "POST",
                     headers: {
@@ -184,17 +221,17 @@ export function ReelComments({
 
             setText("");
 
-            if (typeof reloadComments === "function") {
-                await reloadComments();
+            if (typeof reloadInteractions === "function") {
+                await reloadInteractions();
             }
         } catch (error) {
-            console.error("Add reel comment error:", error);
+            console.error("Add comment error:", error);
         }
     };
 
     const handleAddReply = async (parentId) => {
         const trimmedReply = replyText.trim();
-        if (!trimmedReply || !reelId || !parentId) return;
+        if (!trimmedReply || !videoId || !parentId) return;
 
         const token = getToken();
         if (!token) {
@@ -204,7 +241,7 @@ export function ReelComments({
 
         try {
             const response = await fetch(
-                `${import.meta.env.VITE_API_URL}/api/interactions/comment/${reelId}`,
+                `${import.meta.env.VITE_API_URL}/api/interactions/comment/${videoId}`,
                 {
                     method: "POST",
                     headers: {
@@ -226,134 +263,155 @@ export function ReelComments({
             setReplyText("");
             setReplyTo(null);
 
-            if (typeof reloadComments === "function") {
-                await reloadComments();
+            if (typeof reloadInteractions === "function") {
+                await reloadInteractions();
             }
         } catch (error) {
-            console.error("Add reel reply error:", error);
+            console.error("Add reply error:", error);
         }
     };
 
     return (
-        <div className="reel-comments">
-            <div className="reel-comments-list">
-                {normalizedComments.length === 0 ? (
-                    <p className="reel-no-comments">No comments yet</p>
-                ) : (
-                    normalizedComments.map((comment) => (
-                        <div key={comment.id} className="reel-comment-block">
-                            <div className="reel-comment">
-                                <img
-                                    src={comment.avatar}
-                                    alt="avatar"
-                                    onError={(e) => {
-                                        e.currentTarget.src = "/ava.png";
-                                    }}
-                                />
+        <div className="comments">
+            <h3>Comments</h3>
 
-                                <div className="reel-comment-body">
-                                    <div className="reel-comment-meta">
-                                        <span className="reel-comment-name">{comment.name}</span>
-                                        <span className="reel-comment-time">{comment.time}</span>
-                                    </div>
+            <div className="comment-form">
+                <img
+                    src="/ava.png"
+                    alt="your avatar"
+                    onError={(e) => {
+                        e.currentTarget.src = "/ava.png";
+                    }}
+                />
 
-                                    <p
-                                        dangerouslySetInnerHTML={{
-                                            __html: comment.text,
-                                        }}
-                                    />
-
-                                    <div className="reel-comment-actions">
-                                        <span
-                                            className="reel-reply-btn"
-                                            onClick={() =>
-                                                setReplyTo(replyTo === comment.id ? null : comment.id)
-                                            }
-                                        >
-                                            Answer
-                                        </span>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {replyTo === comment.id && (
-                                <div className="reel-reply-form">
-                                    <img
-                                        src="/ava.png"
-                                        alt="your avatar"
-                                        onError={(e) => {
-                                            e.currentTarget.src = "/ava.png";
-                                        }}
-                                    />
-
-                                    <input
-                                        type="text"
-                                        placeholder="Write a reply"
-                                        value={replyText}
-                                        onChange={(e) => setReplyText(e.target.value)}
-                                        onKeyDown={(e) =>
-                                            e.key === "Enter" && handleAddReply(comment.id)
-                                        }
-                                    />
-
-                                    <button
-                                        type="button"
-                                        onClick={() => handleAddReply(comment.id)}
-                                    >
-                                        ➤
-                                    </button>
-                                </div>
-                            )}
-
-                            {comment.replies.length > 0 && (
-                                <div className="reel-replies">
-                                    {comment.replies.map((reply) => (
-                                        <div
-                                            key={reply.id}
-                                            className="reel-comment reel-comment-reply-item"
-                                        >
-                                            <img
-                                                src={reply.avatar}
-                                                alt="avatar"
-                                                onError={(e) => {
-                                                    e.currentTarget.src = "/ava.png";
-                                                }}
-                                            />
-
-                                            <div className="reel-comment-body">
-                                                <div className="reel-comment-meta">
-                                                    <span className="reel-comment-name">{reply.name}</span>
-                                                    <span className="reel-comment-time">{reply.time}</span>
-                                                </div>
-
-                                                <p
-                                                    dangerouslySetInnerHTML={{
-                                                        __html: reply.text,
-                                                    }}
-                                                />
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            )}
-                        </div>
-                    ))
-                )}
-            </div>
-
-            <div className="reel-comment-form">
                 <input
                     type="text"
-                    placeholder="Place your comment"
+                    placeholder="Add a comment"
                     value={text}
                     onChange={(e) => setText(e.target.value)}
                     onKeyDown={(e) => e.key === "Enter" && handleAddComment()}
                 />
 
-                <button type="button" onClick={handleAddComment}>
-                    ➤
+                <div className="form-icons">
+                    <span>
+                        <img src={Emoji} alt="emoji" />
+                    </span>
+                    <span>
+                        <img src={Notif} alt="notif" />
+                    </span>
+                </div>
+
+                <button className="sendCom" onClick={handleAddComment}>
+                    <img src={Send} alt="send" />
                 </button>
             </div>
+
+            <div className="comment-list">
+                {normalizedComments.map((comment) => (
+                    <div key={comment.id} className="comment-block">
+                        <div className="comment">
+                            <img
+                                src={comment.avatar}
+                                alt="avatar"
+                                onError={(e) => {
+                                    e.currentTarget.src = "/ava.png";
+                                }}
+                            />
+
+                            <div className="comment-body">
+                                <div className="comment-meta">
+                                    <span className="comment-name">{comment.name}</span>
+                                    <span className="comment-time">{comment.time}</span>
+                                </div>
+
+                                <p
+                                    dangerouslySetInnerHTML={{
+                                        __html: comment.text,
+                                    }}
+                                />
+
+                                <div className="comment-actions">
+                                    <span
+                                        className="reply-bth"
+                                        onClick={() =>
+                                            setReplyTo(replyTo === comment.id ? null : comment.id)
+                                        }
+                                    >
+                                        Answer
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+
+                        {replyTo === comment.id && (
+                            <div className="reply-form">
+                                <img
+                                    src="/ava.png"
+                                    alt="your avatar"
+                                    onError={(e) => {
+                                        e.currentTarget.src = "/ava.png";
+                                    }}
+                                />
+
+                                <input
+                                    type="text"
+                                    placeholder="Write a reply"
+                                    value={replyText}
+                                    onChange={(e) => setReplyText(e.target.value)}
+                                    onKeyDown={(e) =>
+                                        e.key === "Enter" && handleAddReply(comment.id)
+                                    }
+                                />
+
+                                <button onClick={() => handleAddReply(comment.id)}>➤</button>
+                            </div>
+                        )}
+
+                        {comment.replies.length > 0 && (
+                            <div className="replies">
+                                {comment.replies.map((reply) => (
+                                    <div key={reply.id} className="comment reply">
+                                        <img
+                                            src={reply.avatar}
+                                            alt="avatar"
+                                            onError={(e) => {
+                                                e.currentTarget.src = "/ava.png";
+                                            }}
+                                        />
+
+                                        <div className="comment-body">
+                                            <div className="comment-meta">
+                                                <span className="comment-name">{reply.name}</span>
+                                                <span className="comment-time">{reply.time}</span>
+                                            </div>
+
+                                            <p
+                                                dangerouslySetInnerHTML={{
+                                                    __html: reply.text,
+                                                }}
+                                            />
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                ))}
+            </div>
+
+            {hasMoreComments && <div ref={loadMoreRef} style={{ height: 1 }} />}
+
+            {hasMoreComments && (
+                <div style={{ marginTop: "16px", textAlign: "center" }}>
+                    <button
+                        type="button"
+                        onClick={onLoadMoreComments}
+                        disabled={loadingMoreComments}
+                    >
+                        {loadingMoreComments ? "Loading..." : "Load more comments"}
+                    </button>
+                </div>
+            )}
         </div>
     );
 }
