@@ -476,7 +476,6 @@ export function MainPage() {
                                         onClick={() => handleVideoClick(video)}
                                     />
 
-                                    {/* подпись как у YouTube */}
                                     <Carousel.Caption>
                                         <h5>{video.title}</h5>
                                         <p>{video.channelName}</p>
