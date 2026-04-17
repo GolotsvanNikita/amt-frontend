@@ -896,6 +896,16 @@ export function YouTubeCustomPlayer({
         try {
             setIsSubscribed(nextValue);
 
+            const payload = {
+            channelName: currentVideo.resolvedChannelName || "",
+            avatarUrl: displayChannelAvatar || "/ava.png",
+            channelId: currentVideo.resolvedChannelId || "",
+        };
+
+        console.log("VIDEO SUBSCRIBE PAYLOAD:", payload);
+
+        body: JSON.stringify(payload)
+
             const response = await fetch(
                 `${import.meta.env.VITE_API_URL}/api/interactions/subscribe`,
                 {
