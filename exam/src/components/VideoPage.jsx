@@ -893,18 +893,16 @@ export function YouTubeCustomPlayer({
             currentVideo?.resolvedChannelAvatar ||
             "/ava.png";
 
-        try {
-            setIsSubscribed(nextValue);
-
-            const payload = {
+        const payload = {
             channelName: currentVideo.resolvedChannelName || "",
-            avatarUrl: displayChannelAvatar || "/ava.png",
+            avatarUrl: avatarToSend,
             channelId: currentVideo.resolvedChannelId || "",
         };
 
         console.log("VIDEO SUBSCRIBE PAYLOAD:", payload);
 
-        body: JSON.stringify(payload)
+        try {
+            setIsSubscribed(nextValue);
 
             const response = await fetch(
                 `${import.meta.env.VITE_API_URL}/api/interactions/subscribe`,
@@ -914,11 +912,7 @@ export function YouTubeCustomPlayer({
                         "Content-Type": "application/json",
                         Authorization: `Bearer ${token}`,
                     },
-                    body: JSON.stringify({
-                        channelName: currentVideo.resolvedChannelName,
-                        avatarUrl: displayChannelAvatar,
-                        channelId: currentVideo.resolvedChannelId || "",
-                    })
+                    body: JSON.stringify(payload),
                 }
             );
 

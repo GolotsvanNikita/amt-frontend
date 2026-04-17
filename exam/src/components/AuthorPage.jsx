@@ -232,6 +232,14 @@ export function AuthorPage() {
         const previousValue = isSubscribed;
         const nextSubscribed = !previousValue;
 
+        const payload = {
+            channelName: channel.title || "",
+            avatarUrl: channel.avatarUrl || "/ava.png",
+            channelId: channel.id || "",
+        };
+
+        console.log("AUTHOR SUBSCRIBE PAYLOAD:", payload);
+
         try {
             setSubscribeLoading(true);
             setIsSubscribed(nextSubscribed);
@@ -244,32 +252,19 @@ export function AuthorPage() {
                         "Content-Type": "application/json",
                         Authorization: `Bearer ${token}`,
                     },
-                    body: JSON.stringify({
-                        channelName:
-                            author?.channelName ||
-                            author?.name ||
-                            authorData?.channelName ||
-                            authorData?.name ||
-                            "",
-
-                        avatarUrl:
-                            author?.avatarUrl ||
-                            author?.avatar ||
-                            authorData?.avatarUrl ||
-                            authorData?.avatar ||
-                            "/ava.png",
-
-                        channelId:
-                            author?.channelId ||
-                            authorData?.channelId ||
-                            "",
-                    })
+                    body: JSON.stringify(payload),
                 }
             );
 
+            const data = await response.json().catch(() => null);
+
+            console.log("AUTHOR SUBSCRIBE RESPONSE:", data);
+
             if (!response.ok) {
-                throw new Error("Failed to update subscription");
+                throw new Error(data?.message || "Failed to update subscription");
             }
+
+            window.dispatchEvent(new Event("subscriptionsUpdated"));
         } catch (err) {
             console.error("Subscribe error:", err);
             setIsSubscribed(previousValue);
