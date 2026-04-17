@@ -13,6 +13,7 @@ import { ThemePage } from './components/ThemePage';
 import { ReelsPage } from './components/ReelsPage';
 import { FullReels } from './components/ReelDetailsPage';
 import { ReelCommentsPage } from './components/ReelCommentsPage';
+import { AuthorPageForReels } from "./components/AuthorPageForReels";
 import './App.css';
 
 function TokenInterceptor() {
@@ -57,7 +58,6 @@ function App() {
                     <Route path="/register" element={<RegForm />} />
                     <Route path="/login" element={<FormFloatingBasicExample />} />
 
-                    {/* Маршрут oauth-success удален! */}
 
                     <Route path="/" element={<ProtectedRoute><Layout /></ProtectedRoute>}>
                         <Route index element={<MainPage />} />
@@ -73,6 +73,7 @@ function App() {
                         <Route path="reels-page" element={<ReelsPage />} />
                         <Route path="reels-page/:id" element={<FullReels />} />
                         <Route path="reels-page/:id/comments" element={<ReelCommentsPage />} />
+                        <Route path="reels-author/:channelId" element={<AuthorPageForReels />} />
                     </Route>
 
                     <Route path="*" element={<Navigate to="/register" />} />

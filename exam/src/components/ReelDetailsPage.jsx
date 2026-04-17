@@ -32,6 +32,7 @@ function getAuthToken() {
 function isValidImageSrc(value) {
     return (
         typeof value === "string" &&
+        value.trim() &&
         (
             value.startsWith("http://") ||
             value.startsWith("https://") ||
@@ -39,6 +40,20 @@ function isValidImageSrc(value) {
             value.startsWith("data:image/")
         )
     );
+}
+
+function getFirstNonEmptyString(...values) {
+    for (const value of values) {
+        if (typeof value === "string" && value.trim()) {
+            return value.trim();
+        }
+
+        if (typeof value === "number" && Number.isFinite(value)) {
+            return String(value);
+        }
+    }
+
+    return "";
 }
 
 function extractYoutubeId(value) {
@@ -104,25 +119,49 @@ function normalizeReel(item, index) {
 
     const youtubeId = extractYoutubeId(rawVideoValue) || String(rawVideoValue || "").trim();
 
+    const resolvedChannelId = getFirstNonEmptyString(
+        item?.channelId,
+        item?.authorId,
+        item?.channel?.id,
+        item?.channel?._id,
+        item?.ownerId,
+        item?.uploaderId
+    );
+
+    const resolvedCustomUrl = getFirstNonEmptyString(
+        item?.customUrl,
+        item?.channel?.customUrl,
+        item?.authorCustomUrl,
+        item?.username,
+        item?.handle
+    );
+
+    const resolvedChannelRouteValue = getFirstNonEmptyString(
+        resolvedChannelId,
+        resolvedCustomUrl
+    );
+
+    const resolvedAvatar = isValidImageSrc(item?.avatarUrl)
+        ? item.avatarUrl
+        : isValidImageSrc(item?.authorAvatar)
+        ? item.authorAvatar
+        : isValidImageSrc(item?.channel?.avatarUrl)
+        ? item.channel.avatarUrl
+        : isValidImageSrc(item?.channel?.avatar)
+        ? item.channel.avatar
+        : "/ava.png";
+
     return {
         id: createFallbackId(item, index),
-        channelId: String(
-            item?.channelId ||
-            item?.authorId ||
-            item?.channel?.id ||
-            item?.channel?._id ||
-            ""
-        ),
+        channelId: resolvedChannelId,
+        customUrl: resolvedCustomUrl,
+        channelRouteValue: resolvedChannelRouteValue,
         title: item?.title || "Untitled reel",
         videoUrl: youtubeId,
         posterUrl: item?.posterUrl || item?.thumbnailUrl || item?.thumbnail || item?.preview || "",
-        avatarUrl: isValidImageSrc(item?.avatarUrl)
-            ? item.avatarUrl
-            : isValidImageSrc(item?.authorAvatar)
-            ? item.authorAvatar
-            : "/ava.png",
-        author: item?.author || item?.channelName || item?.name || "Unknown author",
-        username: item?.username || item?.handle || "@unknown",
+        avatarUrl: resolvedAvatar,
+        author: item?.author || item?.channelName || item?.channel?.title || item?.name || "Unknown author",
+        username: item?.username || item?.handle || item?.channel?.customUrl || "@unknown",
         description: item?.description || item?.caption || "",
         audioTitle: item?.audioTitle || item?.audio || "original audio",
         likes: item?.likes ?? item?.likesCount ?? 0,
@@ -217,6 +256,7 @@ export function FullReels() {
     const [hasMore, setHasMore] = useState(true);
     const [activeIndex, setActiveIndex] = useState(0);
     const [activeReelId, setActiveReelId] = useState(id || "");
+    const [activeChannelDetails, setActiveChannelDetails] = useState(null);
 
     const youtubePlayerRefs = useRef({});
     const playerShellRefs = useRef({});
@@ -260,6 +300,9 @@ export function FullReels() {
                     : [];
 
                 const normalized = rawReels.map((item, index) => normalizeReel(item, index));
+
+                console.log("REELS RAW:", rawReels);
+                console.log("REELS NORMALIZED:", normalized);
 
                 setReels((prev) =>
                     append ? mergeUniqueById(prev, normalized) : normalized
@@ -312,7 +355,6 @@ export function FullReels() {
         if (hasMore && !isFetchingMore) {
             loadMoreReels();
         }
-
     }, [id, reels, hasMore, isFetchingMore, loadMoreReels]);
 
     const activeReel = useMemo(() => {
@@ -343,7 +385,7 @@ export function FullReels() {
         if (activeIndex >= reels.length - 2) {
             loadMoreReels();
         }
-    }, [activeReel, activeIndex, reels.length, navigate, loadMoreReels]);
+    }, [activeReel, activeIndex, reels.length, navigate, loadMoreReels, activeReelId]);
 
     useEffect(() => {
         if (observerRef.current) {
@@ -374,6 +416,138 @@ export function FullReels() {
             observerRef.current?.disconnect();
         };
     }, [reels]);
+
+    useEffect(() => {
+        const apiUrl = import.meta.env.VITE_API_URL;
+        if (!apiUrl || !activeReel) {
+            setActiveChannelDetails(null);
+            return;
+        }
+
+        let cancelled = false;
+
+        const loadChannelDetails = async () => {
+            const candidates = [
+                activeReel.channelRouteValue,
+                activeReel.channelId,
+                activeReel.customUrl,
+                activeReel.username,
+                activeReel.author,
+            ]
+                .map((item) => String(item || "").trim())
+                .filter(Boolean);
+
+            for (const candidate of candidates) {
+                try {
+                    const response = await fetch(
+                        `${apiUrl}/api/channel/${encodeURIComponent(candidate)}`
+                    );
+
+                    const text = await response.text();
+                    let data = null;
+
+                    try {
+                        data = text ? JSON.parse(text) : null;
+                    } catch {
+                        data = null;
+                    }
+
+                    console.log("REEL CHANNEL RESPONSE:", {
+                        candidate,
+                        status: response.status,
+                        ok: response.ok,
+                        data,
+                        text,
+                    });
+
+                    if (response.ok && data?.channel) {
+                        if (!cancelled) {
+                            setActiveChannelDetails(data.channel);
+                        }
+                        return;
+                    }
+                } catch (error) {
+                    console.error("Failed to load reel channel:", candidate, error);
+                }
+            }
+
+            if (!cancelled) {
+                setActiveChannelDetails(null);
+            }
+        };
+
+        loadChannelDetails();
+
+        return () => {
+            cancelled = true;
+        };
+    }, [activeReel?.id, activeReel?.channelRouteValue, activeReel?.channelId, activeReel?.customUrl, activeReel?.username, activeReel?.author]);
+
+    useEffect(() => {
+        const apiUrl = import.meta.env.VITE_API_URL;
+        if (!apiUrl || !activeReel?.id) return;
+
+        let cancelled = false;
+
+        const updateActiveReelMeta = async () => {
+            const candidates = [
+                `${apiUrl}/api/reels/${encodeURIComponent(activeReel.id)}/comments`,
+                `${apiUrl}/api/reels/${encodeURIComponent(activeReel.id)}`,
+                `${apiUrl}/api/interactions/video/${encodeURIComponent(activeReel.id)}`,
+                activeReel.videoUrl
+                    ? `${apiUrl}/api/interactions/video/${encodeURIComponent(activeReel.videoUrl)}`
+                    : "",
+            ].filter(Boolean);
+
+            for (const url of candidates) {
+                try {
+                    const response = await fetch(url);
+                    const text = await response.text();
+
+                    let data = null;
+                    try {
+                        data = text ? JSON.parse(text) : null;
+                    } catch {
+                        data = null;
+                    }
+
+                    if (!response.ok || !data) {
+                        continue;
+                    }
+
+                    const resolvedCommentsCount =
+                        data?.commentsCount ??
+                        data?.commentCount ??
+                        data?.totalComments ??
+                        data?.interactions?.commentsCount ??
+                        data?.data?.commentsCount ??
+                        (Array.isArray(data?.comments) ? data.comments.length : null) ??
+                        (Array.isArray(data) ? data.length : null);
+
+                    if (resolvedCommentsCount !== null && resolvedCommentsCount !== undefined) {
+                        if (!cancelled) {
+                            setReels((prev) =>
+                                prev.map((item) =>
+                                    String(item.id) === String(activeReel.id)
+                                        ? { ...item, commentsCount: resolvedCommentsCount }
+                                        : item
+                                )
+                            );
+                        }
+                        break;
+                    }
+                } catch (error) {
+                    console.error("Failed to load reel comments count:", url, error);
+                }
+            }
+        };
+
+        updateActiveReelMeta();
+
+        return () => {
+            cancelled = true;
+        };
+    }, [activeReel?.id, activeReel?.videoUrl]);
 
     const goToPrev = () => {
         if (!reels.length) return;
@@ -549,28 +723,107 @@ export function FullReels() {
         }
     };
 
-    const handleSubscribe = async (reelId) => {
+    const handleSubscribe = async () => {
         const token = getAuthToken();
+
+        if (!token) {
+            navigate("/login");
+            return;
+        }
+
+        const channelName =
+            activeChannelDetails?.title ||
+            activeReel?.author ||
+            activeReel?.username;
+
+        if (!channelName) return;
+
+        const previousValue = Boolean(activeReel?.isSubscribed);
+        const nextValue = !previousValue;
 
         setReels((prev) =>
             prev.map((item) =>
-                String(item.id) === String(reelId)
-                    ? { ...item, isSubscribed: !item.isSubscribed }
+                String(item.id) === String(activeReel.id)
+                    ? { ...item, isSubscribed: nextValue }
                     : item
             )
         );
 
         try {
-            await fetch(`${import.meta.env.VITE_API_URL}/api/reels/${reelId}/subscribe`, {
-                method: "POST",
-                headers: {
-                    ...(token ? { Authorization: `Bearer ${token}` } : {}),
-                },
-            });
+            const response = await fetch(
+                `${import.meta.env.VITE_API_URL}/api/interactions/subscribe`,
+                {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        Authorization: `Bearer ${token}`,
+                    },
+                    body: JSON.stringify({
+                        channelName,
+                    }),
+                }
+            );
+
+            if (!response.ok) {
+                throw new Error("Failed to subscribe");
+            }
         } catch (error) {
             console.error("Subscribe reel error:", error);
+            setReels((prev) =>
+                prev.map((item) =>
+                    String(item.id) === String(activeReel.id)
+                        ? { ...item, isSubscribed: previousValue }
+                        : item
+                )
+            );
         }
     };
+
+    const openReelAuthorPage = () => {
+        const routeValue = String(
+            activeChannelDetails?.id ||
+            activeChannelDetails?.customUrl ||
+            activeReel?.channelRouteValue ||
+            activeReel?.channelId ||
+            activeReel?.customUrl ||
+            activeReel?.username ||
+            ""
+        ).trim();
+
+        console.log("OPEN REEL AUTHOR PAGE:", {
+            routeValue,
+            activeReel,
+            activeChannelDetails,
+        });
+
+        if (!routeValue) return;
+
+        navigate(`/reels-author/${encodeURIComponent(routeValue)}`);
+    };
+
+    const displayAuthorAvatar =
+        (isValidImageSrc(activeChannelDetails?.avatarUrl) && activeChannelDetails.avatarUrl) ||
+        activeReel?.avatarUrl ||
+        "/ava.png";
+
+    const displayAuthorName =
+        activeChannelDetails?.title ||
+        activeReel?.author ||
+        "Unknown author";
+
+    const displayAuthorUsername =
+        activeChannelDetails?.customUrl ||
+        activeReel?.username ||
+        "@unknown";
+
+    const canOpenAuthorPage = Boolean(
+        activeChannelDetails?.id ||
+        activeChannelDetails?.customUrl ||
+        activeReel?.channelRouteValue ||
+        activeReel?.channelId ||
+        activeReel?.customUrl ||
+        activeReel?.username
+    );
 
     if (loading) {
         return <div className="reel-details-loading">Loading reels...</div>;
@@ -638,7 +891,6 @@ export function FullReels() {
                             className="reel-side-action"
                             onClick={goToPrev}
                             disabled={activeIndex === 0}
-                            
                         >
                             <span>↑</span>
                             <small>Prev</small>
@@ -694,31 +946,27 @@ export function FullReels() {
                     <aside className="reel-details-info">
                         <div className="reel-author-row">
                             <img
-                                src={activeReel.avatarUrl}
-                                alt={activeReel.author}
+                                src={displayAuthorAvatar}
+                                alt={displayAuthorName}
                                 className="reel-author-avatar"
-                                onClick={() => {
-                                    if (activeReel.channelId) {
-                                        navigate(`/channel/${activeReel.channelId}`);
-                                    }
-                                }}
-                                style={{ cursor: activeReel.channelId ? "pointer" : "default" }}
+                                onClick={canOpenAuthorPage ? openReelAuthorPage : undefined}
+                                style={{ cursor: canOpenAuthorPage ? "pointer" : "default" }}
                                 onError={(e) => {
                                     e.currentTarget.src = "/ava.png";
                                 }}
                             />
                             <div
                                 className="reel-author-text"
-                                onClick={() => navigate(`/channel/${activeReel.channelId}`)}
-                                style={{ cursor: 'pointer' }}
+                                onClick={canOpenAuthorPage ? openReelAuthorPage : undefined}
+                                style={{ cursor: canOpenAuthorPage ? "pointer" : "default" }}
                             >
-                                <h2>{activeReel.author}</h2>
-                                <p>{activeReel.username}</p>
+                                <h2>{displayAuthorName}</h2>
+                                <p>{displayAuthorUsername}</p>
                             </div>
                             <button
                                 type="button"
                                 className={`reel-subscribe-btn ${activeReel.isSubscribed ? "is-subscribed" : ""}`}
-                                onClick={() => handleSubscribe(activeReel.id)}
+                                onClick={handleSubscribe}
                             >
                                 {activeReel.isSubscribed ? "Subscribed" : "Subscribe"}
                             </button>
