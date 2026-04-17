@@ -37,7 +37,7 @@ function safeParseJson(text) {
     try {
         return JSON.parse(text);
     } catch (error) {
-        console.error("Failed to parse JSON:", error);
+        console.warn("Failed to parse JSON:", error, text);
         return null;
     }
 }
@@ -148,16 +148,59 @@ function normalizeReel(item, index = 0) {
             item?.channelId,
             item?.authorId,
             item?.channel?.id,
-            item?.channel?._id
+            item?.channel?._id,
+            item?.ownerId,
+            item?.uploaderId
         ),
         customUrl: getFirstNonEmptyString(
             item?.customUrl,
             item?.channel?.customUrl,
+            item?.authorCustomUrl
+        ),
+        username: getFirstNonEmptyString(
             item?.username,
             item?.handle
         ),
         author: item?.author || item?.channelName || item?.channel?.title || "Unknown author",
     };
+}
+
+async function fetchChannelCandidate(apiUrl, candidate, token) {
+    const normalizedCandidate = String(candidate || "").trim();
+    if (!normalizedCandidate) return null;
+
+    try {
+        const response = await fetch(
+            `${apiUrl}/api/channel/${encodeURIComponent(normalizedCandidate)}`,
+            {
+                headers: {
+                    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+                },
+            }
+        );
+
+        const text = await response.text();
+        const parsed = safeParseJson(text);
+
+        console.log("REELS AUTHOR CHANNEL RESPONSE:", {
+            candidate: normalizedCandidate,
+            status: response.status,
+            ok: response.ok,
+            text,
+            parsed,
+        });
+
+        return {
+            candidate: normalizedCandidate,
+            ok: response.ok,
+            status: response.status,
+            text,
+            parsed,
+        };
+    } catch (error) {
+        console.error("fetchChannelCandidate error:", normalizedCandidate, error);
+        return null;
+    }
 }
 
 export function AuthorPageForReels() {
@@ -187,50 +230,32 @@ export function AuthorPageForReels() {
             const candidates = [
                 decodedChannelId,
                 decodedChannelId.startsWith("@") ? decodedChannelId.slice(1) : "",
-            ].filter(Boolean);
+            ]
+                .map((item) => String(item || "").trim())
+                .filter(Boolean);
 
             let successPayload = null;
-            let lastFailureMessage = "Failed to load reel author";
+            let lastFailureMessage = "Channel not found";
 
             for (const candidate of candidates) {
-                try {
-                    const response = await fetch(
-                        `${apiUrl}/api/channel/${encodeURIComponent(candidate)}`,
-                        {
-                            headers: {
-                                ...(token ? { Authorization: `Bearer ${token}` } : {}),
-                            },
-                        }
-                    );
+                const result = await fetchChannelCandidate(apiUrl, candidate, token);
 
-                    const text = await response.text();
-                    const data = safeParseJson(text);
+                if (!result) continue;
 
-                    console.log("REELS AUTHOR CHANNEL RESPONSE:", {
-                        candidate,
-                        status: response.status,
-                        ok: response.ok,
-                        data,
-                        text,
-                    });
+                if (result.ok && result.parsed?.channel) {
+                    successPayload = result.parsed;
+                    break;
+                }
 
-                    if (response.ok && data) {
-                        successPayload = data;
-                        break;
-                    }
-
-                    if (data?.message) {
-                        lastFailureMessage = data.message;
-                    } else if (text) {
-                        lastFailureMessage = text;
-                    }
-                } catch (error) {
-                    console.error("Failed to load channel candidate:", candidate, error);
+                if (typeof result.text === "string" && result.text.trim()) {
+                    lastFailureMessage = result.text.trim();
+                } else if (result.parsed?.message) {
+                    lastFailureMessage = result.parsed.message;
                 }
             }
 
-            if (!successPayload) {
-                throw new Error(lastFailureMessage || "Failed to load reel author");
+            if (!successPayload?.channel) {
+                throw new Error(lastFailureMessage || "Channel not found");
             }
 
             const normalizedChannel = {
@@ -278,12 +303,15 @@ export function AuthorPageForReels() {
                 .filter((item) => {
                     const itemChannelId = String(item.channelId || "").trim();
                     const itemCustomUrl = String(item.customUrl || "").trim().replace(/^@/, "");
+                    const itemUsername = String(item.username || "").trim().replace(/^@/, "");
+
                     const pageChannelId = String(normalizedChannel.id || "").trim();
                     const pageCustomUrl = String(normalizedChannel.customUrl || "").trim().replace(/^@/, "");
 
                     return (
                         (itemChannelId && pageChannelId && itemChannelId === pageChannelId) ||
-                        (itemCustomUrl && pageCustomUrl && itemCustomUrl === pageCustomUrl)
+                        (itemCustomUrl && pageCustomUrl && itemCustomUrl === pageCustomUrl) ||
+                        (itemUsername && pageCustomUrl && itemUsername === pageCustomUrl)
                     );
                 });
 
