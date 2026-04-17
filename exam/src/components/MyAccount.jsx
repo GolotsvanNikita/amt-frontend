@@ -1,15 +1,15 @@
 import React, { useEffect, useMemo, useState, useContext, useCallback } from "react";
 import "./MyAccount.css";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { UserContext } from "../UserContext";
 
 const DEFAULT_PROFILE = {
-    name: "User",
-    username: "user",
-    subscribers: 0,
-    avatar: "/ava.png",
-    bannerUrl: "/backimage.jpg",
-    description: ""
+    Name: "User",
+    Username: "user",
+    Subscribers: 0,
+    AvatarUrl: "/ava.png",
+    BannerUrl: "/backimage.jpg",
+    Description: ""
 };
 
 const DEFAULT_ACHIEVEMENT = null;
@@ -18,7 +18,12 @@ export function MyAccount() {
     const navigate = useNavigate();
     const { userData } = useContext(UserContext);
 
-    const token = userData?.token || localStorage.getItem("token") || localStorage.getItem("authToken") || localStorage.getItem("jwt") || "";
+    const token =
+        userData?.token ||
+        localStorage.getItem("token") ||
+        localStorage.getItem("authToken") ||
+        localStorage.getItem("jwt") ||
+        "";
 
     const [profile, setProfile] = useState(DEFAULT_PROFILE);
     const [popularVideos, setPopularVideos] = useState([]);
@@ -93,12 +98,19 @@ export function MyAccount() {
 
     function normalizeTimeAgo(item) {
         return (
+            item?.TimeAgo ||
             item?.timeAgo ||
+            item?.PublishedAtText ||
             item?.publishedAtText ||
+            item?.PublishedText ||
             item?.publishedText ||
+            item?.CreatedAtText ||
             item?.createdAtText ||
+            item?.CreatedAgo ||
             item?.createdAgo ||
+            item?.UploadedAt ||
             item?.uploadedAt ||
+            item?.Time ||
             item?.time ||
             "Recently"
         );
@@ -106,9 +118,13 @@ export function MyAccount() {
 
     function extractVideoId(item, fallbackIndex = 0) {
         return (
+            item?.ResolvedId ||
             item?.resolvedId ||
+            item?.VideoId ||
             item?.videoId ||
+            item?.YoutubeId ||
             item?.youtubeId ||
+            item?.Id ||
             item?.id ||
             item?._id ||
             `video-${fallbackIndex}`
@@ -117,11 +133,17 @@ export function MyAccount() {
 
     function extractThumbnail(item) {
         return (
+            item?.ThumbnailUrl ||
             item?.thumbnailUrl ||
+            item?.Thumbnail ||
             item?.thumbnail ||
+            item?.PosterUrl ||
             item?.posterUrl ||
+            item?.Preview ||
             item?.preview ||
+            item?.Image ||
             item?.image ||
+            item?.CoverUrl ||
             item?.coverUrl ||
             "/16v.png"
         );
@@ -129,8 +151,11 @@ export function MyAccount() {
 
     function extractTitle(item, fallback = "Untitled video") {
         return (
+            item?.Title ||
             item?.title ||
+            item?.Name ||
             item?.name ||
+            item?.VideoTitle ||
             item?.videoTitle ||
             fallback
         );
@@ -138,23 +163,32 @@ export function MyAccount() {
 
     function extractChannelName(item) {
         return (
+            item?.ChannelName ||
             item?.channelName ||
+            item?.Author ||
             item?.author ||
+            item?.Username ||
             item?.username ||
+            item?.OwnerName ||
             item?.ownerName ||
+            item?.CreatorName ||
             item?.creatorName ||
-            profile?.username ||
+            profile?.Username ||
             "unknown"
         );
     }
 
     function extractChannelAvatar(item) {
         return (
+            item?.ChannelAvatar ||
             item?.channelAvatar ||
+            item?.Avatar ||
             item?.avatar ||
+            item?.AuthorAvatar ||
             item?.authorAvatar ||
+            item?.OwnerAvatar ||
             item?.ownerAvatar ||
-            profile?.avatar ||
+            profile?.AvatarUrl ||
             "/ava.png"
         );
     }
@@ -164,68 +198,90 @@ export function MyAccount() {
         const videoId = String(rawId);
 
         return {
-            id: videoId,
-            videoId,
-            type,
-            title: extractTitle(item),
-            thumbnail: extractThumbnail(item),
-            views: formatViews(
+            Id: videoId,
+            VideoId: videoId,
+            Type: type,
+            Title: extractTitle(item),
+            Thumbnail: extractThumbnail(item),
+            Views: formatViews(
+                item?.Views ??
                 item?.views ??
+                item?.ViewsCount ??
                 item?.viewsCount ??
+                item?.ViewCount ??
                 item?.viewCount ??
+                item?.TotalViews ??
                 item?.totalViews ??
                 0
             ),
-            time: normalizeTimeAgo(item),
-            avatar: extractChannelAvatar(item),
-            username: extractChannelName(item),
-            description: item?.description || "",
-            raw: item
+            Time: normalizeTimeAgo(item),
+            Avatar: extractChannelAvatar(item),
+            Username: extractChannelName(item),
+            Description: item?.Description || item?.description || "",
+            Raw: item
         };
     }
 
     function normalizePlaylist(item, index = 0) {
         return {
-            id: String(item?.id || item?._id || `playlist-${index}`),
-            title: item?.title || item?.name || "Untitled playlist",
-            thumbnail:
+            Id: String(item?.Id || item?.id || item?._id || `playlist-${index}`),
+            Title: item?.Title || item?.title || item?.Name || item?.name || "Untitled playlist",
+            Thumbnail:
+                item?.ThumbnailUrl ||
                 item?.thumbnailUrl ||
+                item?.Thumbnail ||
                 item?.thumbnail ||
+                item?.CoverUrl ||
                 item?.coverUrl ||
+                item?.Image ||
                 item?.image ||
                 "/15v.png",
-            videosCount:
+            VideosCount:
+                item?.VideosCount ??
                 item?.videosCount ??
+                item?.ItemsCount ??
                 item?.itemsCount ??
+                item?.Count ??
                 item?.count ??
                 0,
-            raw: item
+            Raw: item
         };
     }
 
     function normalizeSubscription(item, index = 0) {
         return {
-            id: String(item?.id || item?._id || item?.channelId || `sub-${index}`),
-            name:
+            Id: String(item?.Id || item?.id || item?._id || item?.ChannelId || item?.channelId || `sub-${index}`),
+            Name:
+                item?.Name ||
                 item?.name ||
+                item?.ChannelName ||
                 item?.channelName ||
+                item?.Username ||
                 item?.username ||
                 "Unknown channel",
-            username:
+            Username:
+                item?.Username ||
                 item?.username ||
+                item?.ChannelSlug ||
                 item?.channelSlug ||
+                item?.ChannelName ||
                 item?.channelName ||
                 "unknown",
-            avatar:
+            Avatar:
+                item?.Avatar ||
                 item?.avatar ||
+                item?.ChannelAvatar ||
                 item?.channelAvatar ||
+                item?.Image ||
                 item?.image ||
                 "/ava.png",
-            subscribers:
+            Subscribers:
+                item?.Subscribers ??
                 item?.subscribers ??
+                item?.SubscribersCount ??
                 item?.subscribersCount ??
                 0,
-            raw: item
+            Raw: item
         };
     }
 
@@ -233,11 +289,11 @@ export function MyAccount() {
         if (!item) return null;
 
         return {
-            id: item?.id || item?._id || "achievement",
-            title: item?.title || "Achievement",
-            description: item?.description || "",
-            themeSlug: item?.themeSlug || item?.slug || "",
-            isVisible: item?.isVisible !== false
+            Id: item?.Id || item?.id || item?._id || "achievement",
+            Title: item?.Title || item?.title || "Achievement",
+            Description: item?.Description || item?.description || "",
+            ThemeSlug: item?.ThemeSlug || item?.themeSlug || item?.Slug || item?.slug || "",
+            IsVisible: item?.IsVisible !== false && item?.isVisible !== false
         };
     }
 
@@ -245,33 +301,50 @@ export function MyAccount() {
         if (!data) return DEFAULT_PROFILE;
 
         return {
-            name:
+            Name:
+                data?.Name ||
                 data?.name ||
+                data?.DisplayName ||
                 data?.displayName ||
+                data?.FullName ||
                 data?.fullName ||
                 "User",
-            username:
+            Username:
+                data?.Username ||
                 data?.username ||
+                data?.UserName ||
                 data?.userName ||
+                data?.Login ||
                 data?.login ||
                 "user",
-            subscribers:
+            Subscribers:
+                data?.Subscribers ??
                 data?.subscribers ??
+                data?.SubscribersCount ??
                 data?.subscribersCount ??
+                data?.Followers ??
                 data?.followers ??
                 0,
-            avatar:
-                data?.avatar ||
+            AvatarUrl:
+                data?.AvatarUrl ||
                 data?.avatarUrl ||
+                data?.Avatar ||
+                data?.avatar ||
+                data?.ProfileImage ||
                 data?.profileImage ||
                 "/ava.png",
-            bannerUrl:
+            BannerUrl:
+                data?.BannerUrl ||
                 data?.bannerUrl ||
+                data?.Banner ||
                 data?.banner ||
+                data?.BackgroundImage ||
                 data?.backgroundImage ||
                 "/backimage.jpg",
-            description:
+            Description:
+                data?.Description ||
                 data?.description ||
+                data?.Bio ||
                 data?.bio ||
                 ""
         };
@@ -309,31 +382,41 @@ export function MyAccount() {
 
             const normalizedProfile = normalizeProfile(profileData);
 
-            const popularArray = Array.isArray(popularData?.videos)
+            const popularArray = Array.isArray(popularData?.Videos)
+                ? popularData.Videos
+                : Array.isArray(popularData?.videos)
                 ? popularData.videos
                 : Array.isArray(popularData)
                 ? popularData
                 : [];
 
-            const myVideosArray = Array.isArray(myVideosData?.videos)
+            const myVideosArray = Array.isArray(myVideosData?.Videos)
+                ? myVideosData.Videos
+                : Array.isArray(myVideosData?.videos)
                 ? myVideosData.videos
                 : Array.isArray(myVideosData)
                 ? myVideosData
                 : [];
 
-            const watchedArray = Array.isArray(watchedData?.videos)
+            const watchedArray = Array.isArray(watchedData?.Videos)
+                ? watchedData.Videos
+                : Array.isArray(watchedData?.videos)
                 ? watchedData.videos
                 : Array.isArray(watchedData)
                 ? watchedData
                 : [];
 
-            const playlistsArray = Array.isArray(playlistsData?.playlists)
+            const playlistsArray = Array.isArray(playlistsData?.Playlists)
+                ? playlistsData.Playlists
+                : Array.isArray(playlistsData?.playlists)
                 ? playlistsData.playlists
                 : Array.isArray(playlistsData)
                 ? playlistsData
                 : [];
 
-            const subscriptionsArray = Array.isArray(subscriptionsData?.subscriptions)
+            const subscriptionsArray = Array.isArray(subscriptionsData?.Subscriptions)
+                ? subscriptionsData.Subscriptions
+                : Array.isArray(subscriptionsData?.subscriptions)
                 ? subscriptionsData.subscriptions
                 : Array.isArray(subscriptionsData)
                 ? subscriptionsData
@@ -359,14 +442,14 @@ export function MyAccount() {
     }, [loadAccount]);
 
     const handleApplyTheme = () => {
-        if (!achievement?.themeSlug) {
+        if (!achievement?.ThemeSlug) {
             navigate("/theme-page");
             return;
         }
 
         navigate("/theme-page", {
             state: {
-                autoOpenTheme: achievement.themeSlug
+                autoOpenTheme: achievement.ThemeSlug
             }
         });
     };
@@ -376,7 +459,7 @@ export function MyAccount() {
     };
 
     const handleOpenVideo = (video) => {
-        const videoId = video?.videoId || video?.id;
+        const videoId = video?.VideoId || video?.Id;
         if (!videoId) return;
 
         navigate(`/video/${videoId}`, {
@@ -391,31 +474,31 @@ export function MyAccount() {
     };
 
     const handleOpenChannel = () => {
-        navigate(`/author/${profile?.username}`, {
+        navigate(`/author/${profile?.Username}`, {
             state: {
-                channelName: profile?.name,
-                username: profile?.username,
-                avatar: profile?.avatar,
-                subscribers: profile?.subscribers,
-                bannerUrl: profile?.bannerUrl,
-                description: profile?.description
+                channelName: profile?.Name,
+                username: profile?.Username,
+                avatar: profile?.AvatarUrl,
+                subscribers: profile?.Subscribers,
+                bannerUrl: profile?.BannerUrl,
+                description: profile?.Description
             }
         });
     };
 
     const handleOpenSubscription = (sub) => {
-        navigate(`/author/${sub?.username || sub?.id}`, {
+        navigate(`/author/${sub?.Username || sub?.Id}`, {
             state: {
-                channelName: sub?.name,
-                username: sub?.username,
-                avatar: sub?.avatar,
-                subscribers: sub?.subscribers
+                channelName: sub?.Name,
+                username: sub?.Username,
+                avatar: sub?.Avatar,
+                subscribers: sub?.Subscribers
             }
         });
     };
 
     const handleOpenPlaylist = (playlist) => {
-        navigate(`/playlist/${playlist.id}`, {
+        navigate(`/playlist/${playlist.Id}`, {
             state: {
                 playlist
             }
@@ -443,23 +526,23 @@ export function MyAccount() {
         <div className="account-page">
             <header
                 className="account-banner"
-                style={{ backgroundImage: `url(${profile.bannerUrl})` }}
+                style={{ backgroundImage: `url(${profile.BannerUrl})` }}
             >
                 <div className="banner-overlay">
                     <img
-                        src={profile.avatar}
-                        alt={profile.username}
+                        src={profile.AvatarUrl}
+                        alt={profile.Username}
                         className="account-avatar"
                         onClick={handleOpenChannel}
                         style={{ cursor: "pointer" }}
                     />
 
                     <div className="account-info">
-                        <h1>{profile.name}</h1>
-                        <p>@{profile.username} · {profile.subscribers} subscribers</p>
+                        <h1>{profile.Name}</h1>
+                        <p>@{profile.Username} · {profile.Subscribers} subscribers</p>
 
-                        {profile.description ? (
-                            <div className="account-description">{profile.description}</div>
+                        {profile.Description ? (
+                            <div className="account-description">{profile.Description}</div>
                         ) : null}
 
                         <div className="profile-actions">
@@ -513,7 +596,7 @@ export function MyAccount() {
                     {popularVideos.length > 0 ? (
                         popularVideos.map((video) => (
                             <VideoCard
-                                key={video.id}
+                                key={video.Id}
                                 video={video}
                                 onClick={() => handleOpenVideo(video)}
                             />
@@ -530,7 +613,7 @@ export function MyAccount() {
                     {myVideos.length > 0 ? (
                         myVideos.map((video) => (
                             <VideoCard
-                                key={video.id}
+                                key={video.Id}
                                 video={video}
                                 onClick={() => handleOpenVideo(video)}
                             />
@@ -547,7 +630,7 @@ export function MyAccount() {
                     {watchedVideos.length > 0 ? (
                         watchedVideos.map((video) => (
                             <VideoCard
-                                key={video.id}
+                                key={video.Id}
                                 video={video}
                                 onClick={() => handleOpenVideo(video)}
                             />
@@ -564,14 +647,14 @@ export function MyAccount() {
                     {playlists.length > 0 ? (
                         playlists.map((playlist) => (
                             <div
-                                key={playlist.id}
+                                key={playlist.Id}
                                 className="playlist-card"
                                 onClick={() => handleOpenPlaylist(playlist)}
                                 style={{ cursor: "pointer" }}
                             >
-                                <img src={playlist.thumbnail} alt={playlist.title} />
-                                <p>{playlist.title}</p>
-                                <span>{playlist.videosCount} videos</span>
+                                <img src={playlist.Thumbnail} alt={playlist.Title} />
+                                <p>{playlist.Title}</p>
+                                <span>{playlist.VideosCount} videos</span>
                             </div>
                         ))
                     ) : (
@@ -586,14 +669,14 @@ export function MyAccount() {
                     {subscriptions.length > 0 ? (
                         subscriptions.map((sub) => (
                             <div
-                                key={sub.id}
+                                key={sub.Id}
                                 className="playlist-card"
                                 onClick={() => handleOpenSubscription(sub)}
                                 style={{ cursor: "pointer" }}
                             >
-                                <img src={sub.avatar} alt={sub.name} />
-                                <p>{sub.name}</p>
-                                <span>@{sub.username}</span>
+                                <img src={sub.Avatar} alt={sub.Name} />
+                                <p>{sub.Name}</p>
+                                <span>@{sub.Username}</span>
                             </div>
                         ))
                     ) : (
@@ -602,10 +685,10 @@ export function MyAccount() {
                 </div>
             </section>
 
-            {achievement?.isVisible && (
+            {achievement?.IsVisible && (
                 <div className="achievement-bar">
                     <div className="achievement-text">
-                        {achievement.description || achievement.title}
+                        {achievement.Description || achievement.Title}
                     </div>
 
                     <div className="achievement-actions">
@@ -630,16 +713,16 @@ export function MyAccount() {
     function VideoCard({ video, onClick }) {
         return (
             <div className="video-card" onClick={onClick} style={{ cursor: "pointer" }}>
-                <img src={video.thumbnail} className="video-thumb" alt={video.title} />
+                <img src={video.Thumbnail} className="video-thumb" alt={video.Title} />
 
                 <div className="video-meta">
-                    <img src={video.avatar} className="meta-avatar" alt={video.username} />
+                    <img src={video.Avatar} className="meta-avatar" alt={video.Username} />
 
                     <div className="video-info">
-                        <div className="video-title">{video.title}</div>
-                        <div className="video-channel">@{video.username}</div>
+                        <div className="video-title">{video.Title}</div>
+                        <div className="video-channel">@{video.Username}</div>
                         <div className="video-sub">
-                            {video.views} views &nbsp;&nbsp; {video.time}
+                            {video.Views} views &nbsp;&nbsp; {video.Time}
                         </div>
                     </div>
 
