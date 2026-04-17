@@ -422,8 +422,10 @@ export function YouTubeCustomPlayer({
     }, [videos, routeVideoId, normalizedInitialVideo]);
 
     useEffect(() => {
-        setIsSubscribed(Boolean(currentVideo?.isSubscribed));
-    }, [currentVideo?.resolvedId, currentVideo?.isSubscribed]);
+        if (typeof currentVideo?.isSubscribed === "boolean") {
+            setIsSubscribed(currentVideo.isSubscribed);
+        }
+    }, [currentVideo?.resolvedId]);
 
     useEffect(() => {
         const parsedIncomingLikes = parseCompactNumber(likes);
@@ -924,6 +926,7 @@ export function YouTubeCustomPlayer({
                 throw new Error(data?.message || "Failed to subscribe");
             }
 
+            setIsSubscribed(nextValue);
             window.dispatchEvent(new Event("subscriptionsUpdated"));
         } catch (err) {
             console.error("Subscribe error", err);
