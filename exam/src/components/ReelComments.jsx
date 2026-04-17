@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import "./ReelComments.css";
 
 function getToken() {
@@ -35,6 +35,7 @@ function getSafeAvatar(entity) {
         entity?.profileImage,
         entity?.profileImageUrl,
         entity?.image,
+        entity?.snippet?.authorProfileImageUrl,
     ];
 
     for (const candidate of candidates) {
@@ -46,32 +47,93 @@ function getSafeAvatar(entity) {
     return "/ava.png";
 }
 
+function getCommentText(entity) {
+    return (
+        entity?.text ||
+        entity?.content ||
+        entity?.textDisplay ||
+        entity?.snippet?.textDisplay ||
+        entity?.snippet?.textOriginal ||
+        ""
+    );
+}
+
+function getCommentAuthor(entity) {
+    return (
+        entity?.name ||
+        entity?.author ||
+        entity?.username ||
+        entity?.authorDisplayName ||
+        entity?.snippet?.authorDisplayName ||
+        "Unknown user"
+    );
+}
+
+function getCommentTime(entity) {
+    return (
+        entity?.time ||
+        entity?.createdAt ||
+        entity?.publishedAt ||
+        entity?.snippet?.publishedAt ||
+        "just now"
+    );
+}
+
 function normalizeReply(reply, index) {
+    const snippet = reply?.snippet || {};
+
     return {
-        id: String(reply?.id || reply?._id || `reply-${index}`),
-        name: reply?.name || reply?.author || reply?.username || "Unknown user",
+        id: String(
+            reply?.id ||
+            reply?._id ||
+            snippet?.id ||
+            `reply-${index}`
+        ),
+        name: getCommentAuthor(reply),
         avatar: getSafeAvatar(reply),
-        text: reply?.text || reply?.content || "",
-        time: reply?.time || reply?.createdAt || "just now",
+        text: getCommentText(reply),
+        time: getCommentTime(reply),
     };
 }
 
 function normalizeComment(comment, index) {
+    const youtubeTopLevel = comment?.snippet?.topLevelComment;
+    const baseComment = youtubeTopLevel || comment;
+    const baseSnippet = baseComment?.snippet || {};
+
     const rawReplies = Array.isArray(comment?.replies)
         ? comment.replies
         : Array.isArray(comment?.replies?.items)
         ? comment.replies.items
         : Array.isArray(comment?.replies?.data)
         ? comment.replies.data
+        : Array.isArray(comment?.replies?.comments)
+        ? comment.replies.comments
         : [];
 
     return {
-        id: String(comment?.id || comment?._id || `comment-${index}`),
-        name: comment?.name || comment?.author || comment?.username || "Unknown user",
-        avatar: getSafeAvatar(comment),
-        text: comment?.text || comment?.content || "",
-        time: comment?.time || comment?.createdAt || "just now",
-        replies: rawReplies.map((reply, replyIndex) => normalizeReply(reply, replyIndex)),
+        id: String(
+            baseComment?.id ||
+            comment?.id ||
+            comment?._id ||
+            `comment-${index}`
+        ),
+        name: getCommentAuthor(baseComment),
+        avatar: getSafeAvatar(baseComment),
+        text:
+            baseComment?.text ||
+            baseComment?.content ||
+            baseSnippet?.textDisplay ||
+            baseSnippet?.textOriginal ||
+            "",
+        time:
+            baseComment?.time ||
+            baseComment?.createdAt ||
+            baseSnippet?.publishedAt ||
+            "just now",
+        replies: rawReplies.map((reply, replyIndex) =>
+            normalizeReply(reply, replyIndex)
+        ),
     };
 }
 
@@ -84,9 +146,11 @@ export function ReelComments({
     const [replyText, setReplyText] = useState("");
     const [replyTo, setReplyTo] = useState(null);
 
-    const normalizedComments = Array.isArray(comments)
-        ? comments.map((comment, index) => normalizeComment(comment, index))
-        : [];
+    const normalizedComments = useMemo(() => {
+        return Array.isArray(comments)
+            ? comments.map((comment, index) => normalizeComment(comment, index))
+            : [];
+    }, [comments]);
 
     const handleAddComment = async () => {
         const trimmedText = text.trim();
@@ -149,7 +213,7 @@ export function ReelComments({
                     },
                     body: JSON.stringify({
                         text: trimmedReply,
-                        parentId,
+                        parentId: String(parentId),
                     }),
                 }
             );
@@ -193,7 +257,11 @@ export function ReelComments({
                                         <span className="reel-comment-time">{comment.time}</span>
                                     </div>
 
-                                    <p>{comment.text}</p>
+                                    <p
+                                        dangerouslySetInnerHTML={{
+                                            __html: comment.text,
+                                        }}
+                                    />
 
                                     <div className="reel-comment-actions">
                                         <span
@@ -228,7 +296,9 @@ export function ReelComments({
                                         }
                                     />
 
-                                    <button onClick={() => handleAddReply(comment.id)}>➤</button>
+                                    <button type="button" onClick={() => handleAddReply(comment.id)}>
+                                        ➤
+                                    </button>
                                 </div>
                             )}
 
@@ -250,7 +320,11 @@ export function ReelComments({
                                                     <span className="reel-comment-time">{reply.time}</span>
                                                 </div>
 
-                                                <p>{reply.text}</p>
+                                                <p
+                                                    dangerouslySetInnerHTML={{
+                                                        __html: reply.text,
+                                                    }}
+                                                />
                                             </div>
                                         </div>
                                     ))}

@@ -56,6 +56,11 @@
     cursor: pointer;
 }
 
+.reel-comments-subscribe.is-subscribed {
+    background: #1f1f1f;
+    border: 1px solid #444;
+}
+
 .reel-comments-page-audio {
     margin-bottom: 22px;
     color: #fff;

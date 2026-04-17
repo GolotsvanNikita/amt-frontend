@@ -48,6 +48,13 @@ function normalizeVideo(video, index = 0) {
 
     return {
         id: video.videoId || video.id || `video-${index}`,
+        channelId: String(
+            video.channelId ||
+            video.authorId ||
+            video.channel?.id ||
+            video.channel?._id ||
+            ""
+        ),
         title: video.title || "Untitled video",
         thumbnail: video.thumbnail || video.thumbnailUrl || "/1v.png",
         channelName: video.channelName || video.author || "Unknown channel",
@@ -348,7 +355,17 @@ export function MainPage() {
 
                 <div className="videoInfo">
                     <h4>{normalizedVideo.title}</h4>
-                    <p>{normalizedVideo.channelName}</p>
+                    <p
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            if (normalizedVideo.channelId) {
+                                navigate(`/channel/${normalizedVideo.channelId}`);
+                            }
+                        }}
+                        style={{ cursor: normalizedVideo.channelId ? "pointer" : "default" }}
+                    >
+                        {normalizedVideo.channelName}
+                    </p>
                     <span>{normalizedVideo.meta}</span>
                 </div>
             </button>

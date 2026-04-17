@@ -106,6 +106,13 @@ function normalizeReel(item, index) {
 
     return {
         id: createFallbackId(item, index),
+        channelId: String(
+            item?.channelId ||
+            item?.authorId ||
+            item?.channel?.id ||
+            item?.channel?._id ||
+            ""
+        ),
         title: item?.title || "Untitled reel",
         videoUrl: youtubeId,
         posterUrl: item?.posterUrl || item?.thumbnailUrl || item?.thumbnail || item?.preview || "",
@@ -121,7 +128,14 @@ function normalizeReel(item, index) {
         likes: item?.likes ?? item?.likesCount ?? 0,
         shares: item?.shares ?? item?.sharesCount ?? 0,
         remix: item?.remix ?? item?.remixCount ?? 0,
-        commentsCount: item?.commentsCount ?? item?.comments?.length ?? 0,
+        commentsCount:
+            item?.commentsCount ??
+            item?.commentCount ??
+            item?.comments_count ??
+            item?.totalComments ??
+            item?.interactions?.commentsCount ??
+            item?.comments?.length ??
+            0,
         isSubscribed: Boolean(item?.isSubscribed),
         isLiked: Boolean(item?.isLiked),
         isShared: Boolean(item?.isShared),
@@ -624,6 +638,7 @@ export function FullReels() {
                             className="reel-side-action"
                             onClick={goToPrev}
                             disabled={activeIndex === 0}
+                            
                         >
                             <span>↑</span>
                             <small>Prev</small>
@@ -682,16 +697,24 @@ export function FullReels() {
                                 src={activeReel.avatarUrl}
                                 alt={activeReel.author}
                                 className="reel-author-avatar"
+                                onClick={() => {
+                                    if (activeReel.channelId) {
+                                        navigate(`/channel/${activeReel.channelId}`);
+                                    }
+                                }}
+                                style={{ cursor: activeReel.channelId ? "pointer" : "default" }}
                                 onError={(e) => {
                                     e.currentTarget.src = "/ava.png";
                                 }}
                             />
-
-                            <div className="reel-author-text">
+                            <div
+                                className="reel-author-text"
+                                onClick={() => navigate(`/channel/${activeReel.channelId}`)}
+                                style={{ cursor: 'pointer' }}
+                            >
                                 <h2>{activeReel.author}</h2>
                                 <p>{activeReel.username}</p>
                             </div>
-
                             <button
                                 type="button"
                                 className={`reel-subscribe-btn ${activeReel.isSubscribed ? "is-subscribed" : ""}`}

@@ -56,6 +56,13 @@ function getAuthToken(){
 function normalizeVideo(video) {
     return {
         ...video,
+        channelId: String(
+            video?.channelId ||
+            video?.authorId ||
+            video?.channel?.id ||
+            video?.channel?._id ||
+            ""
+        ),
         resolvedId: getResolvedId(video),
         resolvedTitle: video?.title || "Untitled video",
         resolvedChannelName: video?.channelName || video?.author || "Unknown channel",
@@ -544,12 +551,30 @@ export function YouTubeCustomPlayer({ routeVideoId = "", initialVideo = null, li
                                 src={currentVideo.resolvedThumbnail}
                                 alt={currentVideo.resolvedChannelName}
                                 className="channel-avatar"
+                                onClick={() => {
+                                    if (currentVideo.channelId) {
+                                        navigate(`/channel/${currentVideo.channelId}`);
+                                    }
+                                }}
+                                style={{ cursor: currentVideo.channelId ? "pointer" : "default" }}
                             />
-                            <div className="channel-text">
+
+                            <div
+                                className="channel-text"
+                                onClick={() => {
+                                    if (currentVideo.channelId) {
+                                        navigate(`/channel/${currentVideo.channelId}`);
+                                    }
+                                }}
+                                style={{ cursor: currentVideo.channelId ? "pointer" : "default" }}
+                            >
                                 <p className="channel-name">{currentVideo.resolvedChannelName}</p>
                                 <p className="channel-subs">{currentVideo.resolvedPublishedAt}</p>
                             </div>
-                            <button className="subscribe-btn" onClick={handleSubscribe}>Subscribe</button>
+
+                            <button className="subscribe-btn" onClick={handleSubscribe}>
+                                Subscribe
+                            </button>
                         </div>
 
                         <div className="actions">

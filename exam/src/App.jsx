@@ -38,7 +38,7 @@ function App()
                         <Route path="video" element={<VideoAndComments />} />
                         <Route path="video/:id" element={<VideoAndComments />} />
 
-                        <Route path="author" element={<AuthorPage />} />
+                        <Route path="channel/:channelId" element={<AuthorPage />} />
                         <Route path="my-account" element={<MyAccount />} />
                         <Route path="edit-profile" element={<EditProfile />} />
                         <Route path="theme-page" element={<ThemePage />} />

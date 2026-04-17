@@ -11,6 +11,27 @@ export function ReelCommentsPage() {
     const [reelInfo, setReelInfo] = useState(null);
     const [loading, setLoading] = useState(true);
 
+    const handleSubscribe = async () => {
+        const token = getToken();
+
+        setIsSubscribed((prev) => !prev);
+
+        try {
+            await fetch(`${import.meta.env.VITE_API_URL}/api/interactions/subscribe`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+                },
+                body: JSON.stringify({
+                    channelName: author?.title || author?.name,
+                }),
+            });
+        } catch (e) {
+            console.error("Subscribe error:", e);
+        }
+    };
+
     const loadComments = useCallback(async () => {
         if (!id) return;
 
@@ -70,8 +91,12 @@ export function ReelCommentsPage() {
                         <p>{reelInfo?.username || "Reel comments"}</p>
                     </div>
 
-                    <button type="button" className="reel-comments-subscribe">
-                        Subscribe
+                    <button
+                        type="button"
+                        className={`reel-comments-subscribe ${isSubscribed ? "is-subscribed" : ""}`}
+                        onClick={handleSubscribe}
+                    >
+                        {isSubscribed ? "Subscribed" : "Subscribe"}
                     </button>
                 </div>
 

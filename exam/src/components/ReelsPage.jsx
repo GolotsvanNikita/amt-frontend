@@ -46,6 +46,13 @@ function normalizeReel(item, index) {
 
     return {
         id: fallbackId,
+        channelId: String(
+            item?.channelId ||
+            item?.authorId ||
+            item?.channel?.id ||
+            item?.channel?._id ||
+            ""
+        ),
         title: item?.title || 'Untitled reel',
         imageUrl:
             item?.imageUrl ||
