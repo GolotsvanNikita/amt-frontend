@@ -42,6 +42,20 @@ function formatViews(views) {
     return `${numericViews} views`;
 }
 
+function formatLikes(value) {
+    const numericValue = Number(value) || 0;
+
+    if (numericValue >= 1_000_000) {
+        return `${(numericValue / 1_000_000).toFixed(1)}M`;
+    }
+
+    if (numericValue >= 1_000) {
+        return `${(numericValue / 1_000).toFixed(1)}K`;
+    }
+
+    return String(numericValue);
+}
+
 function getResolvedId(video) {
     return String(video?.videoId || video?.id || video?._id || "");
 }
@@ -81,8 +95,8 @@ function normalizeVideo(video) {
         video?.channel?._id ||
         video?.snippet?.channelId ||
         video?.authorChannelId ||
-        video?.channel?.customUrl ||
         video?.customUrl ||
+        video?.channel?.customUrl ||
         ""
     ).trim();
 
@@ -104,7 +118,6 @@ function normalizeVideo(video) {
         video?.channelAvatar ||
         video?.authorAvatar ||
         video?.avatarUrl ||
-        resolvedThumbnail ||
         "/ava.png";
 
     return {
@@ -114,7 +127,9 @@ function normalizeVideo(video) {
         resolvedTitle: video?.title || "Untitled video",
         resolvedChannelName,
         resolvedThumbnail,
-        resolvedChannelAvatar: isValidImageSrc(resolvedChannelAvatar) ? resolvedChannelAvatar : "/ava.png",
+        resolvedChannelAvatar: isValidImageSrc(resolvedChannelAvatar)
+            ? resolvedChannelAvatar
+            : "/ava.png",
         resolvedPublishedAt: video?.publishedAt || video?.time || "",
         resolvedViews: parseViewsToNumber(video?.views || video?.viewCount || 0),
         resolvedDescription: video?.description || " ",
@@ -126,6 +141,7 @@ function normalizeVideo(video) {
             video?.channel?.customUrl ||
             video?.customUrl ||
             "",
+        isSubscribed: Boolean(video?.isSubscribed),
         category: video?.category || video?.genre || video?.type || "",
     };
 }
@@ -162,6 +178,7 @@ export function YouTubeCustomPlayer({
 
     const [expandedDescription, setExpandedDescription] = useState(false);
     const [isSubscribed, setIsSubscribed] = useState(false);
+    const [localLikes, setLocalLikes] = useState(Number(likes) || 0);
 
     const [isPlaying, setIsPlaying] = useState(false);
     const [muted, setIsMuted] = useState(false);
@@ -235,6 +252,48 @@ export function YouTubeCustomPlayer({
     useEffect(() => {
         setIsSubscribed(Boolean(currentVideo?.isSubscribed));
     }, [currentVideo?.resolvedId, currentVideo?.isSubscribed]);
+
+    useEffect(() => {
+        setLocalLikes(Number(likes) || 0);
+    }, [likes, currentVideo?.resolvedId]);
+
+    useEffect(() => {
+        const loadInteractions = async () => {
+            if (!currentVideo?.resolvedId) return;
+
+            try {
+                const response = await fetch(
+                    `${import.meta.env.VITE_API_URL}/api/interactions/video/${currentVideo.resolvedId}`
+                );
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data?.message || "Failed to load interactions");
+                }
+
+                const likesCount =
+                    data?.likesCount ??
+                    data?.interactions?.likesCount ??
+                    data?.data?.likesCount ??
+                    0;
+
+                setLocalLikes(Number(likesCount) || 0);
+
+                if (typeof setLikes === "function") {
+                    setLikes(Number(likesCount) || 0);
+                }
+
+                if (typeof data?.isSubscribed === "boolean") {
+                    setIsSubscribed(data.isSubscribed);
+                }
+            } catch (err) {
+                console.error("Failed to load video interactions:", err);
+            }
+        };
+
+        loadInteractions();
+    }, [currentVideo?.resolvedId, setLikes]);
 
     const recommendedVideos = useMemo(() => {
         if (!currentVideo || !Array.isArray(videos)) return [];
@@ -362,7 +421,7 @@ export function YouTubeCustomPlayer({
         });
 
         if (!rawChannelId) {
-            console.warn("channelId is empty");
+            console.warn("channelId is empty, cannot navigate to author page");
             return;
         }
 
@@ -453,8 +512,10 @@ export function YouTubeCustomPlayer({
                 throw new Error("Failed to like video");
             }
 
+            setLocalLikes((prev) => prev + 1);
+
             if (typeof setLikes === "function") {
-                setLikes((prev) => prev + 1);
+                setLikes((prev) => Number(prev || 0) + 1);
             }
         } catch (err) {
             console.error("Like error:", err);
@@ -691,7 +752,7 @@ export function YouTubeCustomPlayer({
                         <div className="actions">
                             <button className="action-btn" onClick={handleLike}>
                                 <img src={Like} alt="like" width="34" height="34" />
-                                <span>{likes}</span>
+                                <span>{formatLikes(localLikes)}</span>
                             </button>
 
                             <button className="action-btn">

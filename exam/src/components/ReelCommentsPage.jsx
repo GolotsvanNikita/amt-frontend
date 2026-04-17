@@ -1,7 +1,72 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { ReelComments } from "./ReelComments";
 import "./ReelCommentsPage.css";
+
+function getToken() {
+    return (
+        localStorage.getItem("token") ||
+        localStorage.getItem("authToken") ||
+        localStorage.getItem("accessToken") ||
+        localStorage.getItem("jwt") ||
+        sessionStorage.getItem("token") ||
+        sessionStorage.getItem("authToken") ||
+        sessionStorage.getItem("accessToken") ||
+        sessionStorage.getItem("jwt") ||
+        ""
+    );
+}
+
+function isValidImageSrc(value) {
+    if (!value || typeof value !== "string") return false;
+
+    const trimmed = value.trim();
+
+    return (
+        trimmed.startsWith("http://") ||
+        trimmed.startsWith("https://") ||
+        trimmed.startsWith("/") ||
+        trimmed.startsWith("data:image/")
+    );
+}
+
+function normalizeAuthor(reelInfo) {
+    return {
+        id: String(
+            reelInfo?.channelId ||
+            reelInfo?.authorId ||
+            reelInfo?.channel?.id ||
+            reelInfo?.channel?._id ||
+            reelInfo?.customUrl ||
+            reelInfo?.channel?.customUrl ||
+            ""
+        ).trim(),
+        title:
+            reelInfo?.author ||
+            reelInfo?.channelName ||
+            reelInfo?.channel?.title ||
+            reelInfo?.name ||
+            "Unknown author",
+        username:
+            reelInfo?.username ||
+            reelInfo?.channel?.customUrl ||
+            reelInfo?.customUrl ||
+            "@unknown",
+        avatarUrl: isValidImageSrc(
+            reelInfo?.authorAvatar ||
+            reelInfo?.channel?.avatarUrl ||
+            reelInfo?.avatarUrl ||
+            reelInfo?.avatar
+        )
+            ? (
+                reelInfo?.authorAvatar ||
+                reelInfo?.channel?.avatarUrl ||
+                reelInfo?.avatarUrl ||
+                reelInfo?.avatar
+            )
+            : "/ava.png",
+    };
+}
 
 export function ReelCommentsPage() {
     const { id } = useParams();
@@ -10,26 +75,51 @@ export function ReelCommentsPage() {
     const [comments, setComments] = useState([]);
     const [reelInfo, setReelInfo] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [isSubscribed, setIsSubscribed] = useState(false);
+
+    const author = useMemo(() => normalizeAuthor(reelInfo || {}), [reelInfo]);
 
     const handleSubscribe = async () => {
         const token = getToken();
 
-        setIsSubscribed((prev) => !prev);
+        if (!token) {
+            navigate("/login");
+            return;
+        }
+
+        const previousValue = isSubscribed;
+        const nextValue = !previousValue;
+
+        setIsSubscribed(nextValue);
 
         try {
-            await fetch(`${import.meta.env.VITE_API_URL}/api/interactions/subscribe`, {
+            const response = await fetch(`${import.meta.env.VITE_API_URL}/api/interactions/subscribe`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
-                    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+                    Authorization: `Bearer ${token}`,
                 },
                 body: JSON.stringify({
-                    channelName: author?.title || author?.name,
+                    channelName: author?.title || author?.name || "",
                 }),
             });
+
+            if (!response.ok) {
+                throw new Error("Failed to subscribe");
+            }
         } catch (e) {
             console.error("Subscribe error:", e);
+            setIsSubscribed(previousValue);
         }
+    };
+
+    const openAuthorPage = () => {
+        if (!author?.id) {
+            console.warn("Author id not found:", author, reelInfo);
+            return;
+        }
+
+        navigate(`/channel/${encodeURIComponent(author.id)}`);
     };
 
     const loadComments = useCallback(async () => {
@@ -56,11 +146,27 @@ export function ReelCommentsPage() {
                 ? data.data.comments
                 : [];
 
+            const resolvedReelInfo =
+                data?.video ||
+                data?.reel ||
+                data?.data ||
+                null;
+
             setComments(incomingComments);
-            setReelInfo(data?.video || data?.reel || data?.data || null);
+            setReelInfo(resolvedReelInfo);
+
+            if (typeof data?.isSubscribed === "boolean") {
+                setIsSubscribed(data.isSubscribed);
+            } else if (typeof resolvedReelInfo?.isSubscribed === "boolean") {
+                setIsSubscribed(resolvedReelInfo.isSubscribed);
+            } else {
+                setIsSubscribed(false);
+            }
         } catch (error) {
             console.error("Failed to load reel comments:", error);
             setComments([]);
+            setReelInfo(null);
+            setIsSubscribed(false);
         } finally {
             setLoading(false);
         }
@@ -86,9 +192,13 @@ export function ReelCommentsPage() {
                         ← Back
                     </button>
 
-                    <div className="reel-comments-page-title">
-                        <h2>{reelInfo?.author || "Comments"}</h2>
-                        <p>{reelInfo?.username || "Reel comments"}</p>
+                    <div
+                        className="reel-comments-page-title"
+                        onClick={openAuthorPage}
+                        style={{ cursor: author?.id ? "pointer" : "default" }}
+                    >
+                        <h2>{author?.title || "Comments"}</h2>
+                        <p>{author?.username || "Reel comments"}</p>
                     </div>
 
                     <button
@@ -100,8 +210,12 @@ export function ReelCommentsPage() {
                     </button>
                 </div>
 
-                <div className="reel-comments-page-audio">
-                    ♪ Original Audio
+                <div
+                    className="reel-comments-page-audio"
+                    onClick={openAuthorPage}
+                    style={{ cursor: author?.id ? "pointer" : "default" }}
+                >
+                    ♪ {author?.title || "Original Audio"}
                 </div>
 
                 <div className="reel-comments-divider" />
