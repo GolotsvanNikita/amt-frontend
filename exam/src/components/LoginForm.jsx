@@ -65,17 +65,18 @@ export function FormFloatingBasicExample() {
         }
     };
 
-    const handleSocialAuth = async (provider) => {
-        setError('');
+    const handleSocialAuth = (provider) => {
+        const apiUrl = import.meta.env.VITE_API_URL;
+
+        if (!apiUrl) {
+            console.error('VITE_API_URL is not defined');
+            setError('Config error');
+            return;
+        }
+
         setSocialLoading(provider);
 
-        try {
-            window.location.href = `${import.meta.env.VITE_API_URL}/api/auth/${provider}`;
-        } catch (err) {
-            setError(err.message || `${provider} login failed`);
-        } finally {
-            setSocialLoading('');
-        }
+        window.location.href = `${apiUrl}/api/auth/${provider}`;
     };
 
     return (
