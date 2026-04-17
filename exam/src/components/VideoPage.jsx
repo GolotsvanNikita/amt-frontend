@@ -179,12 +179,39 @@ function normalizeVideo(video = {}) {
 
     const resolvedChannelAvatar = getFirstValidImage(
         video?.channel?.avatarUrl,
+        video?.channel?.avatar,
+        video?.channel?.imageUrl,
+        video?.channel?.thumbnailUrl,
+        video?.channel?.photoUrl,
+
         video?.channelAvatar,
         video?.authorAvatar,
         video?.ownerAvatar,
-        video?.channel?.thumbnailUrl,
+        video?.avatar,
+        video?.avatarUrl,
+        video?.imageUrl,
+        video?.photoUrl,
+
+        video?.snippet?.thumbnails?.high?.url,
+        video?.snippet?.thumbnails?.medium?.url,
+        video?.snippet?.thumbnails?.default?.url,
+
         "/ava.png"
     ) || "/ava.png";
+
+    console.log("CHANNEL AVATAR DEBUG:", {
+        title: video?.title,
+        channelName: video?.channelName,
+        channelObject: video?.channel,
+        channelAvatar: video?.channelAvatar,
+        authorAvatar: video?.authorAvatar,
+        ownerAvatar: video?.ownerAvatar,
+        avatar: video?.avatar,
+        avatarUrl: video?.avatarUrl,
+        imageUrl: video?.imageUrl,
+        photoUrl: video?.photoUrl,
+        resolvedChannelAvatar,
+    });
 
     const resolvedPublishedAt = getFirstNonEmptyString(
         video?.publishedAt,
