@@ -185,8 +185,8 @@ export function AuthorPage() {
                     : "/ava.png",
                 subscriberCount: successPayload?.channel?.subscriberCount || "0",
                 customUrl: successPayload?.channel?.customUrl || "@unknown",
-                bannerUrl: isValidImageSrc(successPayload?.channel?.bannerUrl)
-                    ? successPayload.channel.bannerUrl
+                BannerUrl: isValidImageSrc(successPayload?.channel?.BannerUrl)
+                    ? successPayload.channel.BannerUrl
                     : "/7.jpg",
             };
 
@@ -296,9 +296,9 @@ export function AuthorPage() {
         <div className="author-page">
             <div className="author-banner-wrap">
                 <img
-                    src={channel.bannerUrl}
+                    src={channel.BannerUrl}
                     alt={channel.title}
-                    className="author-banner"
+                    className="author-Banner"
                     onError={(e) => {
                         e.currentTarget.src = "/7.jpg";
                     }}
