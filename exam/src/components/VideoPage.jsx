@@ -57,6 +57,24 @@ function formatViews(views) {
 }
 
 function formatLikes(value) {
+    if (value === null || value === undefined) return "0";
+
+    if (typeof value === "string") {
+        const trimmed = value.trim();
+
+        // если уже формат типа 1.5K / 2M / 999
+        if (/^\d+(\.\d+)?[KM]?$/.test(trimmed)) {
+            return trimmed;
+        }
+
+        const parsed = Number(trimmed);
+        if (!isNaN(parsed)) {
+            value = parsed;
+        } else {
+            return "0";
+        }
+    }
+
     const numericValue = Number(value) || 0;
 
     if (numericValue >= 1_000_000) {
