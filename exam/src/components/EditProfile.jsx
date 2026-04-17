@@ -40,6 +40,9 @@ export function EditProfile() {
     const [avatarPreview, setAvatarPreview] = useState("/ava.png");
     const [bannerPreview, setBannerPreview] = useState("/backimage.jpg");
 
+    const [avatarFile, setAvatarFile] = useState(null);
+    const [bannerFile, setBannerFile] = useState(null);
+
     const colorInputRef = useRef(null);
     const avatarFileInputRef = useRef(null);
     const bannerFileInputRef = useRef(null);
@@ -72,7 +75,6 @@ export function EditProfile() {
         if (!raw) return "#B26E6E";
 
         const withHash = raw.startsWith("#") ? raw : `#${raw}`;
-
         if (/^#[0-9A-F]{6}$/.test(withHash)) {
             return withHash;
         }
@@ -102,6 +104,7 @@ export function EditProfile() {
             });
 
             let data = null;
+
             try {
                 data = await response.json();
             } catch {
@@ -119,47 +122,6 @@ export function EditProfile() {
             return data;
         },
         [authHeaders]
-    );
-
-    const trySaveProfile = useCallback(
-        async (payload) => {
-            const candidates = [
-                { url: `${apiBaseUrl}/api/account/profile`, methods: ["PUT", "POST", "PATCH"] },
-                { url: `${apiBaseUrl}/api/account/profile/update`, methods: ["POST", "PUT", "PATCH"] },
-                { url: `${apiBaseUrl}/api/account/update-profile`, methods: ["POST", "PUT", "PATCH"] },
-                { url: `${apiBaseUrl}/api/profile/update`, methods: ["POST", "PUT", "PATCH"] },
-                { url: `${apiBaseUrl}/api/account/edit-profile`, methods: ["POST", "PUT", "PATCH"] }
-            ];
-
-            let lastError = null;
-
-            for (const candidate of candidates) {
-                for (const method of candidate.methods) {
-                    try {
-                        return await fetchJson(candidate.url, {
-                            method,
-                            body: JSON.stringify(payload)
-                        });
-                    } catch (err) {
-                        lastError = err;
-                        const message = String(err?.message || "");
-
-                        const retryable =
-                            message.includes("404") ||
-                            message.includes("405") ||
-                            message.includes("Method Not Allowed") ||
-                            message.includes("Not Found");
-
-                        if (!retryable) {
-                            throw err;
-                        }
-                    }
-                }
-            }
-
-            throw lastError || new Error("Failed to save profile");
-        },
-        [apiBaseUrl, fetchJson]
     );
 
     const loadProfile = useCallback(async () => {
@@ -247,6 +209,7 @@ export function EditProfile() {
         }
 
         setAvatarPreview(previewUrl);
+        setAvatarFile(file);
         setSuccess("");
     };
 
@@ -261,8 +224,85 @@ export function EditProfile() {
         }
 
         setBannerPreview(previewUrl);
+        setBannerFile(file);
         setSuccess("");
     };
+
+    const uploadSingleFile = async (file, endpoint) => {
+        if (!file) return null;
+
+        const formData = new FormData();
+        formData.append("file", file);
+
+        const response = await fetch(`${apiBaseUrl}${endpoint}`, {
+            method: "POST",
+            headers: token
+                ? {
+                      Authorization: `Bearer ${token}`
+                  }
+                : {},
+            body: formData
+        });
+
+        let data = null;
+
+        try {
+            data = await response.json();
+        } catch {
+            data = null;
+        }
+
+        if (!response.ok) {
+            throw new Error(
+                data?.message ||
+                    data?.error ||
+                    `Upload failed: ${response.status}`
+            );
+        }
+
+        return data?.url || data?.avatarUrl || data?.bannerUrl || data?.path || null;
+    };
+
+    const trySaveProfile = useCallback(
+        async (payload) => {
+            const candidates = [
+                { url: `${apiBaseUrl}/api/account/profile`, methods: ["PUT", "POST", "PATCH"] },
+                { url: `${apiBaseUrl}/api/account/profile/update`, methods: ["POST", "PUT", "PATCH"] },
+                { url: `${apiBaseUrl}/api/account/update-profile`, methods: ["POST", "PUT", "PATCH"] },
+                { url: `${apiBaseUrl}/api/profile/update`, methods: ["POST", "PUT", "PATCH"] },
+                { url: `${apiBaseUrl}/api/account/edit-profile`, methods: ["POST", "PUT", "PATCH"] }
+            ];
+
+            let lastError = null;
+
+            for (const candidate of candidates) {
+                for (const method of candidate.methods) {
+                    try {
+                        return await fetchJson(candidate.url, {
+                            method,
+                            body: JSON.stringify(payload)
+                        });
+                    } catch (err) {
+                        lastError = err;
+                        const message = String(err?.message || "");
+
+                        const retryable =
+                            message.includes("404") ||
+                            message.includes("405") ||
+                            message.includes("Method Not Allowed") ||
+                            message.includes("Not Found");
+
+                        if (!retryable) {
+                            throw err;
+                        }
+                    }
+                }
+            }
+
+            throw lastError || new Error("Failed to save profile");
+        },
+        [apiBaseUrl, fetchJson]
+    );
 
     const handleSubmit = async () => {
         setSaving(true);
@@ -274,25 +314,43 @@ export function EditProfile() {
                 throw new Error("No auth token found");
             }
 
+            let avatarUrl = profile.avatar;
+            let bannerUrl = profile.bannerUrl;
+
+            if (avatarFile) {
+                const uploadedAvatarUrl = await uploadSingleFile(
+                    avatarFile,
+                    "/api/account/upload-avatar"
+                );
+                if (uploadedAvatarUrl) {
+                    avatarUrl = uploadedAvatarUrl;
+                }
+            }
+
+            if (bannerFile) {
+                const uploadedBannerUrl = await uploadSingleFile(
+                    bannerFile,
+                    "/api/account/upload-banner"
+                );
+                if (uploadedBannerUrl) {
+                    bannerUrl = uploadedBannerUrl;
+                }
+            }
+
             const payload = {
                 name: form.displayName?.trim() || "User",
                 username: form.username?.trim() || profile.username,
                 about: form.about?.trim() || "",
                 color: normalizeHexColor(form.color),
-
-                // пока отправляем только текущие строковые значения,
-                // без попытки upload файлов
-                avatarUrl: profile.avatar,
-                bannerUrl: profile.bannerUrl
+                avatarUrl,
+                bannerUrl
             };
 
             const responseData = await trySaveProfile(payload);
 
             const normalized = normalizeProfile({
                 ...payload,
-                ...responseData,
-                avatarUrl: responseData?.avatarUrl || profile.avatar,
-                bannerUrl: responseData?.bannerUrl || profile.bannerUrl
+                ...responseData
             });
 
             setProfile(normalized);
@@ -305,6 +363,8 @@ export function EditProfile() {
 
             setAvatarPreview(normalized.avatar || "/ava.png");
             setBannerPreview(normalized.bannerUrl || "/backimage.jpg");
+            setAvatarFile(null);
+            setBannerFile(null);
             setSuccess("Profile saved successfully");
 
             if (typeof setUserData === "function") {
