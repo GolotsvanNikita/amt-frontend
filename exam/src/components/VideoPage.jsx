@@ -62,7 +62,7 @@ function formatLikes(value) {
     if (typeof value === "string") {
         const trimmed = value.trim();
 
-        // если уже формат типа 1.5K / 2M / 999
+
         if (/^\d+(\.\d+)?[KM]?$/.test(trimmed)) {
             return trimmed;
         }
@@ -309,7 +309,7 @@ export function YouTubeCustomPlayer({
 
     const [expandedDescription, setExpandedDescription] = useState(false);
     const [isSubscribed, setIsSubscribed] = useState(false);
-    const [localLikes, setLocalLikes] = useState(Number(likes) || 0);
+    const [localLikes, setLocalLikes] = useState(formatLikes);
     const [channelDetails, setChannelDetails] = useState(null);
     const [channelAvatarsMap, setChannelAvatarsMap] = useState({});
 
@@ -387,7 +387,7 @@ export function YouTubeCustomPlayer({
     }, [currentVideo?.resolvedId, currentVideo?.isSubscribed]);
 
     useEffect(() => {
-        setLocalLikes(Number(likes) || 0);
+        setLocalLikes(formatLikes);
     }, [likes, currentVideo?.resolvedId]);
 
     useEffect(() => {
@@ -415,10 +415,10 @@ export function YouTubeCustomPlayer({
                     data?.data?.likesCount ??
                     0;
 
-                setLocalLikes(Number(likesCount) || 0);
+                setLocalLikes(formatLikes);
 
                 if (typeof setLikes === "function") {
-                    setLikes(Number(likesCount) || 0);
+                    setLikes(formatLikes);
                 }
 
                 if (typeof data?.isSubscribed === "boolean") {
