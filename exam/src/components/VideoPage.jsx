@@ -240,7 +240,6 @@ function normalizeVideo(video = {}) {
         resolvedChannelName,
         resolvedChannelAvatar,
         resolvedChannelRouteValue: channelRouteValue,
-
         resolvedId,
         resolvedTitle,
         resolvedThumbnail,
@@ -248,12 +247,10 @@ function normalizeVideo(video = {}) {
         resolvedViews,
         resolvedDescription,
         resolvedSubscriberCount,
-
         isSubscribed:
             typeof video?.isSubscribed === "boolean"
                 ? video.isSubscribed
                 : false,
-
         category: getFirstNonEmptyString(
             video?.category,
             video?.genre,
@@ -292,12 +289,11 @@ export function YouTubeCustomPlayer({
     const [playbackRate, setPlayBackRate] = useState(1);
     const [captionsAvailable, setCaptionsAbailable] = useState(false);
 
-    const [channelAvatarsMap, setChannelAvatarsMap] = useState({});
-
     const [expandedDescription, setExpandedDescription] = useState(false);
     const [isSubscribed, setIsSubscribed] = useState(false);
     const [localLikes, setLocalLikes] = useState(Number(likes) || 0);
     const [channelDetails, setChannelDetails] = useState(null);
+    const [channelAvatarsMap, setChannelAvatarsMap] = useState({});
 
     const [isPlaying, setIsPlaying] = useState(false);
     const [muted, setIsMuted] = useState(false);
@@ -420,83 +416,6 @@ export function YouTubeCustomPlayer({
         loadInteractions();
     }, [currentVideo?.resolvedId, setLikes]);
 
-    useEffect(() => {
-        const loadChannelDetails = async () => {
-            const apiUrl = import.meta.env.VITE_API_URL;
-
-            if (!apiUrl) {
-                setChannelDetails(null);
-                return;
-            }
-
-            const loadSingleChannel = async (channelRouteValue) => {
-                if (!channelRouteValue) return null;
-
-                try {
-                    const response = await fetch(
-                        `${apiUrl}/api/channel/${encodeURIComponent(channelRouteValue)}`
-                    );
-
-                    const data = await response.json();
-
-                    if (!response.ok) {
-                        throw new Error(data?.message || "Failed to load channel details");
-                    }
-
-                    return data?.channel || null;
-                } catch (err) {
-                    console.error("Failed to load channel details:", channelRouteValue, err);
-                    return null;
-                }
-            };
-
-            if (currentVideo?.resolvedChannelRouteValue) {
-                const currentChannel = await loadSingleChannel(
-                    currentVideo.resolvedChannelRouteValue
-                );
-
-                setChannelDetails(currentChannel);
-
-                if (currentChannel?.id && isValidImageSrc(currentChannel?.avatarUrl)) {
-                    setChannelAvatarsMap((prev) => ({
-                        ...prev,
-                        [String(currentChannel.id)]: currentChannel.avatarUrl,
-                    }));
-                }
-            } else {
-                setChannelDetails(null);
-            }
-
-            const uniqueRecommendedChannels = [
-                ...new Set(
-                    recommendedVideos
-                        .map((video) => String(video?.resolvedChannelId || video?.channelId || "").trim())
-                        .filter(Boolean)
-                ),
-            ];
-
-            for (const channelId of uniqueRecommendedChannels) {
-                if (channelAvatarsMap[channelId]) {
-                    continue;
-                }
-
-                const recommendedChannel = await loadSingleChannel(channelId);
-
-                if (recommendedChannel?.id && isValidImageSrc(recommendedChannel?.avatarUrl)) {
-                    setChannelAvatarsMap((prev) => ({
-                        ...prev,
-                        [String(recommendedChannel.id)]: recommendedChannel.avatarUrl,
-                    }));
-                }
-            }
-        };
-
-        loadChannelDetails();
-    }, [
-        currentVideo?.resolvedChannelRouteValue,
-        recommendedVideos,
-    ]);
-
     const recommendedVideos = useMemo(() => {
         if (!currentVideo || !Array.isArray(videos)) return [];
 
@@ -538,6 +457,111 @@ export function YouTubeCustomPlayer({
         currentVideo?.resolvedId,
         currentVideo?.resolvedChannelName,
         currentVideo?.category,
+    ]);
+
+    useEffect(() => {
+        const apiUrl = import.meta.env.VITE_API_URL;
+
+        if (!apiUrl) {
+            setChannelDetails(null);
+            return;
+        }
+
+        let cancelled = false;
+
+        const loadSingleChannel = async (channelRouteValue) => {
+            if (!channelRouteValue) return null;
+
+            try {
+                const response = await fetch(
+                    `${apiUrl}/api/channel/${encodeURIComponent(channelRouteValue)}`
+                );
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data?.message || "Failed to load channel details");
+                }
+
+                return data?.channel || null;
+            } catch (err) {
+                console.error("Failed to load channel details:", channelRouteValue, err);
+                return null;
+            }
+        };
+
+        const loadAllChannelDetails = async () => {
+            if (currentVideo?.resolvedChannelRouteValue) {
+                const currentChannel = await loadSingleChannel(
+                    currentVideo.resolvedChannelRouteValue
+                );
+
+                if (!cancelled) {
+                    setChannelDetails(currentChannel);
+                }
+
+                if (
+                    !cancelled &&
+                    currentChannel?.id &&
+                    isValidImageSrc(currentChannel?.avatarUrl)
+                ) {
+                    setChannelAvatarsMap((prev) => ({
+                        ...prev,
+                        [String(currentChannel.id)]: currentChannel.avatarUrl,
+                    }));
+                }
+            } else if (!cancelled) {
+                setChannelDetails(null);
+            }
+
+            const uniqueRecommendedChannels = [
+                ...new Set(
+                    recommendedVideos
+                        .map((video) =>
+                            String(
+                                video?.resolvedChannelId ||
+                                    video?.channelId ||
+                                    video?.resolvedChannelRouteValue ||
+                                    ""
+                            ).trim()
+                        )
+                        .filter(Boolean)
+                ),
+            ];
+
+            for (const channelId of uniqueRecommendedChannels) {
+                if (cancelled) {
+                    return;
+                }
+
+                if (channelAvatarsMap[channelId]) {
+                    continue;
+                }
+
+                const recommendedChannel = await loadSingleChannel(channelId);
+
+                if (
+                    !cancelled &&
+                    recommendedChannel?.id &&
+                    isValidImageSrc(recommendedChannel?.avatarUrl)
+                ) {
+                    setChannelAvatarsMap((prev) => ({
+                        ...prev,
+                        [String(recommendedChannel.id)]: recommendedChannel.avatarUrl,
+                    }));
+                }
+            }
+        };
+
+        loadAllChannelDetails();
+
+        return () => {
+            cancelled = true;
+        };
+    }, [
+        currentVideo?.resolvedChannelRouteValue,
+        recommendedVideos,
+        channelAvatarsMap,
     ]);
 
     const opts = {
@@ -793,10 +817,12 @@ export function YouTubeCustomPlayer({
     };
 
     const displayChannelAvatar =
-    (isValidImageSrc(channelDetails?.avatarUrl) && channelDetails.avatarUrl) ||
-    channelAvatarsMap[String(currentVideo?.resolvedChannelId || currentVideo?.channelId || "")] ||
-    currentVideo?.resolvedChannelAvatar ||
-    "/ava.png";
+        (isValidImageSrc(channelDetails?.avatarUrl) && channelDetails.avatarUrl) ||
+        channelAvatarsMap[
+            String(currentVideo?.resolvedChannelId || currentVideo?.channelId || "").trim()
+        ] ||
+        currentVideo?.resolvedChannelAvatar ||
+        "/ava.png";
 
     const displaySubscriberCount =
         channelDetails?.subscriberCount ||
@@ -809,7 +835,12 @@ export function YouTubeCustomPlayer({
         "";
 
     const getRecommendedChannelAvatar = (video) => {
-        const channelId = String(video?.resolvedChannelId || video?.channelId || "").trim();
+        const channelId = String(
+            video?.resolvedChannelId ||
+                video?.channelId ||
+                video?.resolvedChannelRouteValue ||
+                ""
+        ).trim();
 
         return (
             channelAvatarsMap[channelId] ||
