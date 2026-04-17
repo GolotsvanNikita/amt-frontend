@@ -492,9 +492,11 @@ export function YouTubeCustomPlayer({
 
         const loadAllChannelDetails = async () => {
             if (currentVideo?.resolvedChannelRouteValue) {
-                const currentChannel = await loadSingleChannel(
+                const currentChannelKey = String(
                     currentVideo.resolvedChannelRouteValue
-                );
+                ).trim();
+
+                const currentChannel = await loadSingleChannel(currentChannelKey);
 
                 console.log("CURRENT CHANNEL DETAILS:", currentChannel);
 
@@ -510,10 +512,10 @@ export function YouTubeCustomPlayer({
                     currentChannel?.photoUrl
                 );
 
-                if (!cancelled && currentChannel?.id && currentChannelAvatar) {
+                if (!cancelled && currentChannelKey && currentChannelAvatar) {
                     setChannelAvatarsMap((prev) => ({
                         ...prev,
-                        [String(currentChannel.id)]: currentChannelAvatar,
+                        [currentChannelKey]: currentChannelAvatar,
                     }));
                 }
             } else if (!cancelled) {
@@ -526,9 +528,9 @@ export function YouTubeCustomPlayer({
                         .map((video) =>
                             String(
                                 video?.resolvedChannelId ||
-                                video?.channelId ||
-                                video?.resolvedChannelRouteValue ||
-                                ""
+                                    video?.channelId ||
+                                    video?.resolvedChannelRouteValue ||
+                                    ""
                             ).trim()
                         )
                         .filter(Boolean)
@@ -536,9 +538,7 @@ export function YouTubeCustomPlayer({
             ];
 
             for (const channelId of uniqueRecommendedChannels) {
-                if (cancelled) {
-                    return;
-                }
+                if (cancelled) return;
 
                 if (channelAvatarsMap[channelId]) {
                     continue;
@@ -549,6 +549,7 @@ export function YouTubeCustomPlayer({
                 console.log("RECOMMENDED CHANNEL DETAILS:", {
                     channelId,
                     recommendedChannel,
+                    avatarFromApi: recommendedChannel?.avatarUrl,
                 });
 
                 const recommendedChannelAvatar = getFirstValidImage(
@@ -559,10 +560,10 @@ export function YouTubeCustomPlayer({
                     recommendedChannel?.photoUrl
                 );
 
-                if (!cancelled && recommendedChannel?.id && recommendedChannelAvatar) {
+                if (!cancelled && channelId && recommendedChannelAvatar) {
                     setChannelAvatarsMap((prev) => ({
                         ...prev,
-                        [String(recommendedChannel.id)]: recommendedChannelAvatar,
+                        [channelId]: recommendedChannelAvatar,
                     }));
                 }
             }
@@ -576,7 +577,6 @@ export function YouTubeCustomPlayer({
     }, [
         currentVideo?.resolvedChannelRouteValue,
         recommendedVideos,
-        channelAvatarsMap,
     ]);
 
     const opts = {
@@ -832,10 +832,10 @@ export function YouTubeCustomPlayer({
     };
 
     const displayChannelAvatar =
-        (isValidImageSrc(channelDetails?.avatarUrl) && channelDetails.avatarUrl) ||
         channelAvatarsMap[
-            String(currentVideo?.resolvedChannelId || currentVideo?.channelId || "").trim()
+            String(currentVideo?.resolvedChannelRouteValue || "").trim()
         ] ||
+        (isValidImageSrc(channelDetails?.avatarUrl) && channelDetails.avatarUrl) ||
         currentVideo?.resolvedChannelAvatar ||
         "/ava.png";
 
@@ -852,25 +852,33 @@ export function YouTubeCustomPlayer({
     const getRecommendedChannelAvatar = (video) => {
         const channelId = String(
             video?.resolvedChannelId ||
-            video?.channelId ||
-            video?.resolvedChannelRouteValue ||
-            ""
+                video?.channelId ||
+                video?.resolvedChannelRouteValue ||
+                ""
         ).trim();
 
-        return (
-            channelAvatarsMap[channelId] ||
-            getFirstValidImage(
-                video?.channel?.avatarUrl,
-                video?.channel?.avatar,
-                video?.channel?.thumbnailUrl,
-                video?.channel?.imageUrl,
-                video?.channel?.photoUrl,
-                video?.channelAvatar,
-                video?.authorAvatar,
-                video?.ownerAvatar
-            ) ||
-            "/ava.png"
+        const fromMap = channelAvatarsMap[channelId];
+        const fromVideo = getFirstValidImage(
+            video?.channel?.avatarUrl,
+            video?.channel?.avatar,
+            video?.channel?.thumbnailUrl,
+            video?.channel?.imageUrl,
+            video?.channel?.photoUrl,
+            video?.channelAvatar,
+            video?.authorAvatar,
+            video?.ownerAvatar,
+            video?.resolvedChannelAvatar
         );
+
+        console.log("RECOMMEND AVATAR CHECK:", {
+            videoTitle: video?.resolvedTitle,
+            channelId,
+            fromMap,
+            fromVideo,
+            finalAvatar: fromMap || fromVideo || "/ava.png",
+        });
+
+        return fromMap || fromVideo || "/ava.png";
     };
 
     const canOpenChannel = Boolean(currentVideo?.resolvedChannelRouteValue);
@@ -1132,6 +1140,10 @@ export function YouTubeCustomPlayer({
                                         alt={video.resolvedChannelName}
                                         className="yt-avatar"
                                         onError={(e) => {
+                                            console.warn("AVATAR LOAD ERROR:", {
+                                                title: video?.resolvedTitle,
+                                                avatarSrc: e.currentTarget.src,
+                                            });
                                             e.currentTarget.src = "/ava.png";
                                         }}
                                     />
