@@ -128,6 +128,15 @@ function normalizeReel(item, index) {
         item?.uploaderId
     );
 
+    console.log("NORMALIZE REEL CHANNEL:", {
+        rawItem: item,
+        resolvedChannelId,
+        username: item?.username,
+        handle: item?.handle,
+        author: item?.author,
+        channelName: item?.channelName,
+    });
+
     const resolvedCustomUrl = getFirstNonEmptyString(
         item?.customUrl,
         item?.channel?.customUrl,
@@ -485,69 +494,73 @@ export function FullReels() {
 
     useEffect(() => {
         const apiUrl = import.meta.env.VITE_API_URL;
-        if (!apiUrl || !activeReel?.id) return;
+        if (!apiUrl || !activeReel) {
+            setActiveChannelDetails(null);
+            return;
+        }
 
         let cancelled = false;
 
-        const updateActiveReelMeta = async () => {
+        const loadChannelDetails = async () => {
             const candidates = [
-                `${apiUrl}/api/reels/${encodeURIComponent(activeReel.id)}/comments`,
-                `${apiUrl}/api/reels/${encodeURIComponent(activeReel.id)}`,
-                `${apiUrl}/api/interactions/video/${encodeURIComponent(activeReel.id)}`,
-                activeReel.videoUrl
-                    ? `${apiUrl}/api/interactions/video/${encodeURIComponent(activeReel.videoUrl)}`
-                    : "",
-            ].filter(Boolean);
+                activeReel.channelId,
+            ]
+                .map((item) => String(item || "").trim())
+                .filter(Boolean);
 
-            for (const url of candidates) {
+            if (!candidates.length) {
+                console.warn("REEL CHANNEL: no real channelId in reel", activeReel);
+                if (!cancelled) {
+                    setActiveChannelDetails(null);
+                }
+                return;
+            }
+
+            for (const candidate of candidates) {
                 try {
-                    const response = await fetch(url);
-                    const text = await response.text();
+                    const response = await fetch(
+                        `${apiUrl}/api/channel/${encodeURIComponent(candidate)}`
+                    );
 
+                    const text = await response.text();
                     let data = null;
+
                     try {
                         data = text ? JSON.parse(text) : null;
                     } catch {
                         data = null;
                     }
 
-                    if (!response.ok || !data) {
-                        continue;
-                    }
+                    console.log("REEL CHANNEL RESPONSE:", {
+                        candidate,
+                        status: response.status,
+                        ok: response.ok,
+                        text,
+                        data,
+                    });
 
-                    const resolvedCommentsCount =
-                        data?.commentsCount ??
-                        data?.commentCount ??
-                        data?.totalComments ??
-                        data?.interactions?.commentsCount ??
-                        data?.data?.commentsCount ??
-                        (Array.isArray(data?.comments) ? data.comments.length : null) ??
-                        (Array.isArray(data) ? data.length : null);
-
-                    if (resolvedCommentsCount !== null && resolvedCommentsCount !== undefined) {
+                    if (response.ok && data?.channel) {
                         if (!cancelled) {
-                            setReels((prev) =>
-                                prev.map((item) =>
-                                    String(item.id) === String(activeReel.id)
-                                        ? { ...item, commentsCount: resolvedCommentsCount }
-                                        : item
-                                )
-                            );
+                            setActiveChannelDetails(data.channel);
                         }
-                        break;
+                        return;
                     }
                 } catch (error) {
-                    console.error("Failed to load reel comments count:", url, error);
+                    console.error("Failed to load reel channel:", candidate, error);
                 }
+            }
+
+            if (!cancelled) {
+                setActiveChannelDetails(null);
             }
         };
 
-        updateActiveReelMeta();
+        loadChannelDetails();
 
         return () => {
             cancelled = true;
         };
-    }, [activeReel?.id, activeReel?.videoUrl]);
+    }, [activeReel?.id, activeReel?.channelId]);
 
     const goToPrev = () => {
         if (!reels.length) return;
@@ -782,11 +795,7 @@ export function FullReels() {
     const openReelAuthorPage = () => {
         const routeValue = String(
             activeChannelDetails?.id ||
-            activeChannelDetails?.customUrl ||
-            activeReel?.channelRouteValue ||
             activeReel?.channelId ||
-            activeReel?.customUrl ||
-            activeReel?.username ||
             ""
         ).trim();
 
@@ -796,10 +805,17 @@ export function FullReels() {
             activeChannelDetails,
         });
 
-        if (!routeValue) return;
+        if (!routeValue) {
+            console.warn("No real channel id for reels author page");
+            return;
+        }
 
         navigate(`/reels-author/${encodeURIComponent(routeValue)}`);
     };
+
+    const canOpenAuthorPage = Boolean(
+        String(activeChannelDetails?.id || activeReel?.channelId || "").trim()
+    );
 
     const displayAuthorAvatar =
         (isValidImageSrc(activeChannelDetails?.avatarUrl) && activeChannelDetails.avatarUrl) ||
@@ -815,15 +831,6 @@ export function FullReels() {
         activeChannelDetails?.customUrl ||
         activeReel?.username ||
         "@unknown";
-
-    const canOpenAuthorPage = Boolean(
-        activeChannelDetails?.id ||
-        activeChannelDetails?.customUrl ||
-        activeReel?.channelRouteValue ||
-        activeReel?.channelId ||
-        activeReel?.customUrl ||
-        activeReel?.username
-    );
 
     if (loading) {
         return <div className="reel-details-loading">Loading reels...</div>;

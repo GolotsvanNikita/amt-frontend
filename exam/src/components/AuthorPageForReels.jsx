@@ -227,52 +227,55 @@ export function AuthorPageForReels() {
             const token = getAuthToken();
             const decodedChannelId = decodeURIComponent(String(channelId || "").trim());
 
-            const candidates = [
-                decodedChannelId,
-                decodedChannelId.startsWith("@") ? decodedChannelId.slice(1) : "",
-            ]
-                .map((item) => String(item || "").trim())
-                .filter(Boolean);
-
-            let successPayload = null;
-            let lastFailureMessage = "Channel not found";
-
-            for (const candidate of candidates) {
-                const result = await fetchChannelCandidate(apiUrl, candidate, token);
-
-                if (!result) continue;
-
-                if (result.ok && result.parsed?.channel) {
-                    successPayload = result.parsed;
-                    break;
-                }
-
-                if (typeof result.text === "string" && result.text.trim()) {
-                    lastFailureMessage = result.text.trim();
-                } else if (result.parsed?.message) {
-                    lastFailureMessage = result.parsed.message;
-                }
+            if (!decodedChannelId) {
+                throw new Error("Channel id is missing");
             }
 
-            if (!successPayload?.channel) {
-                throw new Error(lastFailureMessage || "Channel not found");
+            const response = await fetch(
+                `${apiUrl}/api/channel/${encodeURIComponent(decodedChannelId)}`,
+                {
+                    headers: {
+                        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+                    },
+                }
+            );
+
+            const text = await response.text();
+            let data = null;
+
+            try {
+                data = text ? JSON.parse(text) : null;
+            } catch {
+                data = null;
+            }
+
+            console.log("REELS AUTHOR CHANNEL RESPONSE:", {
+                candidate: decodedChannelId,
+                status: response.status,
+                ok: response.ok,
+                text,
+                data,
+            });
+
+            if (!response.ok || !data?.channel) {
+                throw new Error(text || data?.message || "Channel not found");
             }
 
             const normalizedChannel = {
                 id: String(
-                    successPayload?.channel?.id ??
-                    successPayload?.channel?._id ??
+                    data?.channel?.id ??
+                    data?.channel?._id ??
                     decodedChannelId
                 ),
-                title: successPayload?.channel?.title || "Unknown channel",
-                description: successPayload?.channel?.description || "",
-                avatarUrl: isValidImageSrc(successPayload?.channel?.avatarUrl)
-                    ? successPayload.channel.avatarUrl
+                title: data?.channel?.title || "Unknown channel",
+                description: data?.channel?.description || "",
+                avatarUrl: isValidImageSrc(data?.channel?.avatarUrl)
+                    ? data.channel.avatarUrl
                     : "/ava.png",
-                subscriberCount: successPayload?.channel?.subscriberCount || "0",
-                customUrl: successPayload?.channel?.customUrl || "@unknown",
-                bannerUrl: isValidImageSrc(successPayload?.channel?.bannerUrl)
-                    ? successPayload.channel.bannerUrl
+                subscriberCount: data?.channel?.subscriberCount || "0",
+                customUrl: data?.channel?.customUrl || "@unknown",
+                bannerUrl: isValidImageSrc(data?.channel?.bannerUrl)
+                    ? data.channel.bannerUrl
                     : "/7.jpg",
             };
 
@@ -281,7 +284,13 @@ export function AuthorPageForReels() {
             try {
                 const reelsResponse = await fetch(`${apiUrl}/api/reels?page=1&limit=100`);
                 const reelsText = await reelsResponse.text();
-                const reelsData = safeParseJson(reelsText);
+                let reelsData = null;
+
+                try {
+                    reelsData = reelsText ? JSON.parse(reelsText) : null;
+                } catch {
+                    reelsData = null;
+                }
 
                 const rawReels = Array.isArray(reelsData?.reels)
                     ? reelsData.reels
@@ -300,24 +309,11 @@ export function AuthorPageForReels() {
 
             const normalizedReels = reelsPayload
                 .map((item, index) => normalizeReel(item, index))
-                .filter((item) => {
-                    const itemChannelId = String(item.channelId || "").trim();
-                    const itemCustomUrl = String(item.customUrl || "").trim().replace(/^@/, "");
-                    const itemUsername = String(item.username || "").trim().replace(/^@/, "");
-
-                    const pageChannelId = String(normalizedChannel.id || "").trim();
-                    const pageCustomUrl = String(normalizedChannel.customUrl || "").trim().replace(/^@/, "");
-
-                    return (
-                        (itemChannelId && pageChannelId && itemChannelId === pageChannelId) ||
-                        (itemCustomUrl && pageCustomUrl && itemCustomUrl === pageCustomUrl) ||
-                        (itemUsername && pageCustomUrl && itemUsername === pageCustomUrl)
-                    );
-                });
+                .filter((item) => String(item.channelId || "").trim() === String(normalizedChannel.id || "").trim());
 
             setChannel(normalizedChannel);
             setReels(normalizedReels);
-            setIsSubscribed(Boolean(successPayload?.isSubscribed));
+            setIsSubscribed(Boolean(data?.isSubscribed));
         } catch (err) {
             console.error("REELS AUTHOR PAGE ERROR:", err);
             setError(err.message || "Something went wrong");
