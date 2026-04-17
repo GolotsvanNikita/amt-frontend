@@ -29,6 +29,19 @@ function isValidImageSrc(value) {
     );
 }
 
+function safeParseJson(text) {
+    if (!text || typeof text !== "string") {
+        return null;
+    }
+
+    try {
+        return JSON.parse(text);
+    } catch (error) {
+        console.error("Failed to parse channel JSON:", error);
+        return null;
+    }
+}
+
 function normalizeVideo(item, index = 0) {
     return {
         id: String(
@@ -64,6 +77,27 @@ function normalizePlaylist(item, index = 0) {
     };
 }
 
+async function fetchChannelCandidate(apiUrl, rawCandidate, token) {
+    const candidate = String(rawCandidate || "").trim();
+    if (!candidate) return null;
+
+    const response = await fetch(`${apiUrl}/api/channel/${encodeURIComponent(candidate)}`, {
+        headers: {
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+    });
+
+    const text = await response.text();
+    const parsed = safeParseJson(text);
+
+    return {
+        candidate,
+        response,
+        text,
+        parsed,
+    };
+}
+
 export function AuthorPage() {
     const { channelId } = useParams();
     const navigate = useNavigate();
@@ -88,62 +122,89 @@ export function AuthorPage() {
             }
 
             const token = getAuthToken();
+            const decodedChannelId = decodeURIComponent(String(channelId || "").trim());
 
-            const response = await fetch(`${apiUrl}/api/channel/${channelId}`, {
-                headers: {
-                    ...(token ? { Authorization: `Bearer ${token}` } : {}),
-                },
-            });
+            const candidates = [
+                decodedChannelId,
+                decodedChannelId.startsWith("@") ? decodedChannelId.slice(1) : "",
+            ].filter(Boolean);
 
-            const text = await response.text();
-            let data = {};
+            console.log("AUTHOR PAGE CANDIDATES:", candidates);
 
-            try {
-                data = text ? JSON.parse(text) : {};
-            } catch (parseError) {
-                console.error("Failed to parse channel JSON:", parseError);
-                data = {};
+            let successPayload = null;
+            let lastFailureMessage = "Failed to load channel";
+
+            for (const candidate of candidates) {
+                const result = await fetchChannelCandidate(apiUrl, candidate, token);
+
+                if (!result) continue;
+
+                const { response, text, parsed } = result;
+
+                console.log("AUTHOR PAGE RESPONSE:", {
+                    candidate,
+                    status: response.status,
+                    ok: response.ok,
+                    text,
+                    parsed,
+                });
+
+                if (response.ok && parsed) {
+                    successPayload = parsed;
+                    break;
+                }
+
+                if (response.ok && !parsed) {
+                    lastFailureMessage = text || "Channel response is not valid JSON";
+                    continue;
+                }
+
+                if (parsed?.message) {
+                    lastFailureMessage = parsed.message;
+                } else if (text) {
+                    lastFailureMessage = text;
+                }
             }
 
-            if (!response.ok) {
-                throw new Error(data?.message || "Failed to load channel");
+            if (!successPayload) {
+                throw new Error(lastFailureMessage || "Failed to load channel");
             }
 
             const normalizedChannel = {
                 id: String(
-                    data?.channel?.id ??
-                    data?.channel?._id ??
-                    channelId
+                    successPayload?.channel?.id ??
+                    successPayload?.channel?._id ??
+                    decodedChannelId
                 ),
-                title: data?.channel?.title || "Unknown channel",
-                description: data?.channel?.description || "",
-                avatarUrl: isValidImageSrc(data?.channel?.avatarUrl)
-                    ? data.channel.avatarUrl
+                title: successPayload?.channel?.title || "Unknown channel",
+                description: successPayload?.channel?.description || "",
+                avatarUrl: isValidImageSrc(successPayload?.channel?.avatarUrl)
+                    ? successPayload.channel.avatarUrl
                     : "/ava.png",
-                subscriberCount: data?.channel?.subscriberCount || "0",
-                customUrl: data?.channel?.customUrl || "@unknown",
-                bannerUrl: isValidImageSrc(data?.channel?.bannerUrl)
-                    ? data.channel.bannerUrl
+                subscriberCount: successPayload?.channel?.subscriberCount || "0",
+                customUrl: successPayload?.channel?.customUrl || "@unknown",
+                bannerUrl: isValidImageSrc(successPayload?.channel?.bannerUrl)
+                    ? successPayload.channel.bannerUrl
                     : "/7.jpg",
             };
 
-            const normalizedVideos = Array.isArray(data?.videos)
-                ? data.videos.map((item, index) => normalizeVideo(item, index))
+            const normalizedVideos = Array.isArray(successPayload?.videos)
+                ? successPayload.videos.map((item, index) => normalizeVideo(item, index))
                 : [];
 
-            const normalizedFeaturedVideo = data?.featuredVideo
-                ? normalizeVideo(data.featuredVideo, 0)
+            const normalizedFeaturedVideo = successPayload?.featuredVideo
+                ? normalizeVideo(successPayload.featuredVideo, 0)
                 : null;
 
-            const normalizedPlaylists = Array.isArray(data?.playlists)
-                ? data.playlists.map((item, index) => normalizePlaylist(item, index))
+            const normalizedPlaylists = Array.isArray(successPayload?.playlists)
+                ? successPayload.playlists.map((item, index) => normalizePlaylist(item, index))
                 : [];
 
             setChannel(normalizedChannel);
             setVideos(normalizedVideos);
             setFeaturedVideo(normalizedFeaturedVideo);
             setPlaylists(normalizedPlaylists);
-            setIsSubscribed(Boolean(data?.isSubscribed));
+            setIsSubscribed(Boolean(successPayload?.isSubscribed));
         } catch (err) {
             console.error("CHANNEL PAGE ERROR:", err);
             setError(err.message || "Something went wrong");

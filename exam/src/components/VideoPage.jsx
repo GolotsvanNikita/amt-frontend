@@ -280,6 +280,7 @@ export function YouTubeCustomPlayer({
                 }
 
                 console.log("VIDEO INTERACTIONS:", data);
+                console.log("OPEN CHANNEL FULL VIDEO:", JSON.stringify(currentVideo, null, 2));
 
                 const likesCount =
                     data?.likesCount ??
@@ -435,7 +436,7 @@ export function YouTubeCustomPlayer({
             rawChannelId,
             currentVideo,
         });
-
+        console.log("OPEN CHANNEL FULL VIDEO:", JSON.stringify(currentVideo, null, 2));
         if (!rawChannelId) {
             console.warn("channelId is empty, cannot navigate to author page");
             return;
