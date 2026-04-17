@@ -888,6 +888,11 @@ export function YouTubeCustomPlayer({
         const previousValue = isSubscribed;
         const nextValue = !previousValue;
 
+        const avatarToSend =
+            channelDetails?.avatarUrl ||
+            currentVideo?.resolvedChannelAvatar ||
+            "/ava.png";
+
         try {
             setIsSubscribed(nextValue);
 
@@ -901,13 +906,20 @@ export function YouTubeCustomPlayer({
                     },
                     body: JSON.stringify({
                         channelName: currentVideo.resolvedChannelName,
+                        avatarUrl: avatarToSend,
                     }),
                 }
             );
 
+            const data = await response.json().catch(() => null);
+
+            console.log("VIDEO PAGE SUBSCRIBE RESPONSE:", data);
+
             if (!response.ok) {
-                throw new Error("Failed to subscribe");
+                throw new Error(data?.message || "Failed to subscribe");
             }
+
+            window.dispatchEvent(new Event("subscriptionsUpdated"));
         } catch (err) {
             console.error("Subscribe error", err);
             setIsSubscribed(previousValue);
