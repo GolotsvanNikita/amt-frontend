@@ -70,31 +70,49 @@ export function VideoAndComments() {
                     }
                 );
 
+                const data = await response.json();
+
+                console.log("VIDEO PAGE INTERACTIONS RAW:", data);
+
                 if (!response.ok) {
-                    throw new Error("Failed to load interactions");
+                    throw new Error(data?.message || "Failed to load interactions");
                 }
 
-                const data = await response.json();
-                const incomingComments = Array.isArray(data?.comments) ? data.comments : [];
+                const incomingComments = Array.isArray(data?.comments)
+                    ? data.comments
+                    : Array.isArray(data?.interactions?.comments)
+                    ? data.interactions.comments
+                    : Array.isArray(data?.data?.comments)
+                    ? data.data.comments
+                    : [];
+
+                const resolvedLikes =
+                    data?.likesCount ??
+                    data?.interactions?.likesCount ??
+                    data?.data?.likesCount ??
+                    0;
 
                 setComments((prev) =>
                     append ? mergeUniqueComments(prev, incomingComments) : incomingComments
                 );
 
-                setLikes(Number(data?.likesCount) || 0);
+                setLikes(Number(resolvedLikes) || 0);
                 setCommentsPage(pageToLoad);
 
                 if (typeof data?.hasMoreComments === "boolean") {
                     setHasMoreComments(data.hasMoreComments);
                 } else if (typeof data?.hasMore === "boolean") {
                     setHasMoreComments(data.hasMore);
+                } else if (typeof data?.interactions?.hasMoreComments === "boolean") {
+                    setHasMoreComments(data.interactions.hasMoreComments);
+                } else if (typeof data?.data?.hasMoreComments === "boolean") {
+                    setHasMoreComments(data.data.hasMoreComments);
                 } else {
                     setHasMoreComments(incomingComments.length === 10);
                 }
             } catch (err) {
                 console.error("Failed to load interactions:", err);
                 setInteractionsError(err.message || "Failed to load interactions");
-
             } finally {
                 setLoadingInteractions(false);
                 setLoadingMoreComments(false);
