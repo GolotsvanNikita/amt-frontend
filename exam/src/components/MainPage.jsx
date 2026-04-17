@@ -397,6 +397,32 @@ export function MainPage() {
         return allVideos.length > 0 ? allVideos[0] : null;
     }, [allVideos]);
 
+    const [carouselVideos, setCarouselVideos] = useState([]);
+
+    const getRandomVideos = useCallback(() => {
+        if (!allVideos.length) return [];
+
+        const shuffled = [...allVideos].sort(() => 0.5 - Math.random());
+
+        return shuffled.slice(0, 5);
+    }, [allVideos]);
+
+    useEffect(() => {
+        if (allVideos.length) {
+            setCarouselVideos(getRandomVideos());
+        }
+    }, [allVideos, getRandomVideos]);
+
+    const handleCarouselSelect = (selectedIndex) => {
+        if (selectedIndex === carouselVideos.length - 1) {
+            console.log("CAROUSEL: LOAD NEW RANDOM");
+
+            setTimeout(() => {
+                setCarouselVideos(getRandomVideos());
+            }, 300);
+        }
+    };
+
     return (
         <div className="mainPage">
             <div
@@ -426,20 +452,35 @@ export function MainPage() {
                     <p>{featuredVideo?.meta || "No featured video yet"}</p>
 
                     <div className="carousel" style={{ flex: 1 }}>
-                        <Carousel data-bs-theme="dark">
-                            {[1, 2, 3].map((item) => (
-                                <Carousel.Item key={item}>
+                        <Carousel
+                            data-bs-theme="dark"
+                            interval={2500}
+                            onSelect={handleCarouselSelect}
+                        >
+                            {carouselVideos.map((video, index) => (
+                                <Carousel.Item key={video.id || index}>
                                     <img
                                         className="d-block w-100"
-                                        src={`/s${item}.jpg`}
-                                        alt={`Slide ${item}`}
+                                        src={
+                                            video.thumbnail ||
+                                            `https://i.ytimg.com/vi/${video.id}/hqdefault.jpg`
+                                        }
+                                        alt={video.title}
                                         style={{
                                             width: "100%",
                                             objectFit: "cover",
                                             height: "140px",
                                             borderRadius: "20px",
+                                            cursor: "pointer",
                                         }}
+                                        onClick={() => handleVideoClick(video)}
                                     />
+
+                                    {/* подпись как у YouTube */}
+                                    <Carousel.Caption>
+                                        <h5>{video.title}</h5>
+                                        <p>{video.channelName}</p>
+                                    </Carousel.Caption>
                                 </Carousel.Item>
                             ))}
                         </Carousel>
