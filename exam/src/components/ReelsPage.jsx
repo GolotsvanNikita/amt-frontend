@@ -213,9 +213,11 @@ export function ReelsPage() {
                 return;
             }
 
+            const API_URL = import.meta.env.VITE_API_URL;
+
             const [categoriesRes, reelsRes] = await Promise.all([
-                fetch("http://localhost:5000/api/reels/categories"),
-                fetch("http://localhost:5000/api/reels"),
+                fetch(`${API_URL}/api/reels/categories`),
+                fetch(`${API_URL}/api/reels`),
             ]);
 
             const categoriesData = await categoriesRes.json();
