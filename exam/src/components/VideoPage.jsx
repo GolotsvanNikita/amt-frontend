@@ -136,6 +136,41 @@ function getResolvedId(video) {
     );
 }
 
+function extractLikesFromResponse(data, fallbackValue = 0) {
+    const candidates = [
+        data?.likesCount,
+        data?.interactions?.likesCount,
+        data?.data?.likesCount,
+        data?.video?.likesCount,
+        data?.video?.interactions?.likesCount,
+        data?.result?.likesCount,
+        fallbackValue,
+    ];
+
+    const firstDefined = candidates.find(
+        (value) => value !== undefined && value !== null && value !== ""
+    );
+
+    const parsed = parseCompactNumber(firstDefined ?? 0);
+
+    console.log("LIKES FIELD CHECK:", {
+        rawResponse: data,
+        candidates: {
+            likesCount: data?.likesCount,
+            interactionsLikesCount: data?.interactions?.likesCount,
+            dataLikesCount: data?.data?.likesCount,
+            videoLikesCount: data?.video?.likesCount,
+            videoInteractionsLikesCount: data?.video?.interactions?.likesCount,
+            resultLikesCount: data?.result?.likesCount,
+            fallbackValue,
+        },
+        selectedRawValue: firstDefined ?? 0,
+        parsedLikes: parsed,
+    });
+
+    return parsed;
+}
+
 function normalizeVideo(video = {}) {
     const resolvedId = getResolvedId(video);
 
@@ -339,6 +374,15 @@ export function YouTubeCustomPlayer({
 
                 console.log("ROUTE VIDEO ID:", routeVideoId);
                 console.log("VIDEOS:", normalized.slice(0, 5));
+                console.log("CURRENT VIDEO LIKES FROM /api/video/all SAMPLE:", normalized.slice(0, 5).map((item) => ({
+                    id: item.resolvedId,
+                    title: item.resolvedTitle,
+                    resolvedLikes: item.resolvedLikes,
+                    rawLikesCount: item.likesCount,
+                    rawLikeCount: item.likeCount,
+                    rawLikes: item.likes,
+                    rawInteractionsLikesCount: item.interactions?.likesCount,
+                })));
 
                 setVideos(normalized);
             } catch (err) {
@@ -382,7 +426,15 @@ export function YouTubeCustomPlayer({
     }, [currentVideo?.resolvedId, currentVideo?.isSubscribed]);
 
     useEffect(() => {
-        setLocalLikes(parseCompactNumber(likes));
+        const parsedIncomingLikes = parseCompactNumber(likes);
+
+        console.log("LIKES PROP CHECK:", {
+            incomingLikesProp: likes,
+            parsedIncomingLikes,
+            currentVideoResolvedId: currentVideo?.resolvedId,
+        });
+
+        setLocalLikes(parsedIncomingLikes);
     }, [likes, currentVideo?.resolvedId]);
 
     useEffect(() => {
@@ -404,14 +456,10 @@ export function YouTubeCustomPlayer({
                 console.log("OPEN CHANNEL FULL VIDEO:", JSON.stringify(currentVideo, null, 2));
                 console.log("VIDEO PAGE INTERACTIONS RAW:", data);
 
-                const likesCount =
-                    data?.likesCount ??
-                    data?.interactions?.likesCount ??
-                    data?.data?.likesCount ??
-                    currentVideo?.resolvedLikes ??
-                    0;
-
-                const parsedLikes = parseCompactNumber(likesCount);
+                const parsedLikes = extractLikesFromResponse(
+                    data,
+                    currentVideo?.resolvedLikes ?? 0
+                );
 
                 setLocalLikes(parsedLikes);
 
@@ -757,6 +805,12 @@ export function YouTubeCustomPlayer({
         if (!token || !currentVideo?.resolvedId) return;
 
         try {
+            console.log("LIKE CLICK BEFORE REQUEST:", {
+                videoId: currentVideo.resolvedId,
+                localLikesBefore: localLikes,
+                routeVideoId,
+            });
+
             const response = await fetch(
                 `${import.meta.env.VITE_API_URL}/api/interactions/like/${currentVideo.resolvedId}`,
                 {
@@ -767,14 +821,54 @@ export function YouTubeCustomPlayer({
                 }
             );
 
+            const responseText = await response.text();
+            let responseData = null;
+
+            try {
+                responseData = responseText ? JSON.parse(responseText) : null;
+            } catch {
+                responseData = responseText;
+            }
+
+            console.log("LIKE POST RESPONSE:", {
+                ok: response.ok,
+                status: response.status,
+                responseData,
+            });
+
             if (!response.ok) {
                 throw new Error("Failed to like video");
             }
 
-            setLocalLikes((prev) => prev + 1);
+            const refreshResponse = await fetch(
+                `${import.meta.env.VITE_API_URL}/api/interactions/video/${currentVideo.resolvedId}`
+            );
+
+            const refreshData = await refreshResponse.json();
+
+            console.log("LIKE REFRESH RESPONSE:", refreshData);
+
+            if (!refreshResponse.ok) {
+                throw new Error(
+                    refreshData?.message || "Failed to refresh likes after like"
+                );
+            }
+
+            const refreshedLikes = extractLikesFromResponse(
+                refreshData,
+                currentVideo?.resolvedLikes ?? localLikes
+            );
+
+            console.log("LIKE FINAL APPLY:", {
+                refreshedLikes,
+                currentVideoResolvedLikes: currentVideo?.resolvedLikes,
+                localLikesBeforeSet: localLikes,
+            });
+
+            setLocalLikes(refreshedLikes);
 
             if (typeof setLikes === "function") {
-                setLikes((prev) => parseCompactNumber(prev) + 1);
+                setLikes(refreshedLikes);
             }
         } catch (err) {
             console.error("Like error:", err);
