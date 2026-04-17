@@ -27,48 +27,51 @@ button {
     background: #000;
     color: #fff;
     overflow-x: hidden;
-    padding: 8px 0 20px;
+    padding: 20px 0 28px;
 }
 
-.reels-page-inner {
+.reels-content {
     width: 100%;
-    max-width: 1450px;
+    max-width: 1400px;
     margin: 0 auto;
+    padding: 0 24px;
     display: flex;
     flex-direction: column;
-    gap: 14px;
-    padding: 0 16px;
+    align-items: stretch;
 }
 
 .reels-categories {
-    display: grid;
-    grid-template-columns: repeat(9, minmax(0, 1fr));
-    gap: 10px;
-    width: 1188px;
-    margin: 0 0 18px 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
     align-items: center;
+    justify-content: flex-start;
+    width: 100%;
+    margin: 0 0 22px;
 }
 
 .reels-category-item {
-    width: 100%;
-    height: 32px;
-    padding: 0 8px;
-    border: 1px solid #202020;
-    border-radius: 8px;
-    background: #0a0a0a;
+    min-width: 110px;
+    height: 36px;
+    padding: 0 16px;
+    border: 1px solid #222;
+    border-radius: 10px;
+    background: #080808;
     color: #fff;
-    font-size: 12px;
-    font-weight: 400;
+    font-size: 14px;
+    font-weight: 500;
     cursor: pointer;
-    transition: 0.2s ease;
+    transition: background 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
     white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
 }
 
 .reels-category-item:hover {
-    border-color: #3a3a3a;
+    border-color: #3b3b3b;
+    background: #101010;
 }
 
 .reels-category-item.is-active {
@@ -78,21 +81,31 @@ button {
 }
 
 .reels-grid {
-    display: grid;
     width: 100%;
-    grid-template-columns: 120px 1.4fr 1.4fr 200px;
-    grid-template-rows: 170px 190px 190px 154px;
-    gap: 12px;
-    align-items: stretch;
-    margin-top: 2px;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 18px;
+    align-items: start;
+    justify-items: stretch;
 }
 
 .reel-card {
     position: relative;
+    width: 100%;
+    aspect-ratio: 9 / 16;
     overflow: hidden;
-    border-radius: 8px;
+    border-radius: 14px;
     background: #111;
     cursor: pointer;
+    transition: transform 0.2s ease;
+}
+
+.reel-card:hover {
+    transform: translateY(-2px);
+}
+
+.reel-card--uniform {
+    width: 100%;
 }
 
 .reel-card-image {
@@ -112,9 +125,9 @@ button {
     inset: 0;
     background: linear-gradient(
         to top,
-        rgba(0, 0, 0, 0.82) 0%,
-        rgba(0, 0, 0, 0.22) 36%,
-        rgba(0, 0, 0, 0) 60%
+        rgba(0, 0, 0, 0.88) 0%,
+        rgba(0, 0, 0, 0.34) 38%,
+        rgba(0, 0, 0, 0) 68%
     );
     pointer-events: none;
 }
@@ -123,7 +136,7 @@ button {
     position: absolute;
     left: 10px;
     right: 10px;
-    bottom: 8px;
+    bottom: 10px;
     display: flex;
     align-items: flex-end;
     gap: 8px;
@@ -131,90 +144,47 @@ button {
 }
 
 .reel-card-avatar {
-    width: 20px;
-    height: 20px;
+    width: 28px;
+    height: 28px;
     border-radius: 50%;
     object-fit: cover;
     flex-shrink: 0;
-    border: 1px solid rgba(255, 255, 255, 0.35);
+    border: 1px solid rgba(255, 255, 255, 0.28);
+    background: #1a1a1a;
 }
 
 .reel-card-text {
     min-width: 0;
+    flex: 1;
 }
 
 .reel-card-title {
-    margin: 0;
-    font-size: 9px;
-    font-weight: 400;
-    line-height: 1.15;
+    margin: 0 0 4px;
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 1.25;
     color: #fff;
-    white-space: nowrap;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
     overflow: hidden;
-    text-overflow: ellipsis;
+    word-break: break-word;
 }
 
 .reel-card-sub {
-    margin: 2px 0 0;
-    font-size: 7px;
-    color: rgba(255, 255, 255, 0.72);
+    margin: 0;
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.76);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-}
-
-/* 1 — сцена, узкая слева сверху */
-.reel-card--small {
-    grid-column: 1 / 2;
-    grid-row: 1 / 2;
-}
-
-/* 2 — верхняя широкая по центру */
-.reel-card--wide {
-    grid-column: 2 / 3;
-    grid-row: 1 / 2;
-}
-
-/* 3 — большой вертикальный портрет справа */
-.reel-card--tall {
-    grid-column: 3 / 4;
-    grid-row: 1 / 3;
-}
-
-/* 4 — широкий концерт под верхом */
-.reel-card--middleWide {
-    grid-column: 1 / 3;
-    grid-row: 2 / 3;
-}
-
-/* 6 — высокий небоскреб слева снизу */
-.reel-card--mediumTall {
-    grid-column: 1 / 2;
-    grid-row: 3 / 5;
-}
-
-/* 5 — центральная карточка */
-.reel-card--quote {
-    grid-column: 2 / 3;
-    grid-row: 3 / 4;
-}
-
-/* 7 — узкая правая карточка */
-.reel-card--smallTall {
-    grid-column: 3 / 4;
-    grid-row: 3 / 4;
-}
-
-/* 8 — нижняя широкая */
-.reel-card--bottomWide {
-    grid-column: 2 / 4;
-    grid-row: 4 / 5;
 }
 
 .reels-loading,
 .reels-error-wrap,
 .reels-empty {
-    min-height: 100vh;
+    min-height: 280px;
+    width: 100%;
     background: #000;
     color: #fff;
     display: flex;
@@ -223,16 +193,22 @@ button {
     flex-direction: column;
     gap: 14px;
     font-size: 16px;
+    text-align: center;
 }
 
 .reels-retry-btn {
-    height: 38px;
+    height: 40px;
     padding: 0 18px;
     border: none;
     border-radius: 10px;
     background: #7189f4;
     color: #fff;
     cursor: pointer;
+    transition: background 0.2s ease;
+}
+
+.reels-retry-btn:hover {
+    background: #5f79ea;
 }
 
 .reels-error {
@@ -250,63 +226,70 @@ button {
     .reels-page {
         margin-left: 0;
         width: 100%;
-        padding: 10px 0 18px;
+        padding: 16px 0 22px;
     }
 
-    .reels-page-inner {
-        max-width: 980px;
-        padding: 0 12px;
+    .reels-content {
+        max-width: 1000px;
+        padding: 0 16px;
+    }
+
+    .reels-grid {
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        gap: 16px;
     }
 
     .reels-categories {
-        display: flex;
-        flex-wrap: wrap;
-        justify-content: flex-start;
-    }
-    .reels-grid {
-        grid-template-columns: repeat(2, 1fr);
-        grid-auto-rows: 220px;
+        gap: 10px;
+        margin-bottom: 18px;
     }
 
-    .reel-card--tall,
-    .reel-card--mediumTall,
-    .reel-card--smallTall {
-        grid-row: span 2 !important;
-    }
-
-    .reel-card--wide,
-    .reel-card--middleWide,
-    .reel-card--quote,
-    .reel-card--bottomWide {
-        grid-column: span 2 !important;
+    .reels-category-item {
+        min-width: 100px;
+        height: 34px;
+        font-size: 13px;
+        padding: 0 14px;
     }
 }
 
 @media (max-width: 700px) {
     .reels-page {
-        padding: 8px 0 16px;
+        padding: 12px 0 18px;
     }
 
-    .reels-page-inner {
-        padding: 0 10px;
+    .reels-content {
+        padding: 0 12px;
     }
 
     .reels-categories {
-        display: flex;
         flex-wrap: nowrap;
         overflow-x: auto;
-        justify-content: flex-start;
+        overflow-y: hidden;
+        gap: 8px;
         padding-bottom: 6px;
+        margin-bottom: 16px;
+        scrollbar-width: none;
+    }
+
+    .reels-categories::-webkit-scrollbar {
+        display: none;
+    }
+
+    .reels-category-item {
+        flex: 0 0 auto;
+        min-width: 96px;
+        height: 34px;
+        padding: 0 14px;
+        font-size: 13px;
     }
 
     .reels-grid {
-        grid-template-columns: 1fr;
-        grid-auto-rows: 220px;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 12px;
     }
 
     .reel-card {
-        grid-column: auto !important;
-        grid-row: auto !important;
+        border-radius: 12px;
     }
 
     .reel-card-title {
@@ -318,7 +301,39 @@ button {
     }
 
     .reel-card-avatar {
-        width: 26px;
-        height: 26px;
+        width: 24px;
+        height: 24px;
+    }
+}
+
+@media (max-width: 480px) {
+    .reels-content {
+        padding: 0 10px;
+    }
+
+    .reels-grid {
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+    }
+
+    .reels-category-item {
+        min-width: 90px;
+        height: 32px;
+        font-size: 12px;
+        border-radius: 9px;
+    }
+
+    .reel-card-meta {
+        left: 8px;
+        right: 8px;
+        bottom: 8px;
+    }
+
+    .reel-card-title {
+        font-size: 11px;
+    }
+
+    .reel-card-sub {
+        font-size: 9px;
     }
 }

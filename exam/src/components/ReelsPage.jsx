@@ -1,4 +1,4 @@
-import React, { useMemo, useEffect, useState } from 'react';
+import React, { useMemo, useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './ReelsPage.css';
 
@@ -17,15 +17,12 @@ const mockReels = [];
 
 function normalizeCategory(item, index) {
     const fallbackId = String(item?.id ?? item?._id ?? item?.slug ?? `category-${index}`);
-    const slug = String(item?.slug ?? item?.name ?? item?.title ?? 'all')
-        .trim()
-        .toLowerCase()
-        .replace(/\s+/g, '-');
+    const rawSlug = String(item?.slug ?? item?.name ?? item?.title ?? 'all').trim();
 
     return {
         id: fallbackId,
-        title: item?.title || item?.name || slug || 'Category',
-        slug,
+        title: item?.title || item?.name || rawSlug || 'Category',
+        slug: rawSlug.toLowerCase().replace(/\s+/g, '-'),
     };
 }
 
@@ -40,6 +37,13 @@ function normalizeReel(item, index) {
         `reel-${index}`
     );
 
+    const rawCategory =
+        item?.categorySlug ||
+        item?.category?.slug ||
+        item?.category?.name ||
+        item?.category ||
+        'all';
+
     return {
         id: fallbackId,
         title: item?.title || 'Untitled reel',
@@ -51,8 +55,7 @@ function normalizeReel(item, index) {
             item?.preview ||
             '/1.jpg',
         avatarUrl: item?.avatarUrl || item?.authorAvatar || '/ava.png',
-        categorySlug: String(item?.categorySlug || item?.category || 'all').toLowerCase(),
-        layoutType: 'uniform',
+        categorySlug: String(rawCategory).trim().toLowerCase().replace(/\s+/g, '-'),
         views: item?.views || '0 views',
         time: item?.time || 'Recently',
         author: item?.author || item?.channelName || item?.name || 'Unknown author',
@@ -91,23 +94,19 @@ function mergeUniqueById(items) {
 export function ReelsPage() {
     const navigate = useNavigate();
 
-    const [categories, setCategories] = useState([]);
+    const [serverCategories, setServerCategories] = useState([]);
     const [reels, setReels] = useState([]);
     const [activeCategory, setActiveCategory] = useState('all');
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
 
-    useEffect(() => {
-        loadReelsPage();
-    }, []);
-
-    const loadReelsPage = async () => {
+    const loadReelsPage = useCallback(async () => {
         try {
             setLoading(true);
             setError('');
 
             if (USE_MOCK) {
-                setCategories(mockCategories);
+                setServerCategories(mockCategories);
                 setReels(mockReels);
                 return;
             }
@@ -126,6 +125,7 @@ export function ReelsPage() {
                 categoriesData = categoriesText ? JSON.parse(categoriesText) : {};
             } catch (error) {
                 console.error('Failed to parse categories JSON:', error);
+                categoriesData = {};
             }
 
             if (!categoriesRes.ok) {
@@ -148,6 +148,7 @@ export function ReelsPage() {
                     reelsData = reelsText ? JSON.parse(reelsText) : {};
                 } catch (error) {
                     console.error(`Failed to parse reels JSON on page ${page}:`, error);
+                    reelsData = {};
                 }
 
                 if (!reelsRes.ok) {
@@ -176,12 +177,7 @@ export function ReelsPage() {
                 page += 1;
             }
 
-            setCategories(
-                normalizedCategories.length
-                    ? normalizedCategories
-                    : [{ id: 'all', title: 'All', slug: 'all' }]
-            );
-
+            setServerCategories(normalizedCategories);
             setReels(mergeUniqueById(loadedReels));
         } catch (err) {
             console.error('LOAD REELS PAGE ERROR:', err);
@@ -189,7 +185,54 @@ export function ReelsPage() {
         } finally {
             setLoading(false);
         }
-    };
+    }, []);
+
+    useEffect(() => {
+        loadReelsPage();
+    }, [loadReelsPage]);
+
+    const categoryCounts = useMemo(() => {
+        const counts = new Map();
+
+        reels.forEach((item) => {
+            const slug = String(item.categorySlug || 'all').toLowerCase();
+            counts.set(slug, (counts.get(slug) || 0) + 1);
+        });
+
+        return counts;
+    }, [reels]);
+
+    const categories = useMemo(() => {
+        const usedSlugs = new Set(['all']);
+
+        const filteredServerCategories = serverCategories.filter((category) => {
+            const slug = String(category.slug || 'all').toLowerCase();
+
+            if (slug === 'all') return false;
+            if (usedSlugs.has(slug)) return false;
+            if (!categoryCounts.get(slug)) return false;
+
+            usedSlugs.add(slug);
+            return true;
+        });
+
+        const categoriesFromReels = Array.from(categoryCounts.keys())
+            .filter((slug) => slug !== 'all' && !usedSlugs.has(slug))
+            .map((slug, index) => ({
+                id: `generated-${slug}-${index}`,
+                title: slug
+                    .split('-')
+                    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+                    .join(' '),
+                slug,
+            }));
+
+        return [
+            { id: 'all', title: 'All', slug: 'all' },
+            ...filteredServerCategories,
+            ...categoriesFromReels,
+        ];
+    }, [serverCategories, categoryCounts]);
 
     const filteredReels = useMemo(() => {
         if (activeCategory === 'all') return reels;
@@ -198,6 +241,16 @@ export function ReelsPage() {
             (item) => String(item.categorySlug).toLowerCase() === String(activeCategory).toLowerCase()
         );
     }, [activeCategory, reels]);
+
+    useEffect(() => {
+        const hasActiveCategory = categories.some(
+            (category) => String(category.slug) === String(activeCategory)
+        );
+
+        if (!hasActiveCategory) {
+            setActiveCategory('all');
+        }
+    }, [categories, activeCategory]);
 
     if (loading) {
         return <div className="reels-loading">Loading reels...</div>;
@@ -217,66 +270,88 @@ export function ReelsPage() {
     return (
         <div className="reels-page">
             <div className="reels-content">
-                <div className="reels-categories">
-                    {categories.map((category) => (
-                        <button
-                            key={category.id}
-                            className={`reels-category-item ${activeCategory === category.slug ? 'is-active' : ''}`}
-                            onClick={() => setActiveCategory(category.slug)}
-                            type="button"
-                        >
-                            {category.title}
-                        </button>
-                    ))}
-                </div>
+                {!!categories.length && (
+                    <div className="reels-categories">
+                        {categories.map((category) => {
+                            const count =
+                                category.slug === 'all'
+                                    ? reels.length
+                                    : categoryCounts.get(category.slug) || 0;
 
-                <div className="reels-grid">
-                    {filteredReels.map((item) => (
-                        <article
-                            key={item.id}
-                            className="reel-card reel-card--uniform"
-                            onClick={() => navigate(`/reels-page/${String(item.id)}`)}
-                            role="button"
-                            tabIndex={0}
-                            onKeyDown={(e) => {
-                                if (e.key === 'Enter' || e.key === ' ') {
-                                    navigate(`/reels-page/${String(item.id)}`);
-                                }
-                            }}
-                        >
-                            <img
-                                src={item.imageUrl}
-                                alt={item.title}
-                                className="reel-card-image"
-                                onError={(e) => {
-                                    e.currentTarget.src = '/1.jpg';
+                            return (
+                                <button
+                                    key={category.id}
+                                    className={`reels-category-item ${activeCategory === category.slug ? 'is-active' : ''}`}
+                                    onClick={() => setActiveCategory(category.slug)}
+                                    type="button"
+                                >
+                                    {category.title}
+                                </button>
+                            );
+                        })}
+                    </div>
+                )}
+
+                {!!filteredReels.length ? (
+                    <div className="reels-grid">
+                        {filteredReels.map((item) => (
+                            <article
+                                key={item.id}
+                                className="reel-card reel-card--uniform"
+                                onClick={() => navigate(`/reels-page/${String(item.id)}`)}
+                                role="button"
+                                tabIndex={0}
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter' || e.key === ' ') {
+                                        e.preventDefault();
+                                        navigate(`/reels-page/${String(item.id)}`);
+                                    }
                                 }}
-                            />
-
-                            <div className="reel-card-overlay" />
-
-                            <div className="reel-card-meta">
+                            >
                                 <img
-                                    src={item.avatarUrl}
+                                    src={item.imageUrl}
                                     alt={item.title}
-                                    className="reel-card-avatar"
+                                    className="reel-card-image"
                                     onError={(e) => {
-                                        e.currentTarget.src = '/ava.png';
+                                        e.currentTarget.src = '/1.jpg';
                                     }}
                                 />
-                                <div className="reel-card-text">
-                                    <h3 className="reel-card-title">{item.title}</h3>
-                                    <p className="reel-card-sub">
-                                        {item.views} · {item.time}
-                                    </p>
-                                </div>
-                            </div>
-                        </article>
-                    ))}
-                </div>
 
-                {!filteredReels.length && (
-                    <div className="reels-loading">No reels found</div>
+                                <div className="reel-card-overlay" />
+
+                                <div className="reel-card-meta">
+                                    <img
+                                        src={item.avatarUrl}
+                                        alt={item.author}
+                                        className="reel-card-avatar"
+                                        onError={(e) => {
+                                            e.currentTarget.src = '/ava.png';
+                                        }}
+                                    />
+
+                                    <div className="reel-card-text">
+                                        <h3 className="reel-card-title">{item.title}</h3>
+                                        <p className="reel-card-sub">
+                                            {item.views} · {item.time}
+                                        </p>
+                                    </div>
+                                </div>
+                            </article>
+                        ))}
+                    </div>
+                ) : (
+                    <div className="reels-empty">
+                        <div>No reels found</div>
+                        {activeCategory !== 'all' && (
+                            <button
+                                className="reels-retry-btn"
+                                type="button"
+                                onClick={() => setActiveCategory('all')}
+                            >
+                                Show all
+                            </button>
+                        )}
+                    </div>
                 )}
             </div>
         </div>
