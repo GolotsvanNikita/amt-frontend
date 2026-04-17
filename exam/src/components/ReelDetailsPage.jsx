@@ -4,6 +4,10 @@ import YouTube from "react-youtube";
 import "./ReelDetailsPage.css";
 
 function formatCount(value) {
+    if (typeof value === "string" && /[a-zA-Z]/.test(value)) {
+        return value;
+    }
+
     const numericValue = Number(value) || 0;
 
     if (numericValue >= 1000000) return `${(numericValue / 1000000).toFixed(1)}M`;
@@ -34,24 +38,6 @@ function isValidImageSrc(value) {
             value.startsWith("/") ||
             value.startsWith("data:image/")
         )
-    );
-}
-
-function isDirectVideoUrl(value) {
-    if (typeof value !== "string" || !value.trim()) return false;
-
-    const lower = value.toLowerCase();
-
-    return (
-        lower.startsWith("http://") ||
-        lower.startsWith("https://") ||
-        lower.startsWith("/") ||
-        lower.endsWith(".mp4") ||
-        lower.endsWith(".webm") ||
-        lower.endsWith(".ogg") ||
-        lower.includes(".mp4?") ||
-        lower.includes(".webm?") ||
-        lower.includes(".ogg?")
     );
 }
 
@@ -116,14 +102,12 @@ function normalizeReel(item, index) {
         item?.videoId ||
         "";
 
-    const directVideoUrl = isDirectVideoUrl(rawVideoValue) ? rawVideoValue : "";
-    const youtubeId = directVideoUrl ? "" : extractYoutubeId(rawVideoValue);
+    const youtubeId = extractYoutubeId(rawVideoValue) || String(rawVideoValue || "").trim();
 
     return {
         id: createFallbackId(item, index),
         title: item?.title || "Untitled reel",
-        videoUrl: directVideoUrl,
-        youtubeId,
+        videoUrl: youtubeId,
         posterUrl: item?.posterUrl || item?.thumbnailUrl || item?.thumbnail || item?.preview || "",
         avatarUrl: isValidImageSrc(item?.avatarUrl)
             ? item.avatarUrl
@@ -134,10 +118,10 @@ function normalizeReel(item, index) {
         username: item?.username || item?.handle || "@unknown",
         description: item?.description || item?.caption || "",
         audioTitle: item?.audioTitle || item?.audio || "original audio",
-        likes: Number(item?.likes ?? item?.likesCount) || 0,
-        shares: Number(item?.shares ?? item?.sharesCount) || 0,
-        remix: Number(item?.remix ?? item?.remixCount) || 0,
-        commentsCount: Number(item?.commentsCount ?? item?.comments?.length) || 0,
+        likes: item?.likes ?? item?.likesCount ?? 0,
+        shares: item?.shares ?? item?.sharesCount ?? 0,
+        remix: item?.remix ?? item?.remixCount ?? 0,
+        commentsCount: item?.commentsCount ?? item?.comments?.length ?? 0,
         isSubscribed: Boolean(item?.isSubscribed),
         isLiked: Boolean(item?.isLiked),
         isShared: Boolean(item?.isShared),
@@ -160,7 +144,6 @@ function mergeUniqueById(prev, next) {
 function ReelMedia({
     reel,
     isActive,
-    setVideoNode,
     setYoutubePlayer,
     onMediaClick,
 }) {
@@ -173,56 +156,40 @@ function ReelMedia({
             modestbranding: 1,
             rel: 0,
             loop: 1,
-            playlist: reel.youtubeId,
+            playlist: reel.videoUrl,
             fs: 0,
             playsinline: 1,
             enablejsapi: 1,
         },
     };
 
-    if (reel.youtubeId) {
-        return (
-            <div className="reel-details-video youtube-reel-player" onClick={onMediaClick}>
-                <YouTube
-                    videoId={reel.youtubeId}
-                    opts={youtubeOpts}
-                    className="reel-youtube-frame"
-                    onReady={(event) => {
-                        const player = event.target;
-                        setYoutubePlayer(player);
+    return (
+        <div className="reel-details-video youtube-reel-player" onClick={onMediaClick}>
+            <YouTube
+                videoId={reel.videoUrl}
+                opts={youtubeOpts}
+                className="reel-youtube-frame"
+                onReady={(event) => {
+                    const player = event.target;
+                    setYoutubePlayer(player);
 
-                        if (isActive) {
-                            setTimeout(() => {
-                                try {
-                                    player.playVideo();
-                                } catch {}
-                            }, 100);
-                        }
-                    }}
-                />
-            </div>
-        );
-    }
+                    if (isActive) {
+                        setTimeout(() => {
+                            try {
+                                player.playVideo();
+                            } catch {}
+                        }, 100);
+                    }
 
-    if (reel.videoUrl) {
-        return (
-            <video
-                ref={setVideoNode}
-                className="reel-details-video"
-                src={reel.videoUrl}
-                poster={reel.posterUrl || ""}
-                controls={false}
-                playsInline
-                autoPlay={isActive}
-                muted={Boolean(reel.isMuted)}
-                loop
-                preload="metadata"
-                onClick={onMediaClick}
+                    if (reel.isMuted) {
+                        try {
+                            player.mute();
+                        } catch {}
+                    }
+                }}
             />
-        );
-    }
-
-    return <div className="reel-details-video reel-video-fallback">Video unavailable</div>;
+        </div>
+    );
 }
 
 export function FullReels() {
@@ -235,10 +202,11 @@ export function FullReels() {
     const [page, setPage] = useState(1);
     const [hasMore, setHasMore] = useState(true);
     const [activeIndex, setActiveIndex] = useState(0);
+    const [activeReelId, setActiveReelId] = useState(id || "");
 
-    const videoRefs = useRef({});
     const youtubePlayerRefs = useRef({});
     const playerShellRefs = useRef({});
+    const observerRef = useRef(null);
 
     const loadReels = useCallback(
         async (pageToLoad = 1, append = false) => {
@@ -263,8 +231,6 @@ export function FullReels() {
                     data = {};
                 }
 
-                console.log("REELS RESPONSE:", data);
-
                 if (!response.ok) {
                     throw new Error(data?.message || text || "Failed to load reels");
                 }
@@ -279,11 +245,7 @@ export function FullReels() {
                     ? data.items
                     : [];
 
-                console.log("RAW REELS:", rawReels);
-
                 const normalized = rawReels.map((item, index) => normalizeReel(item, index));
-
-                console.log("NORMALIZED REELS:", normalized);
 
                 setReels((prev) =>
                     append ? mergeUniqueById(prev, normalized) : normalized
@@ -300,7 +262,6 @@ export function FullReels() {
                 setPage(pageToLoad);
             } catch (error) {
                 console.error("Failed to load reels:", error);
-
             } finally {
                 setLoading(false);
                 setIsFetchingMore(false);
@@ -317,6 +278,10 @@ export function FullReels() {
     useEffect(() => {
         loadReels(1, false);
     }, [loadReels]);
+
+    useEffect(() => {
+        setActiveReelId(id || "");
+    }, [id]);
 
     useEffect(() => {
         if (!reels.length) return;
@@ -341,17 +306,8 @@ export function FullReels() {
     useEffect(() => {
         if (!activeReel) return;
 
+        setActiveReelId(String(activeReel.id));
         navigate(`/reels-page/${activeReel.id}`, { replace: true });
-
-        Object.entries(videoRefs.current).forEach(([reelId, video]) => {
-            if (!video || typeof video.play !== "function") return;
-
-            if (String(reelId) === String(activeReel.id)) {
-                video.play().catch(() => {});
-            } else {
-                video.pause();
-            }
-        });
 
         Object.entries(youtubePlayerRefs.current).forEach(([reelId, player]) => {
             if (!player) return;
@@ -369,6 +325,36 @@ export function FullReels() {
             loadMoreReels();
         }
     }, [activeReel, activeIndex, reels.length, navigate, loadMoreReels]);
+
+    useEffect(() => {
+        if (observerRef.current) {
+            observerRef.current.disconnect();
+        }
+
+        observerRef.current = new IntersectionObserver(
+            (entries) => {
+                entries.forEach((entry) => {
+                    if (!entry.isIntersecting) return;
+
+                    const reelId = entry.target.dataset.reelId;
+                    if (!reelId) return;
+
+                    const foundIndex = reels.findIndex((item) => String(item.id) === String(reelId));
+                    if (foundIndex !== -1) {
+                        setActiveIndex(foundIndex);
+                        setActiveReelId(reelId);
+                    }
+                });
+            },
+            {
+                threshold: 0.6,
+            }
+        );
+
+        return () => {
+            observerRef.current?.disconnect();
+        };
+    }, [reels]);
 
     const goToPrev = () => {
         if (!reels.length) return;
@@ -389,53 +375,27 @@ export function FullReels() {
     };
 
     const togglePlay = (reelId) => {
-        const htmlVideo = videoRefs.current[reelId];
         const youtubePlayer = youtubePlayerRefs.current[reelId];
+        if (!youtubePlayer) return;
 
-        if (htmlVideo) {
-            if (htmlVideo.paused) {
-                htmlVideo.play().catch(() => {});
-            } else {
-                htmlVideo.pause();
-            }
-            return;
-        }
-
-        if (youtubePlayer) {
+        try {
             const state = youtubePlayer.getPlayerState?.();
-
-            try {
-                if (youtubePlayer.isMuted?.()) {
-                    youtubePlayer.unMute?.();
-                    youtubePlayer.setVolume?.(100);
-                }
-            } catch {}
 
             if (state === 1) {
                 youtubePlayer.pauseVideo?.();
             } else {
                 youtubePlayer.playVideo?.();
             }
+        } catch (error) {
+            console.error("Toggle play error:", error);
         }
     };
 
     const toggleMute = (reelId) => {
-        const htmlVideo = videoRefs.current[reelId];
         const youtubePlayer = youtubePlayerRefs.current[reelId];
+        if (!youtubePlayer) return;
 
-        if (htmlVideo) {
-            const nextMuted = !htmlVideo.muted;
-            htmlVideo.muted = nextMuted;
-
-            setReels((prev) =>
-                prev.map((item) =>
-                    item.id === reelId ? { ...item, isMuted: nextMuted } : item
-                )
-            );
-            return;
-        }
-
-        if (youtubePlayer) {
+        try {
             const currentlyMuted = youtubePlayer.isMuted?.() ?? true;
 
             if (currentlyMuted) {
@@ -447,11 +407,13 @@ export function FullReels() {
 
             setReels((prev) =>
                 prev.map((item) =>
-                    item.id === reelId
+                    String(item.id) === String(reelId)
                         ? { ...item, isMuted: !currentlyMuted }
                         : item
                 )
             );
+        } catch (error) {
+            console.error("Toggle mute error:", error);
         }
     };
 
@@ -471,13 +433,20 @@ export function FullReels() {
 
         setReels((prev) =>
             prev.map((item) => {
-                if (item.id !== reelId) return item;
+                if (String(item.id) !== String(reelId)) return item;
 
                 const nextLiked = !item.isLiked;
+                const nextLikes =
+                    typeof item.likes === "number"
+                        ? nextLiked
+                            ? item.likes + 1
+                            : Math.max(item.likes - 1, 0)
+                        : item.likes;
+
                 return {
                     ...item,
                     isLiked: nextLiked,
-                    likes: nextLiked ? item.likes + 1 : Math.max(item.likes - 1, 0),
+                    likes: nextLikes,
                 };
             })
         );
@@ -497,12 +466,14 @@ export function FullReels() {
     const handleShare = async (reelId) => {
         setReels((prev) =>
             prev.map((item) => {
-                if (item.id !== reelId) return item;
+                if (String(item.id) !== String(reelId)) return item;
 
                 return {
                     ...item,
                     isShared: true,
-                    shares: item.isShared ? item.shares : item.shares + 1,
+                    shares: typeof item.shares === "number"
+                        ? (item.isShared ? item.shares : item.shares + 1)
+                        : item.shares,
                 };
             })
         );
@@ -529,13 +500,20 @@ export function FullReels() {
 
         setReels((prev) =>
             prev.map((item) => {
-                if (item.id !== reelId) return item;
+                if (String(item.id) !== String(reelId)) return item;
 
                 const nextRemixed = !item.isRemixed;
+                const nextRemix =
+                    typeof item.remix === "number"
+                        ? nextRemixed
+                            ? item.remix + 1
+                            : Math.max(item.remix - 1, 0)
+                        : item.remix;
+
                 return {
                     ...item,
                     isRemixed: nextRemixed,
-                    remix: nextRemixed ? item.remix + 1 : Math.max(item.remix - 1, 0),
+                    remix: nextRemix,
                 };
             })
         );
@@ -557,7 +535,7 @@ export function FullReels() {
 
         setReels((prev) =>
             prev.map((item) =>
-                item.id === reelId
+                String(item.id) === String(reelId)
                     ? { ...item, isSubscribed: !item.isSubscribed }
                     : item
             )
@@ -590,16 +568,17 @@ export function FullReels() {
                     <div className="reel-details-video-wrap">
                         <div
                             className="reel-player-shell"
+                            data-reel-id={activeReel.id}
                             ref={(node) => {
                                 playerShellRefs.current[activeReel.id] = node;
+                                if (node && observerRef.current) {
+                                    observerRef.current.observe(node);
+                                }
                             }}
                         >
                             <ReelMedia
                                 reel={activeReel}
-                                isActive={true}
-                                setVideoNode={(node) => {
-                                    videoRefs.current[activeReel.id] = node;
-                                }}
+                                isActive={String(activeReelId) === String(activeReel.id)}
                                 setYoutubePlayer={(player) => {
                                     youtubePlayerRefs.current[activeReel.id] = player;
                                 }}

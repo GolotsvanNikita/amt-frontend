@@ -2,7 +2,7 @@ import React, { useMemo, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './ReelsPage.css';
 
-const USE_MOCK = true;
+const USE_MOCK = false;
 
 const mockCategories = [
     { id: "all", title: "All", slug: "all" },
