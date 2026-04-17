@@ -11,71 +11,54 @@ import YouTube from "react-youtube";
 import "./VideoPage.css";
 import { useNavigate } from "react-router-dom";
 
-function parseViewsToNumber(views) {
-    if (typeof views === "number" && Number.isFinite(views)) {
-        return Math.floor(views);
+function parseCompactNumber(value) {
+    if (typeof value === "number" && Number.isFinite(value)) {
+        return Math.floor(value);
     }
 
-    if (!views || typeof views !== "string") {
+    if (value === null || value === undefined) {
         return 0;
     }
-
-    const cleaned = views.trim();
-    const match = cleaned.match(/([\d.,]+)\s*([KMB])?/i);
-
-    if (!match) {
-        const plainNumber = Number(cleaned.replace(/[^\d.]/g, ""));
-        return Number.isFinite(plainNumber) ? Math.floor(plainNumber) : 0;
-    }
-
-    let value = parseFloat(match[1].replace(/,/g, ""));
-    const suffix = (match[2] || "").toUpperCase();
-
-    if (!Number.isFinite(value)) {
-        return 0;
-    }
-
-    if (suffix === "K") value *= 1_000;
-    if (suffix === "M") value *= 1_000_000;
-    if (suffix === "B") value *= 1_000_000_000;
-
-    return Math.floor(value);
-}
-
-function formatViews(views) {
-    const numericViews = Number(views) || 0;
-
-    if (numericViews >= 1_000_000) {
-        return `${(numericViews / 1_000_000).toFixed(1)}M views`;
-    }
-
-    if (numericViews >= 1_000) {
-        return `${(numericViews / 1_000).toFixed(1)}K views`;
-    }
-
-    return `${numericViews} views`;
-}
-
-function formatLikes(value) {
-    if (value === null || value === undefined) return "0";
 
     if (typeof value === "string") {
-        const trimmed = value.trim();
+        const cleaned = value.trim();
 
-
-        if (/^\d+(\.\d+)?[KM]?$/.test(trimmed)) {
-            return trimmed;
+        if (!cleaned) {
+            return 0;
         }
 
-        const parsed = Number(trimmed);
-        if (!isNaN(parsed)) {
-            value = parsed;
-        } else {
-            return "0";
+        const normalized = cleaned.replace(/\s+/g, "");
+        const match = normalized.match(/^([\d.,]+)([KMB])?$/i);
+
+        if (match) {
+            let numberPart = match[1].replace(/,/g, "");
+            let parsed = parseFloat(numberPart);
+            const suffix = (match[2] || "").toUpperCase();
+
+            if (!Number.isFinite(parsed)) {
+                return 0;
+            }
+
+            if (suffix === "K") parsed *= 1_000;
+            if (suffix === "M") parsed *= 1_000_000;
+            if (suffix === "B") parsed *= 1_000_000_000;
+
+            return Math.floor(parsed);
         }
+
+        const fallback = Number(cleaned.replace(/[^\d.]/g, ""));
+        return Number.isFinite(fallback) ? Math.floor(fallback) : 0;
     }
 
-    const numericValue = Number(value) || 0;
+    return 0;
+}
+
+function formatCompactNumber(value) {
+    const numericValue = parseCompactNumber(value);
+
+    if (numericValue >= 1_000_000_000) {
+        return `${(numericValue / 1_000_000_000).toFixed(1)}B`;
+    }
 
     if (numericValue >= 1_000_000) {
         return `${(numericValue / 1_000_000).toFixed(1)}M`;
@@ -86,6 +69,14 @@ function formatLikes(value) {
     }
 
     return String(numericValue);
+}
+
+function formatViews(views) {
+    return `${formatCompactNumber(views)} views`;
+}
+
+function formatLikes(value) {
+    return formatCompactNumber(value);
 }
 
 function getAuthToken() {
@@ -221,17 +212,13 @@ function normalizeVideo(video = {}) {
             ? video.snippet.description
             : " ";
 
-    const resolvedSubscriberCount = getFirstNonEmptyString(
-        typeof video?.channel?.subscriberCount === "number"
-            ? String(video.channel.subscriberCount)
-            : video?.channel?.subscriberCount,
-        typeof video?.subscriberCount === "number"
-            ? String(video.subscriberCount)
-            : video?.subscriberCount,
-        typeof video?.channelSubscribers === "number"
-            ? String(video.channelSubscribers)
-            : video?.channelSubscribers
-    );
+    const resolvedSubscriberCountRaw =
+        video?.channel?.subscriberCount ??
+        video?.subscriberCount ??
+        video?.channelSubscribers ??
+        0;
+
+    const resolvedSubscriberCount = parseCompactNumber(resolvedSubscriberCountRaw);
 
     const resolvedViewsRaw =
         video?.viewsCount ??
@@ -240,10 +227,17 @@ function normalizeVideo(video = {}) {
         video?.snippet?.viewCount ??
         0;
 
-    const resolvedViews =
-        typeof resolvedViewsRaw === "number"
-            ? Math.floor(resolvedViewsRaw)
-            : parseViewsToNumber(resolvedViewsRaw);
+    const resolvedViews = parseCompactNumber(resolvedViewsRaw);
+
+    const resolvedLikesRaw =
+        video?.likesCount ??
+        video?.likeCount ??
+        video?.likes ??
+        video?.interactions?.likesCount ??
+        video?.statistics?.likeCount ??
+        0;
+
+    const resolvedLikes = parseCompactNumber(resolvedLikesRaw);
 
     const channelRouteValue = getFirstNonEmptyString(
         resolvedChannelId,
@@ -263,6 +257,7 @@ function normalizeVideo(video = {}) {
         resolvedThumbnail,
         resolvedPublishedAt,
         resolvedViews,
+        resolvedLikes,
         resolvedDescription,
         resolvedSubscriberCount,
         isSubscribed:
@@ -309,7 +304,7 @@ export function YouTubeCustomPlayer({
 
     const [expandedDescription, setExpandedDescription] = useState(false);
     const [isSubscribed, setIsSubscribed] = useState(false);
-    const [localLikes, setLocalLikes] = useState(formatLikes);
+    const [localLikes, setLocalLikes] = useState(0);
     const [channelDetails, setChannelDetails] = useState(null);
     const [channelAvatarsMap, setChannelAvatarsMap] = useState({});
 
@@ -387,7 +382,7 @@ export function YouTubeCustomPlayer({
     }, [currentVideo?.resolvedId, currentVideo?.isSubscribed]);
 
     useEffect(() => {
-        setLocalLikes(formatLikes);
+        setLocalLikes(parseCompactNumber(likes));
     }, [likes, currentVideo?.resolvedId]);
 
     useEffect(() => {
@@ -413,12 +408,15 @@ export function YouTubeCustomPlayer({
                     data?.likesCount ??
                     data?.interactions?.likesCount ??
                     data?.data?.likesCount ??
+                    currentVideo?.resolvedLikes ??
                     0;
 
-                setLocalLikes(formatLikes);
+                const parsedLikes = parseCompactNumber(likesCount);
+
+                setLocalLikes(parsedLikes);
 
                 if (typeof setLikes === "function") {
-                    setLikes(formatLikes);
+                    setLikes(parsedLikes);
                 }
 
                 if (typeof data?.isSubscribed === "boolean") {
@@ -432,7 +430,7 @@ export function YouTubeCustomPlayer({
         };
 
         loadInteractions();
-    }, [currentVideo?.resolvedId, setLikes]);
+    }, [currentVideo?.resolvedId, currentVideo?.resolvedLikes, setLikes]);
 
     const recommendedVideos = useMemo(() => {
         if (!currentVideo || !Array.isArray(videos)) return [];
@@ -776,7 +774,7 @@ export function YouTubeCustomPlayer({
             setLocalLikes((prev) => prev + 1);
 
             if (typeof setLikes === "function") {
-                setLikes((prev) => Number(prev || 0) + 1);
+                setLikes((prev) => parseCompactNumber(prev) + 1);
             }
         } catch (err) {
             console.error("Like error:", err);
@@ -858,9 +856,11 @@ export function YouTubeCustomPlayer({
         "/ava.png";
 
     const displaySubscriberCount =
-        channelDetails?.subscriberCount ||
-        currentVideo?.resolvedSubscriberCount ||
-        "";
+        channelDetails?.subscriberCount
+            ? `${formatCompactNumber(channelDetails.subscriberCount)} subscribers`
+            : currentVideo?.resolvedSubscriberCount
+            ? `${formatCompactNumber(currentVideo.resolvedSubscriberCount)} subscribers`
+            : "";
 
     const displayCustomUrl =
         channelDetails?.customUrl ||
