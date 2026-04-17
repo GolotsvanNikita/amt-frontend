@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo, useContext, useCallback } from "react";
 import "./EditProfile.css";
-import { useNavigate } from "react-router-dom";
 import { UserContext } from "../UserContext";
 
 const DEFAULT_PROFILE = {
@@ -13,7 +12,6 @@ const DEFAULT_PROFILE = {
 };
 
 export function EditProfile() {
-    const navigate = useNavigate();
     const { userData, setUserData } = useContext(UserContext);
 
     const token =
@@ -31,9 +29,7 @@ export function EditProfile() {
         displayName: "",
         username: "",
         about: "",
-        color: "#B26E6E",
-        avatar: "",
-        bannerUrl: ""
+        color: "#B26E6E"
     });
 
     const [loading, setLoading] = useState(true);
@@ -41,8 +37,8 @@ export function EditProfile() {
     const [error, setError] = useState("");
     const [success, setSuccess] = useState("");
 
-    const [avatarPreview, setAvatarPreview] = useState("");
-    const [bannerPreview, setBannerPreview] = useState("");
+    const [avatarPreview, setAvatarPreview] = useState("/ava.png");
+    const [bannerPreview, setBannerPreview] = useState("/backimage.jpg");
 
     const colorInputRef = useRef(null);
     const avatarFileInputRef = useRef(null);
@@ -76,6 +72,7 @@ export function EditProfile() {
         if (!raw) return "#B26E6E";
 
         const withHash = raw.startsWith("#") ? raw : `#${raw}`;
+
         if (/^#[0-9A-F]{6}$/.test(withHash)) {
             return withHash;
         }
@@ -183,13 +180,11 @@ export function EditProfile() {
                 displayName: normalized.name,
                 username: normalized.username,
                 about: normalized.about,
-                color: normalized.color,
-                avatar: normalized.avatar,
-                bannerUrl: normalized.bannerUrl
+                color: normalized.color
             });
 
-            setAvatarPreview(normalized.avatar);
-            setBannerPreview(normalized.bannerUrl);
+            setAvatarPreview(normalized.avatar || "/ava.png");
+            setBannerPreview(normalized.bannerUrl || "/backimage.jpg");
         } catch (err) {
             console.error("Failed to load profile:", err);
             setError(err?.message || "Failed to load profile");
@@ -252,12 +247,6 @@ export function EditProfile() {
         }
 
         setAvatarPreview(previewUrl);
-
-        setForm((prev) => ({
-            ...prev,
-            avatarFile: file
-        }));
-
         setSuccess("");
     };
 
@@ -272,59 +261,7 @@ export function EditProfile() {
         }
 
         setBannerPreview(previewUrl);
-
-        setForm((prev) => ({
-            ...prev,
-            bannerFile: file
-        }));
-
         setSuccess("");
-    };
-
-    const uploadFileIfNeeded = async (file, type = "avatar") => {
-        if (!file) return null;
-
-        const formData = new FormData();
-        formData.append("file", file);
-
-        const uploadCandidates = [
-            `${apiBaseUrl}/api/account/upload-${type}`,
-            `${apiBaseUrl}/api/account/${type}/upload`,
-            `${apiBaseUrl}/api/account/upload`
-        ];
-
-        let lastError = null;
-
-        for (const url of uploadCandidates) {
-            try {
-                const response = await fetch(url, {
-                    method: "POST",
-                    headers: token
-                        ? {
-                              Authorization: `Bearer ${token}`
-                          }
-                        : {},
-                    body: formData
-                });
-
-                let data = null;
-                try {
-                    data = await response.json();
-                } catch {
-                    data = null;
-                }
-
-                if (!response.ok) {
-                    throw new Error(data?.message || `Failed to upload ${type}: ${response.status}`);
-                }
-
-                return data?.url || data?.fileUrl || data?.path || null;
-            } catch (err) {
-                lastError = err;
-            }
-        }
-
-        throw lastError || new Error(`Failed to upload ${type}`);
     };
 
     const handleSubmit = async () => {
@@ -337,54 +274,37 @@ export function EditProfile() {
                 throw new Error("No auth token found");
             }
 
-            let avatarUrl = form.avatar || profile.avatar;
-            let bannerUrl = form.bannerUrl || profile.bannerUrl;
-
-            if (form.avatarFile) {
-                const uploadedAvatar = await uploadFileIfNeeded(form.avatarFile, "avatar");
-                if (uploadedAvatar) {
-                    avatarUrl = uploadedAvatar;
-                }
-            }
-
-            if (form.bannerFile) {
-                const uploadedBanner = await uploadFileIfNeeded(form.bannerFile, "banner");
-                if (uploadedBanner) {
-                    bannerUrl = uploadedBanner;
-                }
-            }
-
             const payload = {
                 name: form.displayName?.trim() || "User",
                 username: form.username?.trim() || profile.username,
                 about: form.about?.trim() || "",
                 color: normalizeHexColor(form.color),
-                avatar: avatarUrl,
-                bannerUrl: bannerUrl
+
+                // пока отправляем только текущие строковые значения,
+                // без попытки upload файлов
+                avatarUrl: profile.avatar,
+                bannerUrl: profile.bannerUrl
             };
 
             const responseData = await trySaveProfile(payload);
 
             const normalized = normalizeProfile({
                 ...payload,
-                ...responseData
+                ...responseData,
+                avatarUrl: responseData?.avatarUrl || profile.avatar,
+                bannerUrl: responseData?.bannerUrl || profile.bannerUrl
             });
 
             setProfile(normalized);
-            setForm((prev) => ({
-                ...prev,
+            setForm({
                 displayName: normalized.name,
                 username: normalized.username,
                 about: normalized.about,
-                color: normalized.color,
-                avatar: normalized.avatar,
-                bannerUrl: normalized.bannerUrl,
-                avatarFile: undefined,
-                bannerFile: undefined
-            }));
+                color: normalized.color
+            });
 
-            setAvatarPreview(normalized.avatar);
-            setBannerPreview(normalized.bannerUrl);
+            setAvatarPreview(normalized.avatar || "/ava.png");
+            setBannerPreview(normalized.bannerUrl || "/backimage.jpg");
             setSuccess("Profile saved successfully");
 
             if (typeof setUserData === "function") {
