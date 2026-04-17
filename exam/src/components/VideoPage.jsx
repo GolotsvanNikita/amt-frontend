@@ -94,14 +94,6 @@ function normalizeVideo(video) {
         ""
     ).trim();
 
-    const resolvedChannelName =
-        video?.channelName ||
-        video?.author ||
-        video?.channel?.title ||
-        video?.channel?.name ||
-        video?.ownerName ||
-        "Unknown channel";
-
     const resolvedChannelId = String(
         video?.channelId ||
         video?.authorId ||
@@ -111,10 +103,16 @@ function normalizeVideo(video) {
         video?.authorChannelId ||
         video?.uploaderId ||
         video?.ownerId ||
-        resolvedCustomUrl ||
-        resolvedChannelName ||
         ""
     ).trim();
+
+    const resolvedChannelName =
+        video?.channelName ||
+        video?.author ||
+        video?.channel?.title ||
+        video?.channel?.name ||
+        video?.ownerName ||
+        "Unknown channel";
 
     const resolvedThumbnail =
         video?.thumbnailUrl ||
@@ -133,6 +131,7 @@ function normalizeVideo(video) {
     return {
         ...video,
         channelId: resolvedChannelId,
+        resolvedCustomUrl,
         resolvedId: getResolvedId(video),
         resolvedTitle: video?.title || "Untitled video",
         resolvedChannelName,
@@ -147,7 +146,6 @@ function normalizeVideo(video) {
             video?.channel?.subscriberCount ||
             video?.subscriberCount ||
             "",
-        resolvedCustomUrl,
         isSubscribed: Boolean(video?.isSubscribed),
         category: video?.category || video?.genre || video?.type || "",
     };
@@ -428,7 +426,6 @@ export function YouTubeCustomPlayer({
         const rawChannelId = String(
             currentVideo?.channelId ||
             currentVideo?.resolvedCustomUrl ||
-            currentVideo?.resolvedChannelName ||
             ""
         ).trim();
 
@@ -436,9 +433,9 @@ export function YouTubeCustomPlayer({
             rawChannelId,
             currentVideo,
         });
-        console.log("OPEN CHANNEL FULL VIDEO:", JSON.stringify(currentVideo, null, 2));
+
         if (!rawChannelId) {
-            console.warn("channelId is empty, cannot navigate to author page");
+            console.warn("No real channel id/customUrl from backend");
             return;
         }
 
@@ -741,17 +738,17 @@ export function YouTubeCustomPlayer({
                                 src={currentVideo.resolvedChannelAvatar}
                                 alt={currentVideo.resolvedChannelName}
                                 className="channel-avatar"
-                                onClick={openChannelPage}
+                                onClick={canOpenChannel ? openChannelPage : undefined}
                                 onError={(e) => {
                                     e.currentTarget.src = "/ava.png";
                                 }}
-                                style={{ cursor: currentVideo.channelId ? "pointer" : "default" }}
+                                style={{ cursor: canOpenChannel ? "pointer" : "default", opacity: canOpenChannel ? 1 : 0.85 }}
                             />
 
                             <div
                                 className="channel-text"
-                                onClick={openChannelPage}
-                                style={{ cursor: currentVideo.channelId ? "pointer" : "default" }}
+                                onClick={canOpenChannel ? openChannelPage : undefined}
+                                style={{ cursor: canOpenChannel ? "pointer" : "default" }}
                             >
                                 <p className="channel-name">{currentVideo.resolvedChannelName}</p>
                                 <p className="channel-subs">

@@ -129,38 +129,40 @@ export function AuthorPage() {
                 decodedChannelId.startsWith("@") ? decodedChannelId.slice(1) : "",
             ].filter(Boolean);
 
-            console.log("AUTHOR PAGE CANDIDATES:", candidates);
-
             let successPayload = null;
             let lastFailureMessage = "Failed to load channel";
 
             for (const candidate of candidates) {
-                const result = await fetchChannelCandidate(apiUrl, candidate, token);
+                const response = await fetch(`${apiUrl}/api/channel/${encodeURIComponent(candidate)}`, {
+                    headers: {
+                        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+                    },
+                });
 
-                if (!result) continue;
+                const text = await response.text();
+                let data = null;
 
-                const { response, text, parsed } = result;
+                try {
+                    data = text ? JSON.parse(text) : null;
+                } catch {
+                    data = null;
+                }
 
                 console.log("AUTHOR PAGE RESPONSE:", {
                     candidate,
                     status: response.status,
                     ok: response.ok,
                     text,
-                    parsed,
+                    data,
                 });
 
-                if (response.ok && parsed) {
-                    successPayload = parsed;
+                if (response.ok && data) {
+                    successPayload = data;
                     break;
                 }
 
-                if (response.ok && !parsed) {
-                    lastFailureMessage = text || "Channel response is not valid JSON";
-                    continue;
-                }
-
-                if (parsed?.message) {
-                    lastFailureMessage = parsed.message;
+                if (data?.message) {
+                    lastFailureMessage = data.message;
                 } else if (text) {
                     lastFailureMessage = text;
                 }
