@@ -312,6 +312,7 @@ function normalizeVideo(video = {}) {
         video?.thumbnail,
         video?.preview,
         video?.imageUrl,
+        video?.posterUrl,
         video?.snippet?.thumbnails?.high?.url,
         video?.snippet?.thumbnails?.medium?.url,
         video?.snippet?.thumbnails?.default?.url,
@@ -353,13 +354,43 @@ function normalizeVideo(video = {}) {
 
     const resolvedSubscriberCount = parseCompactNumber(resolvedSubscriberCountRaw);
 
-    const resolvedViews = extractViewsFromVideo(video);
-    const resolvedLikes = extractLikesFromVideo(video);
+    const resolvedViews = Math.max(
+        parseCompactNumber(video?.viewsCount),
+        parseCompactNumber(video?.viewCount),
+        parseCompactNumber(video?.views),
+        parseCompactNumber(video?.statistics?.viewCount),
+        parseCompactNumber(video?.snippet?.viewCount),
+        parseCompactNumber(video?.meta),
+        parseCompactNumber(video?.viewsText)
+    );
+
+    const resolvedLikes = Math.max(
+        parseCompactNumber(video?.likesCount),
+        parseCompactNumber(video?.likeCount),
+        parseCompactNumber(video?.likes),
+        parseCompactNumber(video?.statistics?.likeCount),
+        parseCompactNumber(video?.interactions?.likesCount),
+        parseCompactNumber(video?.video?.likesCount)
+    );
 
     const channelRouteValue = getFirstNonEmptyString(
         resolvedChannelId,
         resolvedCustomUrl
     );
+
+    console.log("NORMALIZE VIDEO CHECK:", {
+        id: resolvedId,
+        title: resolvedTitle,
+        rawViewsCount: video?.viewsCount,
+        rawViewCount: video?.viewCount,
+        rawViews: video?.views,
+        rawMeta: video?.meta,
+        rawLikesCount: video?.likesCount,
+        rawLikeCount: video?.likeCount,
+        rawLikes: video?.likes,
+        resolvedViews,
+        resolvedLikes,
+    });
 
     return {
         ...video,
@@ -424,12 +455,26 @@ function mergeNormalizedVideos(primary = null, fallback = null) {
 
         resolvedViews: Math.max(
             parseCompactNumber(primary.resolvedViews),
-            parseCompactNumber(fallback.resolvedViews)
+            parseCompactNumber(fallback.resolvedViews),
+            parseCompactNumber(primary.viewsCount),
+            parseCompactNumber(primary.viewCount),
+            parseCompactNumber(primary.views),
+            parseCompactNumber(primary.meta),
+            parseCompactNumber(fallback.viewsCount),
+            parseCompactNumber(fallback.viewCount),
+            parseCompactNumber(fallback.views),
+            parseCompactNumber(fallback.meta)
         ),
 
         resolvedLikes: Math.max(
             parseCompactNumber(primary.resolvedLikes),
-            parseCompactNumber(fallback.resolvedLikes)
+            parseCompactNumber(fallback.resolvedLikes),
+            parseCompactNumber(primary.likesCount),
+            parseCompactNumber(primary.likeCount),
+            parseCompactNumber(primary.likes),
+            parseCompactNumber(fallback.likesCount),
+            parseCompactNumber(fallback.likeCount),
+            parseCompactNumber(fallback.likes)
         ),
 
         resolvedSubscriberCount: Math.max(
@@ -438,7 +483,6 @@ function mergeNormalizedVideos(primary = null, fallback = null) {
         ),
 
         isSubscribed: Boolean(primary.isSubscribed || fallback.isSubscribed),
-
         category: primary.category || fallback.category,
     };
 }
@@ -578,7 +622,12 @@ export function YouTubeCustomPlayer({
 
     useEffect(() => {
         const parsedIncomingLikes = parseCompactNumber(likes);
-        const baseLikes = parseCompactNumber(currentVideo?.resolvedLikes ?? 0);
+        const baseLikes = Math.max(
+            parseCompactNumber(currentVideo?.resolvedLikes ?? 0),
+            parseCompactNumber(currentVideo?.likes ?? 0),
+            parseCompactNumber(currentVideo?.likeCount ?? 0),
+            parseCompactNumber(currentVideo?.likesCount ?? 0)
+        );
         const nextLikes = Math.max(parsedIncomingLikes, baseLikes);
 
         console.log("LIKES PROP CHECK:", {
@@ -594,7 +643,9 @@ export function YouTubeCustomPlayer({
         likes,
         currentVideo?.resolvedId,
         currentVideo?.resolvedLikes,
-        currentVideo?.resolvedViews,
+        currentVideo?.likes,
+        currentVideo?.likeCount,
+        currentVideo?.likesCount,
     ]);
     useEffect(() => {
         const loadInteractions = async () => {
@@ -616,12 +667,18 @@ export function YouTubeCustomPlayer({
                 console.log("VIDEO PAGE INTERACTIONS RAW:", data);
 
                 const mergedLikes = mergeVideoAndInteractionLikes(
-                    currentVideo?.resolvedLikes ?? 0,
+                    Math.max(
+                        parseCompactNumber(currentVideo?.resolvedLikes),
+                        parseCompactNumber(currentVideo?.likes),
+                        parseCompactNumber(currentVideo?.likeCount),
+                        parseCompactNumber(currentVideo?.likesCount)
+                    ),
                     data
                 );
 
                 console.log("MERGED LIKES AFTER INTERACTIONS:", {
                     currentVideoResolvedLikes: currentVideo?.resolvedLikes ?? 0,
+                    currentVideoRawLikes: currentVideo?.likes,
                     mergedLikes,
                 });
 
