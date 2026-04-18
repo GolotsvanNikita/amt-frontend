@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import './SideMenu.css';
 
 function getAuthToken() {
@@ -29,26 +29,145 @@ function isValidImageSrc(value) {
     );
 }
 
+function getFirstNonEmptyString(...values) {
+    for (const value of values) {
+        if (typeof value === "string" && value.trim()) {
+            return value.trim();
+        }
+
+        if (typeof value === "number" && Number.isFinite(value)) {
+            return String(value);
+        }
+    }
+
+    return "";
+}
+
+function detectSubscriptionSourceType(sub) {
+    const explicitType = getFirstNonEmptyString(
+        sub?.sourceType,
+        sub?.subscriptionType,
+        sub?.contentType,
+        sub?.targetType,
+        sub?.type,
+        sub?.originType
+    ).toLowerCase();
+
+    if (
+        explicitType === "reel" ||
+        explicitType === "reels" ||
+        explicitType === "short" ||
+        explicitType === "shorts"
+    ) {
+        return "reel";
+    }
+
+    if (
+        explicitType === "video" ||
+        explicitType === "channel" ||
+        explicitType === "youtube"
+    ) {
+        return "video";
+    }
+
+    if (sub?.isReelAuthor === true || sub?.fromReel === true || sub?.reel === true) {
+        return "reel";
+    }
+
+    if (sub?.isVideoAuthor === true || sub?.fromVideo === true || sub?.video === true) {
+        return "video";
+    }
+
+    const reelHint = getFirstNonEmptyString(
+        sub?.reelAuthorId,
+        sub?.reelChannelId,
+        sub?.reelId,
+        sub?.authorId
+    );
+
+    if (reelHint) {
+        return "reel";
+    }
+
+    return "video";
+}
+
+/*
+    ВАЖНО:
+    Если у тебя роут для AuthorPageForReels другой,
+    просто поменяй значение ниже.
+*/
+const VIDEO_CHANNEL_ROUTE_BASE = "/channel";
+const REELS_CHANNEL_ROUTE_BASE = "/author-reels";
+
+function buildSubscriptionPath(sub) {
+    const sourceType = detectSubscriptionSourceType(sub);
+
+    const routeValue = getFirstNonEmptyString(
+        sub?.channelId,
+        sub?.customUrl,
+        sub?.routeValue,
+        sub?.authorId,
+        sub?.reelAuthorId,
+        sub?.reelChannelId
+    );
+
+    if (!routeValue) {
+        return "";
+    }
+
+    const baseRoute =
+        sourceType === "reel"
+            ? REELS_CHANNEL_ROUTE_BASE
+            : VIDEO_CHANNEL_ROUTE_BASE;
+
+    return `${baseRoute}/${encodeURIComponent(routeValue)}`;
+}
+
 function normalizeSubscription(sub, index) {
-    const routeValue =
-        (typeof sub?.channelId === "string" && sub.channelId.trim()) ||
-        (typeof sub?.customUrl === "string" && sub.customUrl.trim()) ||
-        "";
+    const sourceType = detectSubscriptionSourceType(sub);
+
+    const routeValue = getFirstNonEmptyString(
+        sub?.channelId,
+        sub?.customUrl,
+        sub?.routeValue,
+        sub?.authorId,
+        sub?.reelAuthorId,
+        sub?.reelChannelId
+    );
 
     const normalized = {
-        id: sub?.id || sub?.channelId || sub?._id || `sub-${index}`,
-        channelId: sub?.channelId || "",
-        customUrl: sub?.customUrl || "",
+        id:
+            sub?.id ||
+            sub?._id ||
+            sub?.subscriptionId ||
+            sub?.channelId ||
+            sub?.authorId ||
+            `sub-${index}`,
+
+        channelId: getFirstNonEmptyString(sub?.channelId, sub?.authorId),
+        customUrl: getFirstNonEmptyString(sub?.customUrl, sub?.authorCustomUrl),
         routeValue,
+        sourceType,
+
         channelName:
             sub?.channelName ||
             sub?.name ||
             sub?.title ||
+            sub?.author ||
             "Unknown channel",
+
         avatarUrl: isValidImageSrc(sub?.avatarUrl)
             ? sub.avatarUrl
+            : isValidImageSrc(sub?.authorAvatar)
+            ? sub.authorAvatar
             : "/ava.png",
     };
+
+    normalized.path = buildSubscriptionPath({
+        ...sub,
+        ...normalized,
+    });
 
     console.log("NORMALIZED SUB:", {
         raw: sub,
@@ -61,17 +180,16 @@ function normalizeSubscription(sub, index) {
 export function SideMenu() {
     const [subscriptions, setSubscriptions] = useState([]);
     const [loadingSubscriptions, setLoadingSubscriptions] = useState(false);
-
     const [visibleSubscriptions, setVisibleSubscriptions] = useState(5);
 
-    const displayedSubscriptions = subscriptions.slice(0, visibleSubscriptions);
+    const displayedSubscriptions = useMemo(() => {
+        return subscriptions.slice(0, visibleSubscriptions);
+    }, [subscriptions, visibleSubscriptions]);
 
     const handleToggleSubscriptions = () => {
-        if (visibleSubscriptions >= subscriptions.length) {
-            setVisibleSubscriptions(5);
-        } else {
-            setVisibleSubscriptions((prev) => prev + 5);
-        }
+        setVisibleSubscriptions((prev) =>
+            prev >= subscriptions.length ? 5 : subscriptions.length
+        );
     };
 
     const loadSubscriptions = useCallback(async () => {
@@ -122,6 +240,7 @@ export function SideMenu() {
             console.log("FINAL NORMALIZED SUBSCRIPTIONS:", normalized);
 
             setSubscriptions(normalized);
+            setVisibleSubscriptions((prev) => Math.max(5, prev));
         } catch (error) {
             console.error("Failed to load subscriptions:", error);
             setSubscriptions([]);
@@ -150,15 +269,19 @@ export function SideMenu() {
     return (
         <aside className="sidebar">
             <nav className="sidebarSection">
-                <ul className='firstSection'>
+                <ul className="firstSection">
                     <li>
                         <img src="/home.png" alt="home" />
-                        <Link to="/"><span>Home</span></Link>
+                        <Link to="/">
+                            <span>Home</span>
+                        </Link>
                     </li>
 
                     <li>
                         <img src="/shorts.png" alt="shorts" />
-                        <Link to="/reels-page"><span>Playme</span></Link>
+                        <Link to="/reels-page">
+                            <span>Playme</span>
+                        </Link>
                     </li>
 
                     <li>
@@ -175,7 +298,7 @@ export function SideMenu() {
             </nav>
 
             <nav className="sidebarSection">
-                <ul className='secondSection'>
+                <ul className="secondSection">
                     <li><img src="/libra.png" alt="libra" /><span>Library</span></li>
                     <li><img src="/history.png" alt="history" /><span>History</span></li>
                     <li><img src="/playlists.png" alt="playlists" /><span>Playlists</span></li>
@@ -209,13 +332,14 @@ export function SideMenu() {
                                             }}
                                         />
 
-                                        {sub.routeValue ? (
+                                        {sub.path ? (
                                             <Link
-                                                to={`/channel/${encodeURIComponent(sub.routeValue)}`}
+                                                to={sub.path}
                                                 onClick={() => {
                                                     console.log("CLICK CHANNEL:", {
+                                                        sourceType: sub.sourceType,
                                                         routeValue: sub.routeValue,
-                                                        fullUrl: `/channel/${sub.routeValue}`,
+                                                        path: sub.path,
                                                         sub,
                                                     });
                                                 }}
@@ -262,7 +386,7 @@ export function SideMenu() {
 
             <div className="sidebarSection">
                 <h4>Categories</h4>
-                <ul className='categories'>
+                <ul className="categories">
                     <li><img src="/Shape.png" alt="shape" /><span>Games</span></li>
                     <li><img src="/Shape.png" alt="shape" /><span>Podcast</span></li>
                     <li><img src="/Shape.png" alt="shape" /><span>Education</span></li>
@@ -275,7 +399,7 @@ export function SideMenu() {
             </div>
 
             <div className="sidebarSection">
-                <ul className='thirdSection'>
+                <ul className="thirdSection">
                     <li><img src="/settings.png" alt="settings" /><span>Settings</span></li>
                     <li><img src="/report.png" alt="report" /><span>Help</span></li>
                     <li><img src="/help.png" alt="help" /><span>Report history</span></li>

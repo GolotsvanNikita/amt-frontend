@@ -377,7 +377,10 @@ export function AuthorPageForReels() {
                     },
                     body: JSON.stringify({
                         channelName: channel.title,
-                    }),
+                        sourceType: "reel",
+                        channelId: channel.id,
+                        customUrl: channel.customUrl,
+                    })
                 }
             );
 
