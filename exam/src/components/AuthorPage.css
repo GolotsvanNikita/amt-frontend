@@ -2,12 +2,12 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap');
 
 .author-page {
-    width: calc(100% - 240px);
-    margin-left: 240px;
+    width: 100%;
     min-height: 100vh;
     background: #000;
     color: #fff;
     padding-bottom: 36px;
+    box-sizing: border-box;
 }
 
 .author-banner-wrap {

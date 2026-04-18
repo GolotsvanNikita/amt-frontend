@@ -1,0 +1,10 @@
+.layout {
+    display: flex;
+    width: 100%;
+    align-items: flex-start;
+}
+
+.mainContent {
+    flex: 1;
+    min-width: 0;
+}
