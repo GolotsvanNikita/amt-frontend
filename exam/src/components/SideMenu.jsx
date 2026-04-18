@@ -169,6 +169,10 @@ function normalizeSubscription(sub, index) {
             ? sub.avatarUrl
             : isValidImageSrc(sub?.authorAvatar)
             ? sub.authorAvatar
+            : isValidImageSrc(sub?.channelAvatar)
+            ? sub.channelAvatar
+            : isValidImageSrc(sub?.avatar)
+            ? sub.avatar
             : "/ava.png",
     };
 

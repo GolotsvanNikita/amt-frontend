@@ -325,6 +325,8 @@ export function AuthorPageForReels() {
                 channelName: channel.title,
                 channelId: String(channel.id || "").trim(),
                 customUrl: String(channel.customUrl || "").trim(),
+                avatarUrl: String(channel.avatarUrl || "").trim(),
+                bannerUrl: String(channel.bannerUrl || "").trim(),
                 sourceType: "reel",
             };
 
