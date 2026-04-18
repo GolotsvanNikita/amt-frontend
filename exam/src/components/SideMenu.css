@@ -3,7 +3,7 @@
 
 .sidebar {
     box-sizing: border-box;
-    width: 300px;
+    width: 240px;
     background-color: black;
     color: white;
     height: calc(100vh - 120px);
