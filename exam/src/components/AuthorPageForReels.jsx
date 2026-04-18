@@ -187,44 +187,6 @@ function normalizeReel(item, index = 0) {
     };
 }
 
-async function fetchChannelCandidate(apiUrl, candidate, token) {
-    const normalizedCandidate = String(candidate || "").trim();
-    if (!normalizedCandidate) return null;
-
-    try {
-        const response = await fetch(
-            `${apiUrl}/api/channel/${encodeURIComponent(normalizedCandidate)}`,
-            {
-                headers: {
-                    ...(token ? { Authorization: `Bearer ${token}` } : {}),
-                },
-            }
-        );
-
-        const text = await response.text();
-        const parsed = safeParseJson(text);
-
-        console.log("REELS AUTHOR CHANNEL RESPONSE:", {
-            candidate: normalizedCandidate,
-            status: response.status,
-            ok: response.ok,
-            text,
-            parsed,
-        });
-
-        return {
-            candidate: normalizedCandidate,
-            ok: response.ok,
-            status: response.status,
-            text,
-            parsed,
-        };
-    } catch (error) {
-        console.error("fetchChannelCandidate error:", normalizedCandidate, error);
-        return null;
-    }
-}
-
 export function AuthorPageForReels() {
     const { channelId } = useParams();
     const navigate = useNavigate();
@@ -263,13 +225,7 @@ export function AuthorPageForReels() {
             );
 
             const text = await response.text();
-            let data = null;
-
-            try {
-                data = text ? JSON.parse(text) : null;
-            } catch {
-                data = null;
-            }
+            const data = safeParseJson(text);
 
             console.log("REELS AUTHOR CHANNEL RESPONSE:", {
                 candidate: decodedChannelId,
@@ -306,13 +262,7 @@ export function AuthorPageForReels() {
             try {
                 const reelsResponse = await fetch(`${apiUrl}/api/reels?page=1&limit=100`);
                 const reelsText = await reelsResponse.text();
-                let reelsData = null;
-
-                try {
-                    reelsData = reelsText ? JSON.parse(reelsText) : null;
-                } catch {
-                    reelsData = null;
-                }
+                const reelsData = safeParseJson(reelsText);
 
                 const rawReels = Array.isArray(reelsData?.reels)
                     ? reelsData.reels
@@ -329,11 +279,15 @@ export function AuthorPageForReels() {
                 console.error("Failed to load reels for author page:", error);
             }
 
-        const normalizedReels = reelsPayload
-            .map((item, index) => normalizeReel(item, index))
-            .filter((item) => String(item.channelId || "").trim() === String(normalizedChannel.id || "").trim());
+            const normalizedReels = reelsPayload
+                .map((item, index) => normalizeReel(item, index))
+                .filter(
+                    (item) =>
+                        String(item.channelId || "").trim() ===
+                        String(normalizedChannel.id || "").trim()
+                );
 
-        console.log("AUTHOR PAGE REELS NORMALIZED:", normalizedReels);
+            console.log("AUTHOR PAGE REELS NORMALIZED:", normalizedReels);
 
             setChannel(normalizedChannel);
             setReels(normalizedReels);
@@ -367,6 +321,15 @@ export function AuthorPageForReels() {
             setSubscribeLoading(true);
             setIsSubscribed(nextSubscribed);
 
+            const payload = {
+                channelName: channel.title,
+                channelId: String(channel.id || "").trim(),
+                customUrl: String(channel.customUrl || "").trim(),
+                sourceType: "reel",
+            };
+
+            console.log("REELS SUBSCRIBE PAYLOAD:", payload);
+
             const response = await fetch(
                 `${import.meta.env.VITE_API_URL}/api/interactions/subscribe`,
                 {
@@ -375,18 +338,25 @@ export function AuthorPageForReels() {
                         "Content-Type": "application/json",
                         Authorization: `Bearer ${token}`,
                     },
-                    body: JSON.stringify({
-                        channelName: channel.title,
-                        sourceType: "reel",
-                        channelId: channel.id,
-                        customUrl: channel.customUrl,
-                    })
+                    body: JSON.stringify(payload),
                 }
             );
 
+            const text = await response.text();
+            const data = safeParseJson(text);
+
+            console.log("REELS SUBSCRIBE RESPONSE:", {
+                ok: response.ok,
+                status: response.status,
+                text,
+                data,
+            });
+
             if (!response.ok) {
-                throw new Error("Failed to update subscription");
+                throw new Error(data?.message || text || "Failed to update subscription");
             }
+
+            window.dispatchEvent(new Event("subscriptionsUpdated"));
         } catch (err) {
             console.error("Subscribe error:", err);
             setIsSubscribed(previousValue);

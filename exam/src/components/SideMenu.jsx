@@ -93,9 +93,8 @@ function detectSubscriptionSourceType(sub) {
 }
 
 /*
-    ВАЖНО:
-    Если у тебя роут для AuthorPageForReels другой,
-    просто поменяй значение ниже.
+    Поставь здесь свой реальный роут для автора рилсов.
+    Если у тебя в App.jsx путь другой, просто поменяй.
 */
 const VIDEO_CHANNEL_ROUTE_BASE = "/channel";
 const REELS_CHANNEL_ROUTE_BASE = "/author-reels";
@@ -109,7 +108,11 @@ function buildSubscriptionPath(sub) {
         sub?.routeValue,
         sub?.authorId,
         sub?.reelAuthorId,
-        sub?.reelChannelId
+        sub?.reelChannelId,
+        sub?.channelName,
+        sub?.name,
+        sub?.title,
+        sub?.author
     );
 
     if (!routeValue) {
@@ -133,7 +136,11 @@ function normalizeSubscription(sub, index) {
         sub?.routeValue,
         sub?.authorId,
         sub?.reelAuthorId,
-        sub?.reelChannelId
+        sub?.reelChannelId,
+        sub?.channelName,
+        sub?.name,
+        sub?.title,
+        sub?.author
     );
 
     const normalized = {
@@ -143,6 +150,7 @@ function normalizeSubscription(sub, index) {
             sub?.subscriptionId ||
             sub?.channelId ||
             sub?.authorId ||
+            routeValue ||
             `sub-${index}`,
 
         channelId: getFirstNonEmptyString(sub?.channelId, sub?.authorId),
@@ -272,16 +280,12 @@ export function SideMenu() {
                 <ul className="firstSection">
                     <li>
                         <img src="/home.png" alt="home" />
-                        <Link to="/">
-                            <span>Home</span>
-                        </Link>
+                        <Link to="/"><span>Home</span></Link>
                     </li>
 
                     <li>
                         <img src="/shorts.png" alt="shorts" />
-                        <Link to="/reels-page">
-                            <span>Playme</span>
-                        </Link>
+                        <Link to="/reels-page"><span>Playme</span></Link>
                     </li>
 
                     <li>
