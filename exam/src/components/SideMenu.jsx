@@ -46,6 +46,7 @@ function getFirstNonEmptyString(...values) {
 function detectSubscriptionSourceType(sub) {
     const explicitType = getFirstNonEmptyString(
         sub?.sourceType,
+        sub?.SourceType,
         sub?.subscriptionType,
         sub?.contentType,
         sub?.targetType,
@@ -93,8 +94,8 @@ function detectSubscriptionSourceType(sub) {
 }
 
 /*
-    Поставь здесь свой реальный роут для автора рилсов.
-    Если у тебя в App.jsx путь другой, просто поменяй.
+    Если у тебя роут для страницы автора рилсов другой —
+    просто поменяй эту строку.
 */
 const VIDEO_CHANNEL_ROUTE_BASE = "/channel";
 const REELS_CHANNEL_ROUTE_BASE = "/author-reels";
@@ -104,12 +105,15 @@ function buildSubscriptionPath(sub) {
 
     const routeValue = getFirstNonEmptyString(
         sub?.channelId,
+        sub?.ChannelId,
         sub?.customUrl,
+        sub?.CustomUrl,
         sub?.routeValue,
         sub?.authorId,
         sub?.reelAuthorId,
         sub?.reelChannelId,
         sub?.channelName,
+        sub?.ChannelName,
         sub?.name,
         sub?.title,
         sub?.author
@@ -132,16 +136,30 @@ function normalizeSubscription(sub, index) {
 
     const routeValue = getFirstNonEmptyString(
         sub?.channelId,
+        sub?.ChannelId,
         sub?.customUrl,
+        sub?.CustomUrl,
         sub?.routeValue,
         sub?.authorId,
         sub?.reelAuthorId,
         sub?.reelChannelId,
         sub?.channelName,
+        sub?.ChannelName,
         sub?.name,
         sub?.title,
         sub?.author
     );
+
+    const avatarCandidate =
+        sub?.avatarUrl ||
+        sub?.AvatarUrl ||
+        sub?.authorAvatar ||
+        sub?.AuthorAvatar ||
+        sub?.channelAvatar ||
+        sub?.ChannelAvatar ||
+        sub?.avatar ||
+        sub?.Avatar ||
+        "";
 
     const normalized = {
         id:
@@ -149,30 +167,36 @@ function normalizeSubscription(sub, index) {
             sub?._id ||
             sub?.subscriptionId ||
             sub?.channelId ||
+            sub?.ChannelId ||
             sub?.authorId ||
             routeValue ||
             `sub-${index}`,
 
-        channelId: getFirstNonEmptyString(sub?.channelId, sub?.authorId),
-        customUrl: getFirstNonEmptyString(sub?.customUrl, sub?.authorCustomUrl),
+        channelId: getFirstNonEmptyString(
+            sub?.channelId,
+            sub?.ChannelId,
+            sub?.authorId
+        ),
+
+        customUrl: getFirstNonEmptyString(
+            sub?.customUrl,
+            sub?.CustomUrl,
+            sub?.authorCustomUrl
+        ),
+
         routeValue,
         sourceType,
 
         channelName:
             sub?.channelName ||
+            sub?.ChannelName ||
             sub?.name ||
             sub?.title ||
             sub?.author ||
             "Unknown channel",
 
-        avatarUrl: isValidImageSrc(sub?.avatarUrl)
-            ? sub.avatarUrl
-            : isValidImageSrc(sub?.authorAvatar)
-            ? sub.authorAvatar
-            : isValidImageSrc(sub?.channelAvatar)
-            ? sub.channelAvatar
-            : isValidImageSrc(sub?.avatar)
-            ? sub.avatar
+        avatarUrl: isValidImageSrc(avatarCandidate)
+            ? avatarCandidate
             : "/ava.png",
     };
 
@@ -227,11 +251,20 @@ export function SideMenu() {
                 }
             );
 
-            const data = await response.json();
+            const text = await response.text();
+            let data = null;
+
+            try {
+                data = text ? JSON.parse(text) : null;
+            } catch (error) {
+                console.warn("Failed to parse subscriptions JSON:", error, text);
+                data = null;
+            }
 
             console.log("SUBSCRIPTIONS RESPONSE:", {
                 ok: response.ok,
                 status: response.status,
+                text,
                 data,
             });
 

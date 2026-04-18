@@ -247,13 +247,26 @@ export function AuthorPageForReels() {
                 ),
                 title: data?.channel?.title || "Unknown channel",
                 description: data?.channel?.description || "",
-                avatarUrl: isValidImageSrc(data?.channel?.avatarUrl)
-                    ? data.channel.avatarUrl
+                avatarUrl: isValidImageSrc(
+                    data?.channel?.avatarUrl ||
+                    data?.channel?.AvatarUrl ||
+                    data?.channel?.channelAvatar ||
+                    data?.channel?.avatar
+                )
+                    ? (
+                        data?.channel?.avatarUrl ||
+                        data?.channel?.AvatarUrl ||
+                        data?.channel?.channelAvatar ||
+                        data?.channel?.avatar
+                    )
                     : "/ava.png",
                 subscriberCount: data?.channel?.subscriberCount || "0",
                 customUrl: data?.channel?.customUrl || "@unknown",
-                bannerUrl: isValidImageSrc(data?.channel?.bannerUrl)
-                    ? data.channel.bannerUrl
+                bannerUrl: isValidImageSrc(
+                    data?.channel?.bannerUrl ||
+                    data?.channel?.BannerUrl
+                )
+                    ? (data?.channel?.bannerUrl || data?.channel?.BannerUrl)
                     : "/7.jpg",
             };
 
@@ -326,6 +339,7 @@ export function AuthorPageForReels() {
                 channelId: String(channel.id || "").trim(),
                 customUrl: String(channel.customUrl || "").trim(),
                 avatarUrl: String(channel.avatarUrl || "").trim(),
+                AvatarUrl: String(channel.avatarUrl || "").trim(),
                 bannerUrl: String(channel.bannerUrl || "").trim(),
                 sourceType: "reel",
             };
