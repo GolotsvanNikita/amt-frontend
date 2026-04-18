@@ -62,6 +62,18 @@ export function SideMenu() {
     const [subscriptions, setSubscriptions] = useState([]);
     const [loadingSubscriptions, setLoadingSubscriptions] = useState(false);
 
+    const [visibleSubscriptions, setVisibleSubscriptions] = useState(5);
+
+    const displayedSubscriptions = subscriptions.slice(0, visibleSubscriptions);
+
+    const handleToggleSubscriptions = () => {
+        if (visibleSubscriptions >= subscriptions.length) {
+            setVisibleSubscriptions(5);
+        } else {
+            setVisibleSubscriptions((prev) => prev + 5);
+        }
+    };
+
     const loadSubscriptions = useCallback(async () => {
         const token = getAuthToken();
 
@@ -174,59 +186,77 @@ export function SideMenu() {
 
             <div className="sidebarSection">
                 <h4>Subscriptions</h4>
+
                 <ul className="subscriptions">
                     {loadingSubscriptions && subscriptions.length === 0 ? (
-                        <li><span>Loading...</span></li>
+                        <li>
+                            <span>Loading...</span>
+                        </li>
                     ) : subscriptions.length > 0 ? (
-                        subscriptions.map((sub) => {
-                            console.log("RENDER SUB ITEM:", sub);
+                        <>
+                            {displayedSubscriptions.map((sub) => {
+                                console.log("RENDER SUB ITEM:", sub);
 
-                            return (
-                                <li key={sub.id}>
-                                    <img
-                                        src={sub.avatarUrl || "/ava.png"}
-                                        alt={sub.channelName}
-                                        className='imgS'
-                                        onError={(e) => {
-                                            console.log("AVATAR ERROR → fallback");
-                                            e.currentTarget.src = "/ava.png";
-                                        }}
-                                    />
+                                return (
+                                    <li key={sub.id}>
+                                        <img
+                                            src={sub.avatarUrl || "/ava.png"}
+                                            alt={sub.channelName}
+                                            className="imgS"
+                                            onError={(e) => {
+                                                console.log("AVATAR ERROR → fallback");
+                                                e.currentTarget.src = "/ava.png";
+                                            }}
+                                        />
 
-                                    {sub.routeValue ? (
-                                        <Link
-                                            to={`/channel/${encodeURIComponent(sub.routeValue)}`}
-                                            onClick={() => {
-                                                console.log("CLICK CHANNEL:", {
-                                                    routeValue: sub.routeValue,
-                                                    fullUrl: `/channel/${sub.routeValue}`,
-                                                    sub,
-                                                });
-                                            }}
-                                        >
-                                            <span>{sub.channelName}</span>
-                                        </Link>
-                                    ) : (
-                                        <span
-                                            onClick={() => {
-                                                console.warn("NO ROUTE VALUE:", sub);
-                                            }}
-                                        >
-                                            {sub.channelName}
-                                        </span>
-                                    )}
+                                        {sub.routeValue ? (
+                                            <Link
+                                                to={`/channel/${encodeURIComponent(sub.routeValue)}`}
+                                                onClick={() => {
+                                                    console.log("CLICK CHANNEL:", {
+                                                        routeValue: sub.routeValue,
+                                                        fullUrl: `/channel/${sub.routeValue}`,
+                                                        sub,
+                                                    });
+                                                }}
+                                            >
+                                                <span>{sub.channelName}</span>
+                                            </Link>
+                                        ) : (
+                                            <span
+                                                onClick={() => {
+                                                    console.warn("NO ROUTE VALUE:", sub);
+                                                }}
+                                            >
+                                                {sub.channelName}
+                                            </span>
+                                        )}
+                                    </li>
+                                );
+                            })}
+
+                            {subscriptions.length > 5 && (
+                                <li
+                                    className="showMore"
+                                    onClick={handleToggleSubscriptions}
+                                    style={{ cursor: "pointer" }}
+                                >
+                                    <span>
+                                        {visibleSubscriptions >= subscriptions.length
+                                            ? "Show less"
+                                            : "Show more"}
+                                    </span>
+                                    <img src="/more.png" alt="more" className="more" />
                                 </li>
-                            );
-                        })
-                    ) : (
-                        <li><span>No subscriptions yet</span></li>
-                    )}
+                            )}
 
-                    <li className="showMore">
-                        <span>Show more</span>
-                        <img src="/more.png" alt="more" className='more' />
-                    </li>
-                    <hr />
+                            <hr />
+                        </>
+                    ) : (
+                        <li>
+                            <span>No subscriptions yet</span>
+                        </li>
+                    )}
                 </ul>
             </div>
 

@@ -55,11 +55,15 @@
     border-radius: 50%;
 }
 
-.showMore
-{
+.showMore {
     color: white;
     font-size: 15px;
     margin-top: 10px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    user-select: none;
 }
 
 .more
