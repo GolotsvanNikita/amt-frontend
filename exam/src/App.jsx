@@ -14,6 +14,7 @@ import { ReelsPage } from './components/ReelsPage';
 import { FullReels } from './components/ReelDetailsPage';
 import { ReelCommentsPage } from './components/ReelCommentsPage';
 import { AuthorPageForReels } from "./components/AuthorPageForReels";
+import { SubscriptionsPage } from './components/SubscriptionsPage';
 import './App.css';
 
 function TokenInterceptor() {
@@ -74,6 +75,8 @@ function App() {
                         <Route path="reels-page/:id" element={<FullReels />} />
                         <Route path="reels-page/:id/comments" element={<ReelCommentsPage />} />
                         <Route path="reels-author/:channelId" element={<AuthorPageForReels />} />
+
+                        <Route path="subcriptions" element={<SubscriptionsPage/>} />
                     </Route>
 
                     <Route path="*" element={<Navigate to="/register" />} />

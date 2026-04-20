@@ -327,7 +327,7 @@ export function SideMenu() {
 
                     <li>
                         <img src="/Group 185.png" alt="group" />
-                        <span>Subscriptions</span>
+                        <Link to="/subcriptions">Subcriptions</Link>
                     </li>
 
                     <li>
