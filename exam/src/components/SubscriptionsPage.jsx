@@ -124,6 +124,7 @@ function normalizeReel(item, index) {
 
 export function SubscriptionsPage(){
     const navigate = useNavigate();
+    const [subscriptions, setSubscriptions] = useState([]);
     const [videos, setVideos] = useState([]);
     const [reels, setReels] = useState([]);
     const [loading, setLoading] = useState(true);
