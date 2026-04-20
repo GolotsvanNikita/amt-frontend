@@ -41,34 +41,83 @@ function extractDateValue(item){
     return Number.isNaN(time) ? 0 : time;
 }
 
-function normalizeVideo(item, index){
-    return{
+function normalizeVideo(item, index) {
+    return {
         id: item?.id || item?.videoId || `video-${index}`,
-        sourceType : "video",
-        title : item?.title || "Untitled video",
-        thumbnail : item?.thumbnailUrl || item?.thumbnail || item?.previewUrl || item?.posterUrl || "",
-        avatarUrl : isValidImage(item?.AvatarUrl) ? item?.AvatarUrl : isValidImage(item?.avatarUrl) ? item?.avatarUrl : isValidImage(item?.authorAvatar) ? item?.authorAvatar : "/ava.png",
-        channelName: item?.channelName || item?.author || item?.authorName || item?.name || "Unknown author",
-        isSubscribed: Boolean(item?.isSubscribed),
-        createdAt: item?.createdAt || item?.publishedAt || item?.uploadDate || item?.date || "",
+        sourceType: "video",
+        title: item?.title || "Untitled video",
+        thumbnail:
+            item?.thumbnailUrl ||
+            item?.thumbnail ||
+            item?.previewUrl ||
+            item?.imageUrl ||
+            "",
+        avatarUrl:
+            item?.AvatarUrl ||
+            item?.avatarUrl ||
+            item?.authorAvatar ||
+            "/ava.png",
+        channelId: item?.channelId || "",
+        customUrl: item?.customUrl || "",
+        routeValue:
+            item?.routeValue ||
+            item?.customUrl ||
+            item?.channelId ||
+            item?.channelName ||
+            "",
+        channelName:
+            item?.channelName ||
+            item?.author ||
+            item?.authorName ||
+            "Unknown channel",
+        createdAt:
+            item?.createdAt ||
+            item?.publishedAt ||
+            item?.uploadDate ||
+            item?.date ||
+            "",
         createdAtValue: extractDateValue(item),
-        views: item?.viewsCount || item?.views || item?.viewCount ||  item?.view || 0,
         raw: item,
     };
 }
 
-function normalizeReel(item, index){
-    return{
+function normalizeReel(item, index) {
+    return {
         id: item?.id || item?.reelId || item?.videoId || `reel-${index}`,
-        sourceType: 'reel',
-        title : item?.title || "Untitled reel",
-        thumbnail: item?.thumbnail || item?.thumbnailUrl || item?.posterUrl || item?.previewUrl || "",
-        avatarUrl: isValidImage(item?.AvatarUrl) ? item?.AvatarUrl : isValidImage(item?.avatarUrl) ? item?.avatarUrl : isValidImage(item?.authorAvatar) ? item?.authorAvatar : "/ava.png",
-        channelName: item?.channelName || item?.author || item?.authorName || item?.name || "Unknown avatar",
-        isSubscribed: Boolean(item?.isSubscribed),
-        createdAt: item?.createdAt || item?.publishedAt || item?.date || item?.uploadDate || " ",
+        sourceType: "reel",
+        title: item?.title || "Untitled reel",
+        thumbnail:
+            item?.thumbnailUrl ||
+            item?.thumbnail ||
+            item?.posterUrl ||
+            item?.previewUrl ||
+            item?.imageUrl ||
+            "",
+        avatarUrl:
+            item?.AvatarUrl ||
+            item?.avatarUrl ||
+            item?.authorAvatar ||
+            "/ava.png",
+        channelId: item?.channelId || "",
+        customUrl: item?.customUrl || "",
+        routeValue:
+            item?.routeValue ||
+            item?.customUrl ||
+            item?.channelId ||
+            item?.channelName ||
+            "",
+        channelName:
+            item?.channelName ||
+            item?.author ||
+            item?.authorName ||
+            "Unknown channel",
+        createdAt:
+            item?.createdAt ||
+            item?.publishedAt ||
+            item?.uploadDate ||
+            item?.date ||
+            "",
         createdAtValue: extractDateValue(item),
-        views: item?.views || item?.view || item?.viewsCount || item?.viewCount || 0,
         raw: item,
     };
 }
@@ -152,11 +201,66 @@ export function SubscriptionsPage(){
         };
     }, []);
 
-    const subscriptionsFeed = useMemo(()=>{
-        const merged = [...videos, ...reels].filter((item)=>item.isSubscribed).sort((a,b)=>b.createdAtValue - a.createdAtValue);
-        console.log("SUBSCRIPTIONS FEED:", merged);
+    console.log("SUBSCRIPTIONS STATE:", subscriptions);
+    console.log("VIDEOS STATE:", videos);
+    console.log("REELS STATE:", reels);
+
+    const subscriptionsFeed = useMemo(() => {
+        const subscribedChannelIds = new Set(
+            subscriptions
+                .map((item) => String(item?.channelId || "").trim())
+                .filter(Boolean)
+        );
+
+        const subscribedFallbackKeys = new Set(
+            subscriptions
+                .map((item) =>
+                    String(
+                        item?.routeValue ||
+                        item?.customUrl ||
+                        item?.channelName ||
+                        ""
+                    )
+                        .trim()
+                        .toLowerCase()
+                )
+                .filter(Boolean)
+        );
+
+        console.log("SUBSCRIBED CHANNEL IDS:", [...subscribedChannelIds]);
+        console.log("SUBSCRIBED FALLBACK KEYS:", [...subscribedFallbackKeys]);
+
+        const merged = [...videos, ...reels]
+            .filter((item) => {
+                const itemChannelId = String(item?.channelId || "").trim();
+
+                const itemFallbackKey = String(
+                    item?.routeValue ||
+                    item?.customUrl ||
+                    item?.channelName ||
+                    ""
+                )
+                    .trim()
+                    .toLowerCase();
+
+                const matchedByChannelId =
+                    itemChannelId && subscribedChannelIds.has(itemChannelId);
+
+                const matchedByFallback =
+                    !matchedByChannelId &&
+                    itemFallbackKey &&
+                    subscribedFallbackKeys.has(itemFallbackKey);
+
+                return matchedByChannelId || matchedByFallback;
+            })
+            .sort((a, b) => b.createdAtValue - a.createdAtValue);
+
+        console.log("VIDEOS NORMALIZED:", videos);
+        console.log("REELS NORMALIZED:", reels);
+        console.log("FINAL SUBSCRIPTIONS FEED:", merged);
+
         return merged;
-    }, [videos,reels])
+    }, [subscriptions, videos, reels]);
 
     function openItem(item){
         console.log("OPEN SUB ITEM", item);
