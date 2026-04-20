@@ -13,7 +13,7 @@ function getToken(){
     );
 }
 
-function getAuthToken(){
+function getAuthHeaders(){
     const token = getToken();
 
     const headers = {
