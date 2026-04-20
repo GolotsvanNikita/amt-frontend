@@ -83,53 +83,67 @@ export function SubscriptionsPage(){
     useEffect(()=>{
         let isMounted = true;
         async function loadSubscriptionsFeed() {
-            try{
+            try {
                 setLoading(true);
                 setError("");
 
-                const [videosRes, reelsRes] = await Promise.all([
-                    fetch(`${API_URL}/api/video/all`,{
-                        method: "GET",
-                        headers: getAuthToken()
-                    }),
-                    fetch(`${API_URL}/api/reels`,{
-                        method: "GET",
-                        headers : getAuthToken(),
-                    }),
-                ]);
+                const videosRes = await fetch(`${API_URL}/api/video/all`, {
+                    method: "GET",
+                    headers: getAuthHeaders(),
+                });
 
-                if(!videosRes.ok){
-                    throw new Error(`Videos request failed ${videosRes.status}`);
+                const reelsRes = await fetch(`${API_URL}/api/reels`, {
+                    method: "GET",
+                    headers: getAuthHeaders(),
+                });
+
+                console.log("VIDEOS RESPONSE:", videosRes);
+                console.log("VIDEOS STATUS:", videosRes.status);
+                console.log("VIDEOS OK:", videosRes.ok);
+
+                console.log("REELS RESPONSE:", reelsRes);
+                console.log("REELS STATUS:", reelsRes.status);
+                console.log("REELS OK:", reelsRes.ok);
+
+                if (!videosRes.ok) {
+                    throw new Error(`Videos request failed: ${videosRes.status}`);
                 }
 
-                if(!reels.ok){
-                    throw new Error(`Videos request failed ${reelsRes.status}`);
+                if (!reelsRes.ok) {
+                    throw new Error(`Reels request failed: ${reelsRes.status}`);
                 }
 
                 const videosData = await videosRes.json();
                 const reelsData = await reelsRes.json();
 
-                console.log("SUBSCRIPTIONS VIDEOS RAW: ", videosData);
-                console.log("SUBSCRIPTONS REELS RAWL: " , reelsData);
+                console.log("VIDEOS DATA:", videosData);
+                console.log("REELS DATA:", reelsData);
 
-                const rawVideos = Array.isArray(videosData) ? videosData : Array.isArray(videosData?.videos) ? videosData.videos : [];
+                const rawVideos = Array.isArray(videosData)
+                    ? videosData
+                    : Array.isArray(videosData?.videos)
+                    ? videosData.videos
+                    : [];
 
-                const rawReels = Array.isArray(reelsData) ? reelsData : Array.isArray(reelsData?.reels) ? reelsData.reels : [];
+                const rawReels = Array.isArray(reelsData)
+                    ? reelsData
+                    : Array.isArray(reelsData?.reels)
+                    ? reelsData.reels
+                    : [];
+
+                console.log("RAW VIDEOS:", rawVideos);
+                console.log("RAW REELS:", rawReels);
 
                 const normalizedVideos = rawVideos.map(normalizeVideo);
                 const normalizedReels = rawReels.map(normalizeReel);
 
-                if(!isMounted) return;
                 setVideos(normalizedVideos);
                 setReels(normalizedReels);
-            }catch(err){
-                console.error("SUBSCRIPTION LOAD ERROR", err);
-                if(!isMounted) return;
-                setError(err.message || "failed to load subscriptions");
-            }finally{
-                if(isMounted){
-                    setLoading(false);
-                }
+            } catch (err) {
+                console.error("SUBSCRIPTION LOAD ERROR:", err);
+                setError(err.message || "Failed to load subscriptions");
+            } finally {
+                setLoading(false);
             }
         }
         loadSubscriptionsFeed();
