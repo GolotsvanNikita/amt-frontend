@@ -15,6 +15,7 @@ import { FullReels } from './components/ReelDetailsPage';
 import { ReelCommentsPage } from './components/ReelCommentsPage';
 import { AuthorPageForReels } from "./components/AuthorPageForReels";
 import { SubscriptionsPage } from './components/SubscriptionsPage';
+import { HistoryPage } from './components/HistoryPage';
 import './App.css';
 
 function TokenInterceptor() {
@@ -70,6 +71,7 @@ function App() {
                         <Route path="my-account" element={<MyAccount />} />
                         <Route path="edit-profile" element={<EditProfile />} />
                         <Route path="theme-page" element={<ThemePage />} />
+                        <Route path="history-page" element={<HistoryPage/>} />
 
                         <Route path="reels-page" element={<ReelsPage />} />
                         <Route path="reels-page/:id" element={<FullReels />} />
