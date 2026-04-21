@@ -9,7 +9,7 @@ import Plus from "../assets/Component 170.svg";
 import ArrowDown from "../assets/ArrowDown.svg";
 import YouTube from "react-youtube";
 import "./VideoPage.css";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 
 function parseCompactNumber(value) {
     if (typeof value === "number" && Number.isFinite(value)) {
@@ -506,6 +506,7 @@ export function YouTubeCustomPlayer({
 }) {
     const playerRef = useRef(null);
     const navigate = useNavigate();
+    const location = useLocation();
 
     const [videos, setVideos] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -585,8 +586,11 @@ export function YouTubeCustomPlayer({
     }, [routeVideoId]);
 
     const normalizedInitialVideo = useMemo(() => {
-        return initialVideo ? normalizeVideo(initialVideo) : null;
-    }, [initialVideo]);
+        const locationVideo = location?.state?.video || null;
+        const sourceVideo = initialVideo || locationVideo || null;
+
+        return sourceVideo ? normalizeVideo(sourceVideo) : null;
+    }, [initialVideo, location]);
 
     const currentVideo = useMemo(() => {
         const normalizedRouteId = String(routeVideoId || "").trim();

@@ -380,7 +380,9 @@ export function AuthorPage() {
                                 });
 
                                 if (targetId) {
-                                    navigate(`/video/${targetId}`);
+                                    navigate(`/video/${targetId}`, {
+                                        state: { video: featuredVideo },
+                                    });
                                 }
                             }}
                         >
@@ -430,7 +432,9 @@ export function AuthorPage() {
                                     });
 
                                     if (targetId) {
-                                        navigate(`/video/${targetId}`);
+                                        navigate(`/video/${targetId}`, {
+                                            state: { video },
+                                        });
                                     }
                                 }}
                             >
