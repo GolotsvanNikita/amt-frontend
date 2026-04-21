@@ -93,7 +93,7 @@ function detectSubscriptionSourceType(sub) {
 }
 
 const VIDEO_CHANNEL_ROUTE_BASE = "/channel";
-const REELS_CHANNEL_ROUTE_BASE = "/author-reels";
+const REELS_CHANNEL_ROUTE_BASE = "/reels-author";
 
 function buildSubscriptionPath(sub) {
     const sourceType = detectSubscriptionSourceType(sub);
@@ -400,57 +400,69 @@ export function SubscriptionsPage(){
     console.log("REELS STATE:", reels);
 
     const subscriptionsFeed = useMemo(() => {
-        const subscribedChannelIds = new Set(
-            subscriptions
-                .map((item) => String(item?.channelId || "").trim())
-                .filter(Boolean)
-        );
+        const subscriptionsByChannelId = new Map();
+        const subscriptionsByFallbackKey = new Map();
 
-        const subscribedFallbackKeys = new Set(
-            subscriptions
-                .map((item) =>
-                    String(
-                        item?.routeValue ||
-                        item?.customUrl ||
-                        item?.channelName ||
-                        ""
-                    )
-                        .trim()
-                        .toLowerCase()
-                )
-                .filter(Boolean)
-        );
+        subscriptions.forEach((sub) => {
+            const channelId = String(sub?.channelId || "").trim();
+            const fallbackKey = String(
+                sub?.routeValue ||
+                sub?.customUrl ||
+                sub?.channelName ||
+                ""
+            ).trim().toLowerCase();
 
-        console.log("SUBSCRIBED CHANNEL IDS:", [...subscribedChannelIds]);
-        console.log("SUBSCRIBED FALLBACK KEYS:", [...subscribedFallbackKeys]);
+            if (channelId) {
+                subscriptionsByChannelId.set(channelId, sub);
+            }
+
+            if (fallbackKey) {
+                subscriptionsByFallbackKey.set(fallbackKey, sub);
+            }
+        });
 
         const merged = [...videos, ...reels]
             .filter((item) => {
                 const itemChannelId = String(item?.channelId || "").trim();
-
                 const itemFallbackKey = String(
                     item?.routeValue ||
                     item?.customUrl ||
                     item?.channelName ||
                     ""
-                )
-                    .trim()
-                    .toLowerCase();
+                ).trim().toLowerCase();
 
-                const matchedByChannelId =
-                    itemChannelId && subscribedChannelIds.has(itemChannelId);
+                return (
+                    subscriptionsByChannelId.has(itemChannelId) ||
+                    subscriptionsByFallbackKey.has(itemFallbackKey)
+                );
+            })
+            .map((item) => {
+                const itemChannelId = String(item?.channelId || "").trim();
+                const itemFallbackKey = String(
+                    item?.routeValue ||
+                    item?.customUrl ||
+                    item?.channelName ||
+                    ""
+                ).trim().toLowerCase();
 
-                const matchedByFallback =
-                    !matchedByChannelId &&
-                    itemFallbackKey &&
-                    subscribedFallbackKeys.has(itemFallbackKey);
+                const matchedSubscription =
+                    subscriptionsByChannelId.get(itemChannelId) ||
+                    subscriptionsByFallbackKey.get(itemFallbackKey);
 
-                return matchedByChannelId || matchedByFallback;
+                return {
+                    ...item,
+                    avatarUrl:
+                        matchedSubscription?.avatarUrl ||
+                        item?.avatarUrl ||
+                        "/ava.png",
+                    channelPath:
+                        matchedSubscription?.path || "",
+                    sourceType:
+                        matchedSubscription?.sourceType || item?.sourceType || "video",
+                };
             })
             .sort((a, b) => b.createdAtValue - a.createdAtValue);
 
-        console.log("VIDEOS NORMALIZED:", videos);
-        console.log("REELS NORMALIZED:", reels);
         console.log("FINAL SUBSCRIPTIONS FEED:", merged);
 
         return merged;
@@ -459,7 +471,7 @@ export function SubscriptionsPage(){
     function openItem(item){
         console.log("OPEN SUB ITEM", item);
         if(item.sourceType === "reel"){
-            navigate(`/reels/${item.id}`,{
+            navigate(`/reels-page/${item.id}`,{
                 state:{
                     reel:item.raw,
                 },
@@ -475,8 +487,8 @@ export function SubscriptionsPage(){
     function openAuthor(item) {
         console.log("OPEN AUTHOR FROM SUBSCRIPTIONS", item);
 
-        if (item.path) {
-            navigate(item.path, {
+        if (item.channelPath) {
+            navigate(item.channelPath, {
                 state: {
                     channelName: item.channelName,
                     avatarUrl: item.avatarUrl,
@@ -487,14 +499,21 @@ export function SubscriptionsPage(){
             return;
         }
 
-        navigate("/channel", {
-            state: {
-                channelName: item.channelName,
-                avatarUrl: item.avatarUrl,
-                sourceType: item.sourceType,
-                sourceData: item.raw,
-            },
-        });
+        if (item.channelId) {
+            const fallbackPath =
+                item.sourceType === "reel"
+                    ? `/reels-author/${encodeURIComponent(item.channelId)}`
+                    : `/channel/${encodeURIComponent(item.channelId)}`;
+
+            navigate(fallbackPath, {
+                state: {
+                    channelName: item.channelName,
+                    avatarUrl: item.avatarUrl,
+                    sourceType: item.sourceType,
+                    sourceData: item.raw,
+                },
+            });
+        }
     }
 
     return(
