@@ -320,7 +320,7 @@ export function SubscriptionsPage(){
                     method: "GET",
                     headers: getAuthHeaders(),
                 });
-                const subscriptionsRes = await fetch(`${API_URL}/api/subscriptions`, {
+                const subscriptionsRes = await fetch(`${API_URL}/api/account/subscriptions`, {
                     method: "GET",
                     headers: getAuthHeaders(),
                 });
@@ -346,7 +346,7 @@ export function SubscriptionsPage(){
 
                 const videosData = await videosRes.json();
                 const reelsData = await reelsRes.json();
-                const subscriptionsDat = await subscriptionsRes.json();
+                const subscriptionsData = await subscriptionsRes.json();
                 
 
                 console.log("VIDEOS DATA:", videosData);
@@ -363,7 +363,7 @@ export function SubscriptionsPage(){
                     : Array.isArray(reelsData?.reels)
                     ? reelsData.reels
                     : [];
-                const subscriptionsData = await subscriptionsRes.json();
+                
 
                 const rawSubscriptions = Array.isArray(subscriptionsData)
                     ? subscriptionsData
