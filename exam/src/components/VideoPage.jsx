@@ -589,23 +589,43 @@ export function YouTubeCustomPlayer({
     }, [initialVideo]);
 
     const currentVideo = useMemo(() => {
+        const normalizedRouteId = String(routeVideoId || "").trim();
+
         const foundFromVideos =
             videos.length > 0
-                ? videos.find(
-                    (video) => String(video.resolvedId) === String(routeVideoId)
-                )
+                ? videos.find((video) => {
+                    const candidateIds = [
+                        video?.resolvedId,
+                        video?.videoId,
+                        video?.id,
+                        video?._id,
+                        video?.youtubeId,
+                    ]
+                        .filter(Boolean)
+                        .map((v) => String(v).trim());
+
+                    return candidateIds.includes(normalizedRouteId);
+                })
                 : null;
 
         const matchedInitial =
             normalizedInitialVideo &&
-            String(normalizedInitialVideo.resolvedId) === String(routeVideoId)
+            [
+                normalizedInitialVideo?.resolvedId,
+                normalizedInitialVideo?.videoId,
+                normalizedInitialVideo?.id,
+                normalizedInitialVideo?.youtubeId,
+            ]
+                .filter(Boolean)
+                .map((v) => String(v).trim())
+                .includes(normalizedRouteId)
                 ? normalizedInitialVideo
                 : null;
 
         const merged = mergeNormalizedVideos(foundFromVideos, matchedInitial);
 
         console.log("CURRENT VIDEO MERGE CHECK:", {
-            routeVideoId,
+            routeVideoId: normalizedRouteId,
             foundFromVideos,
             matchedInitial,
             merged,
@@ -613,12 +633,6 @@ export function YouTubeCustomPlayer({
 
         return merged || matchedInitial || foundFromVideos || null;
     }, [videos, routeVideoId, normalizedInitialVideo]);
-
-    useEffect(() => {
-        if (typeof currentVideo?.isSubscribed === "boolean") {
-            setIsSubscribed(currentVideo.isSubscribed);
-        }
-    }, [currentVideo?.resolvedId]);
 
     useEffect(() => {
         const parsedIncomingLikes = parseCompactNumber(likes);
