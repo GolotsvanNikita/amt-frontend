@@ -10,6 +10,7 @@ import ArrowDown from "../assets/ArrowDown.svg";
 import YouTube from "react-youtube";
 import "./VideoPage.css";
 import { useNavigate, useLocation } from "react-router-dom";
+import { saveWatchProgress } from "../utils/historyProgress";
 
 function parseCompactNumber(value) {
     if (typeof value === "number" && Number.isFinite(value)) {
@@ -505,6 +506,9 @@ export function YouTubeCustomPlayer({
     setLikes = null,
 }) {
     const playerRef = useRef(null);
+    const historyIntervalRef = useRef(null);
+    const lastSavedTimeRef = useRef(0);
+    const restoredProgressRef = useRef(false);
     const navigate = useNavigate();
     const location = useLocation();
 
@@ -647,6 +651,27 @@ export function YouTubeCustomPlayer({
         });
         return merged || matchedInitial || foundFromVideos || null;
     }, [videos, routeVideoId, normalizedInitialVideo]);
+
+    const continueFrom = Number(location?.state?.continueFrom || 0);
+
+    const historyPayload = useMemo(()=>{
+        if(!currentTime?.resolvedId) return null;
+        return{
+            videoId: currentVideo.resolvedId,
+            title: currentVideo.resolvedTitle || " ",
+            thumbnailUrl: currentVideo.resolvedThumbnail || "",
+            channelName: currentVideo.resolvedChannelName || "",
+            durationSeconds: Number(duration || 0),
+            lastPositionSecounds: Number(currentTime || 0),
+        };
+    },[
+        currentVideo?.resolvedId,
+        currentVideo?.resolvedTitle,
+        currentVideo?.resolvedThumbnail,
+        currentVideo?.resolvedChannelName,
+        duration,
+        currentTime,
+    ])
 
     useEffect(() => {
         const parsedIncomingLikes = parseCompactNumber(likes);
@@ -906,7 +931,9 @@ export function YouTubeCustomPlayer({
 
     const onReady = (e) => {
         playerRef.current = e.target;
-        setDuration(e.target.getDuration());
+
+        const playerDuration = Number(e.target.getDuration?.() || 0);
+        setDuration(playerDuration);
 
         if (e.target.getAvailablePlaybackRates) {
             const rates = e.target.getAvailablePlaybackRates();
@@ -918,7 +945,41 @@ export function YouTubeCustomPlayer({
         if (e.target.getVolume) {
             setVolume(e.target.getVolume());
         }
+
+        if (
+            !restoredProgressRef.current &&
+            continueFrom > 0 &&
+            playerDuration > 0 &&
+            continueFrom < playerDuration - 2
+        ) {
+            e.target.seekTo(continueFrom, true);
+            setCurrentTime(continueFrom);
+            setProgress((continueFrom / playerDuration) * 100);
+            restoredProgressRef.current = true;
+        }
     };
+
+    const pushWatchProgress = useCallback(
+        async (force = false, explicitTime = null, explicitDuration = null)=>{
+            if(!currentVideo?.resolvedId) return;
+            const saveCurrentTime = explicitTime !==null ? Number(explicitTime || 0) : Number(playerRef.current?.getCurrentTime?.() || currentTime || 0);
+
+            const safeDuration = explicitDuration !== null ? Number(explicitDuration || 0) : Number(playerRef.current?.getDuration?.() || duration || 0);
+
+            if(!force && Math.abs(saveCurrentTime - lastSavedTimeRef.current)<5){
+                return;
+            }
+            lastSavedTimeRef.current = saveCurrentTime;
+            await saveWatchProgress({
+                videoId: currentVideo.resolvedId,
+                title: currentVideo.resolvedTitle || "",
+                thumbnailUrl: currentVideo.resolvedThumbnail || "",
+                channelName: currentVideo.resolvedChannelName || "",
+                durationSeconds: safeDuration,
+                lastPositionSecounds: saveCurrentTime,
+            })
+        }
+    )
 
     const checkCaptionsAbailability = useCallback(() => {
         const player = playerRef.current;
@@ -947,6 +1008,43 @@ export function YouTubeCustomPlayer({
         return () => clearInterval(interval);
     }, []);
 
+    useEffect(()=>{
+        if(!currentVideo?.resolvedId) return;
+        if(historyIntervalRef.current){
+            clearInterval(historyIntervalRef.current);
+        }
+
+        historyIntervalRef.current = setInterval(()=>{
+            const player = playerRef.current;
+            if(!player?.getCurrentTime || !player?.getDuration) return;
+            const time = Number(player.getCurrentTime() || 0);
+            const dur = Number(player.getDuration() || 0);
+
+            if(time > 0 && dur > 0){
+                pushWatchProgress(false, time, dur)
+            }
+        }, 10000);
+        return ()=>{
+            if(historyIntervalRef.current){
+                clearInterval(historyIntervalRef.current);
+                historyIntervalRef.current = null;
+            }
+        };
+    }, [currentVideo?.resolvedId, pushWatchProgress])
+
+    useEffect(()=>{
+        return ()=>{
+            const player = playerRef.current;
+
+            const time = Number(player?.getCurrentTime?.() || currentTime || 0);
+            const dur = Number(player?.getDuration?.() || duration || 0);
+
+            if(time>0){
+                pushWatchProgress(true, time,dur);
+            }
+        };
+    },[pushWatchProgress, currentTime, duration])
+
     useEffect(() => {
         setIsPlaying(false);
         setIsMuted(false);
@@ -955,6 +1053,9 @@ export function YouTubeCustomPlayer({
         setDuration(0);
         setShowVideo(true);
         setShowSettings(false);
+
+         restoredProgressRef.current = false;
+        lastSavedTimeRef.current = 0;
 
         const timer = setTimeout(() => {
             checkCaptionsAbailability();
@@ -981,13 +1082,14 @@ export function YouTubeCustomPlayer({
         navigate(`/channel/${encodeURIComponent(rawChannelId)}`);
     };
 
-    const togglePlay = () => {
+    const togglePlay = async () => {
         const player = playerRef.current;
         if (!player) return;
 
         if (isPlaying) {
             player.pauseVideo();
             setIsPlaying(false);
+            await handlePauseSave();
         } else {
             player.playVideo();
             setIsPlaying(true);
@@ -1004,6 +1106,30 @@ export function YouTubeCustomPlayer({
         } else {
             player.mute();
             setIsMuted(true);
+        }
+    };
+
+    const handlePauseSave = async () =>{
+        const player = playerRef.current;
+        if(!player?.getCurrentTime || !player?.getDuration) return;
+
+        const time = Number(player.getCurrentTime() || 0);
+        const dur = Number(player.getDuration() || 0);
+
+        if(time > 0){
+            await pushWatchProgress(true, time, dur);
+        }
+    };
+
+    const handleEndenSave = async ()=>{
+        const player = playerRef.current;
+        const dur = Number(player?.getDuration?.() || duration || 0);
+
+        if(dur > 0){
+            await pushWatchProgress(true,dur,dur);
+            setCurrentTime(dur);
+            setProgress(100);
+            setIsPlaying(false);
         }
     };
 
@@ -1035,6 +1161,8 @@ export function YouTubeCustomPlayer({
 
         setCurrentTime(newTime);
         setProgress(value);
+
+        pushWatchProgress(true, newTime, duration);
     };
 
     const handlePlaybackRateChange = (rate) => {
@@ -1287,11 +1415,27 @@ export function YouTubeCustomPlayer({
                     <div className="yt-wrapper">
                         <div className="video-section">
                             {showVideo ? (
-                                <YouTube
-                                    videoId={currentVideo.resolvedId}
-                                    opts={opts}
-                                    onReady={onReady}
-                                />
+                            <YouTube
+                                videoId={currentVideo.resolvedId}
+                                opts={opts}
+                                onReady={onReady}
+                                onStateChange={(event) => {
+                                    const state = event?.data;
+
+                                    if (state === 1) {
+                                        setIsPlaying(true);
+                                    }
+
+                                    if (state === 2) {
+                                        setIsPlaying(false);
+                                        handlePauseSave();
+                                    }
+
+                                    if (state === 0) {
+                                        handleEndedSave();
+                                    }
+                                }}
+                            />
                             ) : (
                                 <div className="preview" onClick={togglePlay}>
                                     <img
