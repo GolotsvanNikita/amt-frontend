@@ -42,7 +42,7 @@ function safeParseJson(text) {
     }
 }
 
-function normalizeVideo(item, index = 0) {
+function normalizeVideo(item, index = 0, channelData = null) {
     return {
         id: String(
             item?.id ??
@@ -51,16 +51,67 @@ function normalizeVideo(item, index = 0) {
             item?.youtubeId ??
             `video-${index}`
         ),
+
+        videoId: String(
+            item?.videoId ??
+            item?.youtubeId ??
+            item?.id ??
+            item?._id ??
+            ""
+        ),
+
+        youtubeId: String(
+            item?.youtubeId ??
+            item?.videoId ??
+            item?.id ??
+            item?._id ??
+            ""
+        ),
+
         title: item?.title || "Untitled video",
+
         thumbnailUrl:
             item?.thumbnailUrl ||
             item?.imageUrl ||
             item?.thumbnail ||
             item?.preview ||
             "/1.jpg",
+
         views: item?.views || item?.viewCount || "",
         publishedAt: item?.publishedAt || item?.time || item?.published || "",
         description: item?.description || "",
+
+        channelName:
+            item?.channelName ||
+            item?.author ||
+            channelData?.title ||
+            "Unknown channel",
+
+        author: item?.author || item?.channelName || channelData?.title || "",
+
+        channelId:
+            item?.channelId ||
+            item?.authorId ||
+            channelData?.id ||
+            "",
+
+        customUrl:
+            item?.customUrl ||
+            item?.channelCustomUrl ||
+            channelData?.customUrl ||
+            "",
+
+        authorAvatar:
+            item?.authorAvatar ||
+            item?.channelAvatar ||
+            channelData?.avatarUrl ||
+            "/ava.png",
+
+        channelAvatar:
+            item?.channelAvatar ||
+            item?.authorAvatar ||
+            channelData?.avatarUrl ||
+            "/ava.png",
     };
 }
 
@@ -191,11 +242,13 @@ export function AuthorPage() {
             };
 
             const normalizedVideos = Array.isArray(successPayload?.videos)
-                ? successPayload.videos.map((item, index) => normalizeVideo(item, index))
+                ? successPayload.videos.map((item, index) =>
+                    normalizeVideo(item, index, normalizedChannel)
+                )
                 : [];
 
             const normalizedFeaturedVideo = successPayload?.featuredVideo
-                ? normalizeVideo(successPayload.featuredVideo, 0)
+                ? normalizeVideo(successPayload.featuredVideo, 0, normalizedChannel)
                 : null;
 
             const normalizedPlaylists = Array.isArray(successPayload?.playlists)
