@@ -13,20 +13,194 @@ function getToken(){
     );
 }
 
-function getAuthHeaders(){
+function getAuthHeaders() {
     const token = getToken();
 
     const headers = {
         "Content-Type": "application/json",
     };
 
-    if(token){
-        headers.Authorization = `Bearer ${token};`
+    if (token) {
+        headers.Authorization = `Bearer ${token}`;
     }
+
+    return headers;
 }
 
-function isValidImage(value){
+
+
+function getFirstNonEmptyString(...values) {
+    for (const value of values) {
+        if (typeof value === "string" && value.trim() !== "") {
+            return value.trim();
+        }
+    }
+    return "";
+}
+
+function isValidImageSrc(value) {
     return typeof value === "string" && value.trim() !== "";
+}
+
+function detectSubscriptionSourceType(sub) {
+    const explicitType = getFirstNonEmptyString(
+        sub?.sourceType,
+        sub?.SourceType,
+        sub?.subscriptionType,
+        sub?.contentType,
+        sub?.targetType,
+        sub?.type,
+        sub?.originType
+    ).toLowerCase();
+
+    if (
+        explicitType === "reel" ||
+        explicitType === "reels" ||
+        explicitType === "short" ||
+        explicitType === "shorts"
+    ) {
+        return "reel";
+    }
+
+    if (
+        explicitType === "video" ||
+        explicitType === "channel" ||
+        explicitType === "youtube"
+    ) {
+        return "video";
+    }
+
+    if (sub?.isReelAuthor === true || sub?.fromReel === true || sub?.reel === true) {
+        return "reel";
+    }
+
+    if (sub?.isVideoAuthor === true || sub?.fromVideo === true || sub?.video === true) {
+        return "video";
+    }
+
+    const reelHint = getFirstNonEmptyString(
+        sub?.reelAuthorId,
+        sub?.reelChannelId,
+        sub?.reelId,
+        sub?.authorId
+    );
+
+    if (reelHint) {
+        return "reel";
+    }
+
+    return "video";
+}
+
+const VIDEO_CHANNEL_ROUTE_BASE = "/channel";
+const REELS_CHANNEL_ROUTE_BASE = "/author-reels";
+
+function buildSubscriptionPath(sub) {
+    const sourceType = detectSubscriptionSourceType(sub);
+
+    const routeValue = getFirstNonEmptyString(
+        sub?.channelId,
+        sub?.ChannelId,
+        sub?.customUrl,
+        sub?.CustomUrl,
+        sub?.routeValue,
+        sub?.authorId,
+        sub?.reelAuthorId,
+        sub?.reelChannelId,
+        sub?.channelName,
+        sub?.ChannelName,
+        sub?.name,
+        sub?.title,
+        sub?.author
+    );
+
+    if (!routeValue) {
+        return "";
+    }
+
+    const baseRoute =
+        sourceType === "reel"
+            ? REELS_CHANNEL_ROUTE_BASE
+            : VIDEO_CHANNEL_ROUTE_BASE;
+
+    return `${baseRoute}/${encodeURIComponent(routeValue)}`;
+}
+
+function normalizeSubscription(sub, index) {
+    const sourceType = detectSubscriptionSourceType(sub);
+
+    const routeValue = getFirstNonEmptyString(
+        sub?.channelId,
+        sub?.ChannelId,
+        sub?.customUrl,
+        sub?.CustomUrl,
+        sub?.routeValue,
+        sub?.authorId,
+        sub?.reelAuthorId,
+        sub?.reelChannelId,
+        sub?.channelName,
+        sub?.ChannelName,
+        sub?.name,
+        sub?.title,
+        sub?.author
+    );
+
+    const avatarCandidate =
+        sub?.avatarUrl ||
+        sub?.AvatarUrl ||
+        sub?.authorAvatar ||
+        sub?.AuthorAvatar ||
+        sub?.channelAvatar ||
+        sub?.ChannelAvatar ||
+        sub?.avatar ||
+        sub?.Avatar ||
+        "";
+
+    const normalized = {
+        id:
+            sub?.id ||
+            sub?._id ||
+            sub?.subscriptionId ||
+            sub?.channelId ||
+            sub?.ChannelId ||
+            sub?.authorId ||
+            routeValue ||
+            `sub-${index}`,
+
+        channelId: getFirstNonEmptyString(
+            sub?.channelId,
+            sub?.ChannelId,
+            sub?.authorId
+        ),
+
+        customUrl: getFirstNonEmptyString(
+            sub?.customUrl,
+            sub?.CustomUrl,
+            sub?.authorCustomUrl
+        ),
+
+        routeValue,
+        sourceType,
+
+        channelName:
+            sub?.channelName ||
+            sub?.ChannelName ||
+            sub?.name ||
+            sub?.title ||
+            sub?.author ||
+            "Unknown channel",
+
+        avatarUrl: isValidImageSrc(avatarCandidate)
+            ? avatarCandidate
+            : "/ava.png",
+    };
+
+    normalized.path = buildSubscriptionPath({
+        ...sub,
+        ...normalized,
+    });
+
+    return normalized;
 }
 
 function extractDateValue(item){
@@ -146,6 +320,10 @@ export function SubscriptionsPage(){
                     method: "GET",
                     headers: getAuthHeaders(),
                 });
+                const subscriptionsRes = await fetch(`${API_URL}/api/subscriptions`, {
+                    method: "GET",
+                    headers: getAuthHeaders(),
+                });
 
                 console.log("VIDEOS RESPONSE:", videosRes);
                 console.log("VIDEOS STATUS:", videosRes.status);
@@ -162,9 +340,14 @@ export function SubscriptionsPage(){
                 if (!reelsRes.ok) {
                     throw new Error(`Reels request failed: ${reelsRes.status}`);
                 }
+                if (!subscriptionsRes.ok) {
+                    throw new Error(`Subscriptions request failed: ${subscriptionsRes.status}`);
+                }
 
                 const videosData = await videosRes.json();
                 const reelsData = await reelsRes.json();
+                const subscriptionsDat = await subscriptionsRes.json();
+                
 
                 console.log("VIDEOS DATA:", videosData);
                 console.log("REELS DATA:", reelsData);
@@ -180,13 +363,23 @@ export function SubscriptionsPage(){
                     : Array.isArray(reelsData?.reels)
                     ? reelsData.reels
                     : [];
+                const subscriptionsData = await subscriptionsRes.json();
+
+                const rawSubscriptions = Array.isArray(subscriptionsData)
+                    ? subscriptionsData
+                    : Array.isArray(subscriptionsData?.subscriptions)
+                    ? subscriptionsData.subscriptions
+                    : [];
+
+                const normalizedSubscriptions = rawSubscriptions.map(normalizeSubscription);    
 
                 console.log("RAW VIDEOS:", rawVideos);
                 console.log("RAW REELS:", rawReels);
 
                 const normalizedVideos = rawVideos.map(normalizeVideo);
                 const normalizedReels = rawReels.map(normalizeReel);
-
+                
+                setSubscriptions(normalizedSubscriptions)
                 setVideos(normalizedVideos);
                 setReels(normalizedReels);
             } catch (err) {
@@ -279,14 +472,25 @@ export function SubscriptionsPage(){
             },
         });
     }
-    function openAuthor(item){
+    function openAuthor(item) {
         console.log("OPEN AUTHOR FROM SUBSCRIPTIONS", item);
 
+        if (item.path) {
+            navigate(item.path, {
+                state: {
+                    channelName: item.channelName,
+                    avatarUrl: item.avatarUrl,
+                    sourceType: item.sourceType,
+                    sourceData: item.raw,
+                },
+            });
+            return;
+        }
+
         navigate("/channel", {
-            state:{
+            state: {
                 channelName: item.channelName,
                 avatarUrl: item.avatarUrl,
-                isSubscribed : item.isSubscribed,
                 sourceType: item.sourceType,
                 sourceData: item.raw,
             },
@@ -304,6 +508,11 @@ export function SubscriptionsPage(){
                 {!loading && error && (
                     <div className="subscriptions-state subscriptions-error">
                         <span>{error}</span>
+                    </div>
+                )}
+                {!loading && !error && subscriptionsFeed.length === 0 && (
+                    <div className="subscriptions-state">
+                        <span>No new content from your subscriptions yet.</span>
                     </div>
                 )}
                 {!loading && !error && subscriptionsFeed.length > 0 && (

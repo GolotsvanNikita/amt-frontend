@@ -93,10 +93,7 @@ function detectSubscriptionSourceType(sub) {
     return "video";
 }
 
-/*
-    Если у тебя роут для страницы автора рилсов другой —
-    просто поменяй эту строку.
-*/
+
 const VIDEO_CHANNEL_ROUTE_BASE = "/channel";
 const REELS_CHANNEL_ROUTE_BASE = "/author-reels";
 
