@@ -281,6 +281,16 @@ export function AuthorPage() {
         return Array.isArray(playlists) ? playlists : [];
     }, [playlists]);
 
+    const getVideoRouteId = (video) => {
+        return (
+            video?.resolvedId ||
+            video?.videoId ||
+            video?.youtubeId ||
+            video?.id ||
+            ""
+        );
+    };
+
     if (loading) {
         return <div className="author-loading">Loading channel...</div>;
     }
@@ -401,7 +411,17 @@ export function AuthorPage() {
                             <article
                                 key={video.id}
                                 className="author-video-card"
-                                onClick={() => navigate(`/video/${video.id}`)}
+                                onClick={() => {
+                                    const targetId = getVideoRouteId(video);
+                                    console.log("AUTHOR PAGE CLICK VIDEO:", {
+                                        video,
+                                        targetId,
+                                    });
+
+                                    if (targetId) {
+                                        navigate(`/video/${targetId}`);
+                                    }
+                                }}
                             >
                                 <img
                                     src={video.thumbnailUrl}
