@@ -630,7 +630,17 @@ export function YouTubeCustomPlayer({
             matchedInitial,
             merged,
         });
-
+        console.log("MATCH IDS DEBUG:", {
+            normalizedRouteId,
+            allVideoIds: videos.map((video) => ({
+                resolvedId: video?.resolvedId,
+                videoId: video?.videoId,
+                id: video?.id,
+                _id: video?._id,
+                youtubeId: video?.youtubeId,
+                title: video?.resolvedTitle,
+            })),
+        });
         return merged || matchedInitial || foundFromVideos || null;
     }, [videos, routeVideoId, normalizedInitialVideo]);
 
