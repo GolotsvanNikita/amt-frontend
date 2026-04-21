@@ -371,7 +371,18 @@ export function AuthorPage() {
 
                         <article
                             className="author-featured-card"
-                            onClick={() => navigate(`/video/${featuredVideo.id}`)}
+                            onClick={() => {
+                                const targetId = getVideoRouteId(featuredVideo);
+
+                                console.log("FEATURED CLICK:", {
+                                    featuredVideo,
+                                    targetId,
+                                });
+
+                                if (targetId) {
+                                    navigate(`/video/${targetId}`);
+                                }
+                            }}
                         >
                             <img
                                 src={featuredVideo.thumbnailUrl}
