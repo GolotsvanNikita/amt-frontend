@@ -15,7 +15,7 @@ import {Link} from "react-router-dom";
                 <button className='mic'><img src="/mic.png" alt="mic"/></button>
             </div>
             <div className='buttons'>
-                <Link to="/reels-page" className='kvadrat'><img src="/kvadrat.svg" alt="kvadrat"/></Link>
+                <Link to="/upload" className='kvadrat'><img src="/kvadrat.svg" alt="kvadrat"/></Link>
                 <a href="#" className='bell'><img src="/Bell.svg" alt="ring"/></a>
                 <Link to="/my-account" className='ava'>
                     <img src="/ava.png" alt="ava"/>
