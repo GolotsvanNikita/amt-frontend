@@ -37,8 +37,11 @@ function formatDate(value) {
 function extractVideoId(item) {
     return (
         item?.videoId ||
+        item?.VideoId ||
         item?.youtubeVideoId ||
+        item?.YoutubeVideoId ||
         item?.id ||
+        item?.Id ||
         item?.video?.id ||
         item?.video?.videoId ||
         ""
@@ -89,6 +92,7 @@ function extractDuration(item) {
 function extractPosition(item) {
     return Number(
         item?.lastPositionSeconds ??
+        item?.LastPositionSeconds ??
         item?.currentTimeSeconds ??
         item?.watchTimeSeconds ??
         item?.progressSeconds ??
@@ -229,14 +233,28 @@ export function HistoryPage() {
         [historyItems]
     );
 
-    function handleOpenVideo(item) {
-        navigate(`/video/${item.videoId}`, {
-            state: {
-                continueFrom: item.lastPositionSeconds || 0,
-                historyItem: item,
-            },
-        });
+function handleOpenVideo(item) {
+    console.log("OPEN HISTORY ITEM:", item);
+
+    if (!item.videoId) {
+        console.warn("History item has no videoId:", item);
+        return;
     }
+
+    navigate(`/video/${encodeURIComponent(item.videoId)}`, {
+        state: {
+            continueFrom: item.lastPositionSeconds || 0,
+            historyItem: item,
+            video: {
+                id: item.videoId,
+                videoId: item.videoId,
+                title: item.title,
+                thumbnailUrl: item.thumbnailUrl,
+                channelName: item.channelName,
+            },
+        },
+    });
+}
 
     return (
         <div className="historyPage">
