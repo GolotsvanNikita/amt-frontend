@@ -43,7 +43,13 @@ export async function saveWatchProgress(payload) {
     });
 
     if (!response.ok) {
-        throw new Error(`Failed to save history: ${response.status} ${text}`);
+        console.error("SAVE HISTORY FAILED:", {
+            status: response.status,
+            body: text,
+            payload: fixedPayload,
+        });
+
+        return null;
     }
 
     return text ? JSON.parse(text) : null;
