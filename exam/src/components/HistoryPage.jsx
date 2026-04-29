@@ -251,6 +251,19 @@ function handleOpenVideo(item) {
                 title: item.title,
                 thumbnailUrl: item.thumbnailUrl,
                 channelName: item.channelName,
+
+                resolvedId: item.videoId,
+                resolvedTitle: item.title,
+                resolvedThumbnail: item.thumbnailUrl,
+                resolvedChannelName: item.channelName,
+
+                channelId: item.channelId || item.ChannelId || "",
+                channelAvatar: item.channelAvatar || item.channelAvatarUrl || item.avatarUrl || "",
+                channelAvatarUrl: item.channelAvatar || item.channelAvatarUrl || item.avatarUrl || "",
+
+                viewsCount: item.viewsCount || item.viewCount || item.views || 0,
+                likeCount: item.likeCount || item.likesCount || item.likes || 0,
+                likesCount: item.likesCount || item.likeCount || item.likes || 0,
             },
         },
     });
