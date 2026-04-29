@@ -631,48 +631,38 @@ export function YouTubeCustomPlayer({
                 ? normalizedInitialVideo
                 : null;
 
-        const merged = mergeNormalizedVideos(foundFromVideos, matchedInitial);
+        if (foundFromVideos) {
+            return mergeNormalizedVideos(foundFromVideos, matchedInitial);
+        }
 
-        console.log("CURRENT VIDEO MERGE CHECK:", {
-            routeVideoId: normalizedRouteId,
-            foundFromVideos,
-            matchedInitial,
-            merged,
-        });
-        console.log("MATCH IDS DEBUG:", {
-            normalizedRouteId,
-            allVideoIds: videos.map((video) => ({
-                resolvedId: video?.resolvedId,
-                videoId: video?.videoId,
-                id: video?.id,
-                _id: video?._id,
-                youtubeId: video?.youtubeId,
-                title: video?.resolvedTitle,
-            })),
-        });
-        return merged || matchedInitial || foundFromVideos || null;
-    }, [videos, routeVideoId, normalizedInitialVideo]);
+        if (loading) {
+            return null;
+        }
+
+        return matchedInitial || null;
+    }, [videos, routeVideoId, normalizedInitialVideo, loading]);
 
     const continueFrom = Number(location?.state?.continueFrom || 0);
 
-    const historyPayload = useMemo(()=>{
-        if(!currentTime?.resolvedId) return null;
-        return{
+    const historyPayload = useMemo(() => {
+        if (!currentVideo?.resolvedId) return null;
+
+        return {
             videoId: currentVideo.resolvedId,
-            title: currentVideo.resolvedTitle || " ",
+            title: currentVideo.resolvedTitle || "",
             thumbnailUrl: currentVideo.resolvedThumbnail || "",
             channelName: currentVideo.resolvedChannelName || "",
             durationSeconds: Number(duration || 0),
             lastPositionSeconds: Number(currentTime || 0),
         };
-    },[
+    }, [
         currentVideo?.resolvedId,
         currentVideo?.resolvedTitle,
         currentVideo?.resolvedThumbnail,
         currentVideo?.resolvedChannelName,
         duration,
         currentTime,
-    ])
+    ]);
 
     useEffect(() => {
         const parsedIncomingLikes = parseCompactNumber(likes);
