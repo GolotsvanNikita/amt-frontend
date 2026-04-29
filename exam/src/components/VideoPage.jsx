@@ -427,8 +427,9 @@ function mergeNormalizedVideos(primary = null, fallback = null) {
     if (!fallback) return primary;
 
     return {
-        ...primary,
         ...fallback,
+        ...primary,
+
 
         id: primary.id || fallback.id,
         channelId: primary.channelId || fallback.channelId,
