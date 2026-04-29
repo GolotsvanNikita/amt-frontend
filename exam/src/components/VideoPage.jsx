@@ -662,7 +662,7 @@ export function YouTubeCustomPlayer({
             thumbnailUrl: currentVideo.resolvedThumbnail || "",
             channelName: currentVideo.resolvedChannelName || "",
             durationSeconds: Number(duration || 0),
-            lastPositionSecounds: Number(currentTime || 0),
+            lastPositionSeconds: Number(currentTime || 0),
         };
     },[
         currentVideo?.resolvedId,
@@ -976,7 +976,7 @@ export function YouTubeCustomPlayer({
                 thumbnailUrl: currentVideo.resolvedThumbnail || "",
                 channelName: currentVideo.resolvedChannelName || "",
                 durationSeconds: safeDuration,
-                lastPositionSecounds: saveCurrentTime,
+                lastPositionSeconds: saveCurrentTime,
             })
         }
     )
