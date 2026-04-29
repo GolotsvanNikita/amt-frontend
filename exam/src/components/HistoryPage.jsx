@@ -151,8 +151,15 @@ export function HistoryPage() {
                         "Content-Type": "application/json",
                         ...(token ? { Authorization: `Bearer ${token}` } : {}),
                     },
-                });
 
+                    
+                });
+                await fetch("https://amtlisback-hqe6fkfvbufmh2g0.westus3-01.azurewebsites.net/api/history/recent", {
+                headers: {
+                    Authorization: `Bearer ${localStorage.getItem("token")}`
+                }
+                })
+                .then(r => r.text().then(t => console.log(r.status, t)))
                 if (!response.ok) {
                     throw new Error(`History request failed: ${response.status}`);
                 }
