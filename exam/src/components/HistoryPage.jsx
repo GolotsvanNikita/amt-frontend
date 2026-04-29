@@ -146,7 +146,7 @@ export function HistoryPage() {
 
                 const token = getToken();
 
-                const response = await fetch(`${API_BASE}/api/history`, {
+                const response = await fetch(`${API_BASE}/api/history/recent`, {
                     headers: {
                         "Content-Type": "application/json",
                         ...(token ? { Authorization: `Bearer ${token}` } : {}),
