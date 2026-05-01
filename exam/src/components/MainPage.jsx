@@ -48,7 +48,10 @@ function normalizeVideo(video, index = 0) {
 
     const channelName = video.channelName || video.author || "Unknown channel";
 
-    const dynamicAvatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(channelName)}&background=random&color=fff&size=100`;
+    let avatar = video.channelAvatarUrl || video.avatar || video.authorAvatar;
+    if (!avatar || avatar === "/ava.png" || avatar === "null") {
+        avatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(channelName)}&background=random&color=fff&size=100`;
+    }
 
     return {
         id: video.videoId || video.id || `video-${index}`,
@@ -62,9 +65,7 @@ function normalizeVideo(video, index = 0) {
         title: video.title || "Untitled video",
         thumbnail: video.thumbnail || video.thumbnailUrl || "/1v.png",
         channelName: channelName,
-
-        avatar: video.channelAvatarUrl || video.channelAvatar || video.avatarUrl || video.avatar || video.authorAvatar || dynamicAvatar,
-
+        avatar: avatar,
         meta: metaString,
         viewsCount: parseViewsCount(metaString),
         category:
@@ -186,18 +187,19 @@ export function MainPage() {
 
                 const normalizedHistory = Array.isArray(data)
                     ? data.map((video, index) =>
-                          normalizeVideo(
-                              {
-                                  id: video.videoId || video.id,
-                                  title: video.title,
-                                  thumbnail: video.thumbnail || video.thumbnailUrl,
-                                  channelName: video.channelName || video.author,
-                                  meta: video.meta || video.viewsText || "",
-                                  category: video.category,
-                              },
-                              index
-                          )
-                      )
+                        normalizeVideo(
+                            {
+                                id: video.videoId || video.id,
+                                title: video.title,
+                                thumbnail: video.thumbnail || video.thumbnailUrl,
+                                channelName: video.channelName || video.author,
+                                channelAvatarUrl: video.channelAvatarUrl || video.avatar,
+                                meta: video.meta || video.viewsText || "",
+                                category: video.category,
+                            },
+                            index
+                        )
+                    )
                     : [];
 
                 setHistory(normalizedHistory);
@@ -327,6 +329,7 @@ export function MainPage() {
                     title: video.title,
                     thumbnailUrl: video.thumbnail,
                     channelName: video.channelName,
+                    channelAvatarUrl: video.avatar,
                     meta: video.meta,
                     category: video.category,
                 }),
@@ -343,7 +346,7 @@ export function MainPage() {
         navigate(`/video/${video.id}`, {
             state: { video },
         });
-    };
+    }
 
     const renderVideoCard = (video) => {
         const normalizedVideo = normalizeVideo(video);
@@ -392,7 +395,6 @@ export function MainPage() {
             </button>
         );
     };
-
     const filteredSections = useMemo(() => {
         return videoSections.map((section) => ({
             ...section,
