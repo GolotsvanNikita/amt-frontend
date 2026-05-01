@@ -485,7 +485,7 @@ export function MyAccount() {
     };
 
     const handleOpenChannel = () => {
-        navigate(`/author/${profile?.Username}`, {
+        navigate(`/channel/${profile?.Username}`, {
             state: {
                 channelName: profile?.Name,
                 username: profile?.Username,
@@ -498,7 +498,9 @@ export function MyAccount() {
     };
 
     const handleOpenSubscription = (sub) => {
-        navigate(`/author/${sub?.Username || sub?.Id}`, {
+        const targetId = sub?.Id && !sub.Id.startsWith("sub-") ? sub.Id : sub?.Username;
+
+        navigate(`/channel/${targetId}`, {
             state: {
                 channelName: sub?.Name,
                 username: sub?.Username,
