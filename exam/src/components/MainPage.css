@@ -231,11 +231,11 @@
     background-image: none;
 }
 
-.carousel[data-bs-theme="dark"] .carousel-control-prev-icon {
+.carousel[data-bs-theme="blue"] .carousel-control-prev-icon {
     background-image: url('./left.png') !important;
 }
 
-.carousel[data-bs-theme="dark"] .carousel-control-next-icon {
+.carousel[data-bs-theme="blue"] .carousel-control-next-icon {
     background-image: url('./right.png') !important;
 }
 
