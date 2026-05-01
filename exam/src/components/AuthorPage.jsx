@@ -80,7 +80,7 @@ function normalizeVideo(item, index = 0, channelData = null) {
 
         views: item?.views || item?.viewCount || "",
         publishedAt: item?.publishedAt || item?.time || item?.published || "",
-        description: item?.description || "",
+        description: item?.description || channelData?.description || "",
 
         channelName:
             item?.channelName ||
@@ -485,7 +485,7 @@ export function AuthorPage() {
 
                                 {!!(featuredVideo.views || featuredVideo.publishedAt) && (
                                     <p className="author-featured-meta">
-                                        {featuredVideo.views} views {featuredVideo.publishedAt ? `Premiered on ${featuredVideo.publishedAt}` : ""}
+                                        {featuredVideo.views} {featuredVideo.views && featuredVideo.publishedAt ? " · " : ""} {featuredVideo.publishedAt}
                                     </p>
                                 )}
 
