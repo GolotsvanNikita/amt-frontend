@@ -326,9 +326,11 @@ export function Comments({
                     <div key={comment.id} className="comment-block">
                         <div className="comment">
                             <img
-                                src={myAvatar}
-                                alt="your avatar"
-                                onError={(e) => { e.currentTarget.src = "/ava.png"; }}
+                                src={comment.avatar}
+                                alt="avatar"
+                                onError={(e) => {
+                                    e.currentTarget.src = "/ava.png";
+                                }}
                             />
 
                             <div className="comment-body">
