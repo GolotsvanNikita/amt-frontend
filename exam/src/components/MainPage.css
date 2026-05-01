@@ -179,7 +179,7 @@
     height: 38px;
     top: 50%;
     transform: translateY(-50%);
-    background: rgb(59 59 59 / 0.85);
+    color: rgba(100, 134, 219, 1);
     border-radius: 50%;
     opacity: 0.9;
     transition: 0.2s ease;
