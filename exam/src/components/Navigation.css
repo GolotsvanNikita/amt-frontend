@@ -13,7 +13,7 @@ body {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 0 24px;
+    padding: 48px 10px 24px 10px;
     z-index: 1000;
 }
 
@@ -99,8 +99,8 @@ body {
     border: none;
     cursor: pointer;
     background-color: #181818;
-    width: 44px;
-    height: 44px;
+    width: 12px;
+    height: 17.5px;
     border-radius: 50%;
     display: flex;
     justify-content: center;
