@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import "./AuthorPage.css";
+import "./MainPage.css";
 
 function getAuthToken() {
     return (
@@ -236,8 +237,9 @@ export function AuthorPage() {
                     : "/ava.png",
                 subscriberCount: successPayload?.channel?.subscriberCount || "0",
                 customUrl: successPayload?.channel?.customUrl || "@unknown",
-                BannerUrl: isValidImageSrc(successPayload?.channel?.BannerUrl)
-                    ? successPayload.channel.BannerUrl
+
+                bannerUrl: isValidImageSrc(successPayload?.channel?.bannerUrl)
+                    ? successPayload.channel.bannerUrl
                     : "/7.jpg",
             };
 
@@ -371,9 +373,9 @@ export function AuthorPage() {
         <div className="author-page">
             <div className="author-banner-wrap">
                 <img
-                    src={channel.BannerUrl}
+                    src={channel.bannerUrl}
                     alt={channel.title}
-                    className="author-Banner"
+                    className="author-banner"
                     onError={(e) => {
                         e.currentTarget.src = "/7.jpg";
                     }}
@@ -472,18 +474,14 @@ export function AuthorPage() {
                         <h2>Latest Videos</h2>
                     </div>
 
-                    <div className="author-videos-grid">
+                    <div className="videoGrid">
                         {latestVideos.map((video) => (
-                            <article
+                            <button
+                                type="button"
+                                className="videoCard"
                                 key={video.id}
-                                className="author-video-card"
                                 onClick={() => {
                                     const targetId = getVideoRouteId(video);
-                                    console.log("AUTHOR PAGE CLICK VIDEO:", {
-                                        video,
-                                        targetId,
-                                    });
-
                                     if (targetId) {
                                         navigate(`/video/${targetId}`, {
                                             state: { video },
@@ -493,22 +491,34 @@ export function AuthorPage() {
                             >
                                 <img
                                     src={video.thumbnailUrl}
-                                    alt={video.title}
-                                    className="author-video-thumb"
-                                    onError={(e) => {
-                                        e.currentTarget.src = "/1.jpg";
-                                    }}
+                                    className="videoThumb"
+                                    alt={video.title || "Video thumbnail"}
+                                    onError={(e) => { e.currentTarget.src = "/1v.png"; }}
                                 />
 
-                                <div className="author-video-info">
-                                    <h3>{video.title}</h3>
-                                    <p>
-                                        {video.views}
-                                        {video.views && video.publishedAt ? " · " : ""}
-                                        {video.publishedAt}
-                                    </p>
+                                <div className="videoMeta">
+                                    <img
+                                        src={video.authorAvatar}
+                                        className="metaAvatar"
+                                        alt={video.channelName}
+                                        onError={(e) => {
+                                            e.currentTarget.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(video.channelName)}&background=222&color=fff`;
+                                        }}
+                                    />
+
+                                    <div className="videoInfo">
+                                        <h4>{video.title}</h4>
+                                        <p>{video.channelName}</p>
+                                        <span>
+                                            {video.views}
+                                            {video.views && video.publishedAt ? " · " : ""}
+                                            {video.publishedAt}
+                                        </span>
+                                    </div>
+
+                                    <div className="videoMore">⋮</div>
                                 </div>
-                            </article>
+                            </button>
                         ))}
                     </div>
 
@@ -522,26 +532,27 @@ export function AuthorPage() {
                         <h2>Playlists</h2>
                     </div>
 
-                    <div className="author-playlists-grid">
+                    <div className="videoGrid">
                         {channelPlaylists.map((playlist) => (
-                            <article
+                            <div
                                 key={playlist.id}
-                                className="author-playlist-card"
+                                className="videoCard"
+                                style={{ cursor: "default" }}
                             >
                                 <img
                                     src={playlist.thumbnailUrl}
+                                    className="videoThumb"
                                     alt={playlist.title}
-                                    className="author-playlist-thumb"
-                                    onError={(e) => {
-                                        e.currentTarget.src = "/1.jpg";
-                                    }}
+                                    onError={(e) => { e.currentTarget.src = "/1v.png"; }}
                                 />
 
-                                <div className="author-playlist-info">
-                                    <h3>{playlist.title}</h3>
-                                    <p>{playlist.videoCount} videos</p>
+                                <div className="videoMeta" style={{ paddingLeft: '16px' }}>
+                                    <div className="videoInfo">
+                                        <h4>{playlist.title}</h4>
+                                        <p>{playlist.videoCount} videos</p>
+                                    </div>
                                 </div>
-                            </article>
+                            </div>
                         ))}
                     </div>
 
