@@ -162,6 +162,7 @@ export function AuthorPage() {
     const [loading, setLoading] = useState(true);
     const [subscribeLoading, setSubscribeLoading] = useState(false);
     const [error, setError] = useState("");
+    const [descExpanded, setDescExpanded] = useState(false);
 
     const loadChannelPage = useCallback(async () => {
         try {
@@ -385,38 +386,59 @@ export function AuthorPage() {
             </div>
 
             <div className="author-content">
-                <section className="author-header-card">
-                    <img
-                        src={channel.avatarUrl}
-                        alt={channel.title}
-                        className="author-avatar"
-                        onError={(e) => {
-                            e.currentTarget.src = "/ava.png";
-                        }}
-                    />
+                <section className="author-header-container">
+                    <div className="author-header-top">
+                        <img
+                            src={channel.avatarUrl}
+                            alt={channel.title}
+                            className="author-avatar"
+                            onError={(e) => {
+                                e.currentTarget.src = "/ava.png";
+                            }}
+                        />
 
-                    <div className="author-main-info">
-                        <h1 className="author-name">{channel.title}</h1>
-                        <p className="author-username">{channel.customUrl}</p>
-                        <p className="author-subscribers">{channel.subscriberCount} subscribers</p>
+                        <div className="author-main-info">
+                            <h1 className="author-name">{channel.title}</h1>
 
-                        {channel.description && (
-                            <p className="author-description">{channel.description}</p>
-                        )}
+                            <div className="author-stats">
+                                <span>{channel.customUrl}</span>
+                                <span>{channel.subscriberCount} subscribers</span>
+                            </div>
+
+                            <div className="author-actions">
+                                <button
+                                    type="button"
+                                    className={`author-subscribe-btn ${isSubscribed ? "is-subscribed" : ""}`}
+                                    onClick={handleSubscribe}
+                                    disabled={subscribeLoading}
+                                >
+                                    {subscribeLoading
+                                        ? "Loading..."
+                                        : isSubscribed
+                                            ? "Subscribed"
+                                            : "Subscribe"}
+                                </button>
+
+                                <button className="author-bell-btn">
+                                    <svg viewBox="0 0 24 24" width="24" height="24" fill={isSubscribed ? "white" : "none"} stroke="white" strokeWidth="1.5">
+                                        <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+                                        <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
                     </div>
 
-                    <button
-                        type="button"
-                        className={`author-subscribe-btn ${isSubscribed ? "is-subscribed" : ""}`}
-                        onClick={handleSubscribe}
-                        disabled={subscribeLoading}
-                    >
-                        {subscribeLoading
-                            ? "Loading..."
-                            : isSubscribed
-                            ? "Subscribed"
-                            : "Subscribe"}
-                    </button>
+                    {channel.description && (
+                        <div className="author-description-wrapper" onClick={() => setDescExpanded(!descExpanded)}>
+                            <p className={`author-description ${descExpanded ? "expanded" : ""}`}>
+                                {channel.description}
+                            </p>
+                            <svg className={`desc-chevron ${descExpanded ? "up" : ""}`} viewBox="0 0 24 24" width="18" height="18" stroke="white" strokeWidth="2" fill="none">
+                                <polyline points="6 9 12 15 18 9"></polyline>
+                            </svg>
+                        </div>
+                    )}
                 </section>
 
                 {featuredVideo && (

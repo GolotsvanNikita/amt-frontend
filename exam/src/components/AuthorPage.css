@@ -35,103 +35,139 @@
 
 .author-content {
     max-width: 1240px;
-    margin: -72px auto 0;
+    margin: 0 auto; /* Убрали отрицательный отступ -72px */
     padding: 0 20px;
     position: relative;
     z-index: 2;
 }
 
-.author-header-card {
-    display: grid;
-    grid-template-columns: auto 1fr auto;
+.author-header-container {
+    padding: 32px 0 40px 0;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.author-header-top {
+    display: flex;
     align-items: center;
     gap: 24px;
-    background: rgba(14, 14, 14, 0.96);
-    border: 1px solid #2a2a2a;
-    border-radius: 22px;
-    padding: 26px;
-    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.35);
-    margin-bottom: 32px;
 }
 
 .author-avatar {
-    width: 152px;
-    height: 152px;
+    width: 160px;
+    height: 160px;
     border-radius: 50%;
     object-fit: cover;
-    border: 3px solid rgba(255, 255, 255, 0.92);
     background: #151515;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
     flex-shrink: 0;
 }
 
 .author-main-info {
-    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
 }
 
 .author-name {
     font-family: 'Jura', sans-serif;
-    font-size: 44px;
-    font-weight: 700;
-    line-height: 1.05;
-    margin: 0 0 8px;
+    font-size: 38px;
+    font-weight: 600;
+    line-height: 1.2;
+    margin: 0 0 6px;
     color: #fff;
-    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.45);
 }
 
-.author-username {
-    margin: 0 0 10px;
-    font-family: 'Inter', sans-serif;
-    font-size: 18px;
-    color: rgba(255, 255, 255, 0.82);
-}
-
-.author-subscribers {
-    margin: 0 0 12px;
+.author-stats {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 16px;
     font-family: 'Inter', sans-serif;
     font-size: 15px;
-    color: rgba(255, 255, 255, 0.72);
+    color: #aaa;
+}
+
+.author-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.author-subscribe-btn {
+    background-color: #c00; /* Цвет как на макете */
+    color: #fff;
+    border: none;
+    min-width: 130px;
+    height: 40px;
+    padding: 0 20px;
+    border-radius: 20px; /* Сильное закругление */
+    font-family: 'Inter', sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.author-subscribe-btn:hover:not(:disabled) {
+    background-color: #a00;
+}
+
+.author-subscribe-btn.is-subscribed {
+    background: #272727;
+    color: #f1f1f1;
+}
+
+.author-bell-btn {
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s ease;
+}
+
+.author-bell-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.author-description-wrapper {
+    display: flex;
+    align-items: flex-end;
+    gap: 8px;
+    cursor: pointer;
+    max-width: 800px;
+    padding-right: 20px;
 }
 
 .author-description {
     margin: 0;
-    max-width: 760px;
     font-family: 'Inter', sans-serif;
-    line-height: 1.6;
-    font-size: 15px;
-    color: rgba(255, 255, 255, 0.9);
+    line-height: 1.5;
+    font-size: 14px;
+    color: #e0e0e0;
+    display: -webkit-box;
+    -webkit-line-clamp: 1; /* Скрываем всё, кроме первой строки */
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    flex: 1;
 }
 
-.author-subscribe-btn {
-    background-color: #890300;
-    color: #fff;
-    border: none;
-    min-width: 156px;
-    height: 46px;
-    padding: 0 24px;
-    border-radius: 12px;
-    font-family: 'Inter', sans-serif;
-    font-size: 15px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    box-shadow: 0 4px 15px rgba(255, 0, 0, 0.22);
+.author-description.expanded {
+    -webkit-line-clamp: unset;
 }
 
-.author-subscribe-btn:hover:not(:disabled) {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(255, 0, 0, 0.34);
+.desc-chevron {
+    transition: transform 0.3s ease;
+    flex-shrink: 0;
+    margin-bottom: 2px;
 }
 
-.author-subscribe-btn.is-subscribed {
-    background: #1f1f1f;
-    border: 1px solid #383838;
-    box-shadow: none;
-}
-
-.author-subscribe-btn:disabled {
-    opacity: 0.7;
-    cursor: not-allowed;
+.desc-chevron.up {
+    transform: rotate(180deg);
 }
 
 .author-section {
@@ -361,6 +397,19 @@
 @media (max-width: 768px) {
     .author-banner-wrap {
         height: 240px;
+    }
+
+    .author-header-top {
+        flex-direction: column;
+        text-align: center;
+    }
+
+    .author-stats {
+        justify-content: center;
+    }
+
+    .author-actions {
+        justify-content: center;
     }
 
     .author-content {
