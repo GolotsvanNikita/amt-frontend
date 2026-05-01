@@ -329,7 +329,7 @@ export function MainPage() {
                     title: video.title,
                     thumbnailUrl: video.thumbnail,
                     channelName: video.channelName,
-                    avatarUrl: video.avatar,
+                    avatarUrl: video.avatar, // ИСПРАВЛЕНО НА avatarUrl
                     meta: video.meta,
                     category: video.category,
                 }),
@@ -340,7 +340,7 @@ export function MainPage() {
                 return [video, ...filtered].slice(0, 20);
             });
         } catch (err) {
-            console.error(err);
+            console.error("Failed to record history:", err);
         }
 
         navigate(`/video/${video.id}`, {
