@@ -331,7 +331,10 @@ export function SideMenu() {
             <nav className="sidebarSection">
                 <ul className="secondSection">
                     <li><img src="/libra.png" alt="libra" /><span>Library</span></li>
-                    <li><Link to="/history-page"><img src="/history.png" alt="history" /><span>History</span></Link></li>
+                    <li>
+                        <img src="/history.png" alt="history" />
+                        <Link to="/history-page"><span>History</span></Link>
+                    </li>
                     <li><img src="/playlists.png" alt="playlists" /><span>Playlists</span></li>
                     <li><img src="/heart.png" alt="heart" /><span>Favorite</span></li>
                 </ul>
