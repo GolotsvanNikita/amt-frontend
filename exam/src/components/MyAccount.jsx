@@ -258,16 +258,25 @@ export function MyAccount() {
     }
 
     function normalizeSubscription(item, index = 0) {
+        const name = item?.Name || item?.name || item?.ChannelName || item?.channelName || item?.Username || item?.username || "Unknown channel";
+
+        let avatar =
+            item?.AvatarUrl ||
+            item?.avatarUrl ||
+            item?.Avatar ||
+            item?.avatar ||
+            item?.ChannelAvatar ||
+            item?.channelAvatar ||
+            item?.Image ||
+            item?.image;
+
+        if (!avatar || avatar === "/ava.png" || avatar === "null") {
+            avatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=random&color=fff&size=100`;
+        }
+
         return {
             Id: String(item?.Id || item?.id || item?._id || item?.ChannelId || item?.channelId || `sub-${index}`),
-            Name:
-                item?.Name ||
-                item?.name ||
-                item?.ChannelName ||
-                item?.channelName ||
-                item?.Username ||
-                item?.username ||
-                "Unknown channel",
+            Name: name,
             Username:
                 item?.Username ||
                 item?.username ||
@@ -276,14 +285,7 @@ export function MyAccount() {
                 item?.ChannelName ||
                 item?.channelName ||
                 "unknown",
-            Avatar:
-                item?.Avatar ||
-                item?.avatar ||
-                item?.ChannelAvatar ||
-                item?.channelAvatar ||
-                item?.Image ||
-                item?.image ||
-                "/ava.png",
+            Avatar: avatar,
             Subscribers:
                 item?.Subscribers ??
                 item?.subscribers ??
@@ -674,12 +676,12 @@ export function MyAccount() {
 
             <section className="section" id="subscriptions-section">
                 <h2>Subscriptions</h2>
-                <div className="playlist-grid">
+                <div className="subscriptions-grid">
                     {subscriptions.length > 0 ? (
                         subscriptions.map((sub) => (
                             <div
                                 key={sub.Id}
-                                className="playlist-card"
+                                className="subscription-card"
                                 onClick={() => handleOpenSubscription(sub)}
                                 style={{ cursor: "pointer" }}
                             >
