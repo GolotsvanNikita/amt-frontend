@@ -1,90 +1,146 @@
-body
-{
+body {
     margin: 0;
     padding: 0;
 }
 
-.navContainer
-{
+.navContainer {
     position: fixed;
-    top: 1;
+    top: 0;
     left: 0;
-    width: 100vw;
-    height: 96px;
+    width: 100%;
+    height: 60px;
     background-color: black;
     display: flex;
-    justify-content: center;
+    justify-content: space-between;
     align-items: center;
-    gap: 465px;
+    padding: 0 24px;
     z-index: 1000;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-.logo
-{
-    width: 114px;
-    height: 28px;
-}
-
-.bell img,
-.ava img,
-.kvadrat img
-{
-    width: 26px;
-    height: 26px;
-}
-
-.inputNav
-{
+.nav-left, .nav-right {
     display: flex;
+    align-items: center;
+    width: 200px;
 }
 
-.search
-{
+.nav-right {
+    justify-content: flex-end;
+}
+
+.nav-center {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+}
+
+.logo {
+    width: 90px;
+    height: auto;
+}
+
+.inputNav {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    max-width: 600px;
+}
+
+.combine {
+    display: flex;
+    flex: 1;
+    position: relative;
+    align-items: center;
+}
+
+.combine input {
+    border-radius: 40px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    background-color: #121212;
+    width: 100%;
+    height: 40px;
+    color: white;
+    padding-left: 20px;
+    padding-right: 50px;
+    outline: none;
+    transition: 0.2s ease;
+}
+
+.combine input:focus {
+    border-color: #3e5db3;
+    background-color: #000;
+}
+
+.combine input::placeholder {
+    color: #888;
+    font-size: 15px;
+}
+
+.search {
     border: none;
     background: none;
     cursor: pointer;
     position: absolute;
-    left: 59.5%;
-    bottom: 35%;
+    right: 15px;
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
 }
 
-.combine input
-{
-    border-radius: 50px;
-    border: solid rgba(255, 255, 255, 0.53) 1px;
-    background-color: black;
-    width: 537px;
-    height: 39px;
-    color: white;
-    padding-left: 20px;
+.search img {
+    width: 18px;
+    height: 18px;
+    opacity: 0.7;
 }
 
-.combine input::placeholder
-{
-    color: white;
-    padding: 30px;
-    font-size: 15px;
-}
-
-.mic
-{
+.mic {
     border: none;
     cursor: pointer;
-    background-color: #D9D9D91A;
-    padding: 4px 15px;
-    border-radius: 24px;
+    background-color: #181818;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
     display: flex;
     justify-content: center;
     align-items: center;
+    transition: 0.2s ease;
+    flex-shrink: 0;
 }
 
-.combine
-{
-    margin-right: 20px;
+.mic:hover {
+    background-color: #2a2a2a;
 }
 
-.buttons
-{
+.mic img {
+    width: 18px;
+    height: 18px;
+}
+
+.buttons {
     display: flex;
+    align-items: center;
     gap: 20px;
+}
+
+.bell, .kvadrat, .ava {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.bell img,
+.kvadrat img {
+    width: 24px;
+    height: 24px;
+}
+
+.user-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    object-fit: cover;
 }
