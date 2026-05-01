@@ -57,7 +57,7 @@ export function UploadPage() {
             formData.append("title", title.trim());
             formData.append("description", description.trim());
             formData.append("category", category.trim());
-            formData.append("video", videoFile);
+            formData.append("file", videoFile);
 
             if (thumbnailFile) {
                 formData.append("thumbnail", thumbnailFile);
