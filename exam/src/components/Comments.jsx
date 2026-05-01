@@ -43,7 +43,9 @@ function getSafeAvatar(entity) {
 
     for (const candidate of candidates) {
         if (isValidImageSrc(candidate)) {
-            return candidate.trim();
+            const trimmed = candidate.trim();
+            if (trimmed.startsWith("/uploads")) return `${import.meta.env.VITE_API_URL}${trimmed}`;
+            return trimmed;
         }
     }
 
@@ -152,6 +154,21 @@ export function Comments({
     const [replyText, setReplyText] = useState("");
     const [replyTo, setReplyTo] = useState(null);
     const loadMoreRef = useRef(null);
+    const [myAvatar, setMyAvatar] = useState("/ava.png");
+
+    useEffect(() => {
+        const token = getToken();
+        if (!token) return;
+        fetch(`${import.meta.env.VITE_API_URL}/api/account/profile`, {
+            headers: { Authorization: `Bearer ${token}` }
+        })
+            .then(res => res.json())
+            .then(data => {
+                if (data?.avatarUrl) {
+                    setMyAvatar(data.avatarUrl.startsWith('/uploads') ? `${import.meta.env.VITE_API_URL}${data.avatarUrl}` : data.avatarUrl);
+                }
+            }).catch(() => {});
+    }, []);
 
     const normalizedComments = useMemo(() => {
         return Array.isArray(comments)
@@ -277,11 +294,9 @@ export function Comments({
 
             <div className="comment-form">
                 <img
-                    src="/ava.png"
+                    src={myAvatar}
                     alt="your avatar"
-                    onError={(e) => {
-                        e.currentTarget.src = "/ava.png";
-                    }}
+                    onError={(e) => { e.currentTarget.src = "/ava.png"; }}
                 />
 
                 <input
@@ -311,11 +326,9 @@ export function Comments({
                     <div key={comment.id} className="comment-block">
                         <div className="comment">
                             <img
-                                src={comment.avatar}
-                                alt="avatar"
-                                onError={(e) => {
-                                    e.currentTarget.src = "/ava.png";
-                                }}
+                                src={myAvatar}
+                                alt="your avatar"
+                                onError={(e) => { e.currentTarget.src = "/ava.png"; }}
                             />
 
                             <div className="comment-body">

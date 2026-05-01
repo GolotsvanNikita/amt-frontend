@@ -126,13 +126,15 @@ function getFirstNonEmptyString(...values) {
 function getFirstValidImage(...values) {
     for (const value of values) {
         if (isValidImageSrc(value)) {
-            return value.trim();
+            const trimmed = value.trim();
+            if (trimmed.startsWith("/uploads")) {
+                return `${import.meta.env.VITE_API_URL}${trimmed}`;
+            }
+            return trimmed;
         }
     }
-
     return "";
 }
-
 function getResolvedId(video) {
     return getFirstNonEmptyString(
         String(video?.videoId ?? ""),
@@ -393,6 +395,8 @@ function normalizeVideo(video = {}) {
         resolvedLikes,
     });
 
+    const resolvedVideoUrl = getFirstNonEmptyString(video?.videoUrl, video?.VideoUrl);
+
     return {
         ...video,
         channelId: resolvedChannelId,
@@ -403,6 +407,7 @@ function normalizeVideo(video = {}) {
         resolvedChannelRouteValue: channelRouteValue,
         resolvedId,
         resolvedTitle,
+        videoUrl: resolvedVideoUrl,
         resolvedThumbnail,
         resolvedPublishedAt,
         resolvedViews,
@@ -434,6 +439,7 @@ function mergeNormalizedVideos(primary = null, fallback = null) {
         id: primary.id || fallback.id,
         channelId: primary.channelId || fallback.channelId,
         resolvedChannelId: primary.resolvedChannelId || fallback.resolvedChannelId,
+        videoUrl: primary.videoUrl || fallback.videoUrl,
         resolvedCustomUrl: primary.resolvedCustomUrl || fallback.resolvedCustomUrl,
         resolvedChannelRouteValue:
             primary.resolvedChannelRouteValue || fallback.resolvedChannelRouteValue,
@@ -1399,6 +1405,11 @@ export function YouTubeCustomPlayer({
         rawVideo: currentVideo,
     });
 
+    const isLocalVideo = Boolean(currentVideo?.videoUrl);
+    const localVideoSrc = isLocalVideo && currentVideo.videoUrl.startsWith("/uploads")
+        ? `${import.meta.env.VITE_API_URL}${currentVideo.videoUrl}`
+        : currentVideo?.videoUrl;
+
     return (
         <div className="yt-page-root">
             <div className="yt-page">
@@ -1406,27 +1417,44 @@ export function YouTubeCustomPlayer({
                     <div className="yt-wrapper">
                         <div className="video-section">
                             {showVideo ? (
-                            <YouTube
-                                videoId={currentVideo.resolvedId}
-                                opts={opts}
-                                onReady={onReady}
-                                onStateChange={(event) => {
-                                    const state = event?.data;
-
-                                    if (state === 1) {
-                                        setIsPlaying(true);
-                                    }
-
-                                    if (state === 2) {
-                                        setIsPlaying(false);
-                                        handlePauseSave();
-                                    }
-
-                                    if (state === 0) {
-                                        handleEndedSave();
-                                    }
-                                }}
-                            />
+                                isLocalVideo ? (
+                                    <video
+                                        ref={(el) => {
+                                            if (el) {
+                                                playerRef.current = {
+                                                    playVideo: () => el.play(),
+                                                    pauseVideo: () => el.pause(),
+                                                    getDuration: () => el.duration,
+                                                    getCurrentTime: () => el.currentTime,
+                                                    seekTo: (time) => { el.currentTime = time; },
+                                                    setVolume: (vol) => { el.volume = vol / 100; },
+                                                    mute: () => { el.muted = true; },
+                                                    unMute: () => { el.muted = false; },
+                                                    setPlaybackRate: (rate) => { el.playbackRate = rate; }
+                                                };
+                                            }
+                                        }}
+                                        src={localVideoSrc}
+                                        autoPlay
+                                        onPlay={() => setIsPlaying(true)}
+                                        onPause={() => { setIsPlaying(false); handlePauseSave(); }}
+                                        onEnded={handleEndenSave}
+                                        onLoadedMetadata={(e) => setDuration(e.target.duration)}
+                                        style={{ width: "100%", height: "100%", objectFit: "contain", backgroundColor: "#000" }}
+                                    />
+                                ) : (
+                                    <YouTube
+                                        videoId={currentVideo.resolvedId}
+                                        opts={opts}
+                                        onReady={onReady}
+                                        onStateChange={(event) => {
+                                            const state = event?.data;
+                                            if (state === 1) setIsPlaying(true);
+                                            if (state === 2) { setIsPlaying(false); handlePauseSave(); }
+                                            if (state === 0) handleEndenSave();
+                                        }}
+                                    />
+                                )
                             ) : (
                                 <div className="preview" onClick={togglePlay}>
                                     <img

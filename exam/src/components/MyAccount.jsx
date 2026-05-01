@@ -3,6 +3,12 @@ import "./MyAccount.css";
 import { useNavigate } from "react-router-dom";
 import { UserContext } from "../UserContext";
 
+function getFullUrl(path) {
+    if (!path || typeof path !== 'string') return path;
+    if (path.startsWith("/uploads")) return `${import.meta.env.VITE_API_URL}${path}`;
+    return path;
+}
+
 const DEFAULT_PROFILE = {
     Name: "User",
     Username: "user",
@@ -132,21 +138,8 @@ export function MyAccount() {
     }
 
     function extractThumbnail(item) {
-        return (
-            item?.ThumbnailUrl ||
-            item?.thumbnailUrl ||
-            item?.Thumbnail ||
-            item?.thumbnail ||
-            item?.PosterUrl ||
-            item?.posterUrl ||
-            item?.Preview ||
-            item?.preview ||
-            item?.Image ||
-            item?.image ||
-            item?.CoverUrl ||
-            item?.coverUrl ||
-            "/16v.png"
-        );
+        const thumb = item?.ThumbnailUrl || item?.thumbnailUrl || item?.Thumbnail || item?.thumbnail || item?.PosterUrl || item?.posterUrl || item?.Preview || item?.preview || item?.Image || item?.image || item?.CoverUrl || item?.coverUrl || "/16v.png";
+        return getFullUrl(thumb);
     }
 
     function extractTitle(item, fallback = "Untitled video") {
@@ -179,20 +172,8 @@ export function MyAccount() {
     }
 
     function extractChannelAvatar(item) {
-        return (
-            item?.channelAvatarUrl ||
-            item?.ChannelAvatarUrl ||
-            item?.ChannelAvatar ||
-            item?.channelAvatar ||
-            item?.Avatar ||
-            item?.avatar ||
-            item?.AuthorAvatar ||
-            item?.authorAvatar ||
-            item?.OwnerAvatar ||
-            item?.ownerAvatar ||
-            profile?.AvatarUrl ||
-            "/ava.png"
-        );
+        const avatar = item?.channelAvatarUrl || item?.ChannelAvatarUrl || item?.ChannelAvatar || item?.channelAvatar || item?.Avatar || item?.avatar || item?.AuthorAvatar || item?.authorAvatar || item?.OwnerAvatar || item?.ownerAvatar || profile?.AvatarUrl || "/ava.png";
+        return getFullUrl(avatar);
     }
 
     function normalizeVideo(item, index = 0, type = "video") {
@@ -310,54 +291,13 @@ export function MyAccount() {
 
     function normalizeProfile(data) {
         if (!data) return DEFAULT_PROFILE;
-
         return {
-            Name:
-                data?.Name ||
-                data?.name ||
-                data?.DisplayName ||
-                data?.displayName ||
-                data?.FullName ||
-                data?.fullName ||
-                "User",
-            Username:
-                data?.Username ||
-                data?.username ||
-                data?.UserName ||
-                data?.userName ||
-                data?.Login ||
-                data?.login ||
-                "user",
-            Subscribers:
-                data?.Subscribers ??
-                data?.subscribers ??
-                data?.SubscribersCount ??
-                data?.subscribersCount ??
-                data?.Followers ??
-                data?.followers ??
-                0,
-            AvatarUrl:
-                data?.AvatarUrl ||
-                data?.avatarUrl ||
-                data?.Avatar ||
-                data?.avatar ||
-                data?.ProfileImage ||
-                data?.profileImage ||
-                "/ava.png",
-            BannerUrl:
-                data?.BannerUrl ||
-                data?.bannerUrl ||
-                data?.Banner ||
-                data?.banner ||
-                data?.BackgroundImage ||
-                data?.backgroundImage ||
-                "/backimage.jpg",
-            Description:
-                data?.Description ||
-                data?.description ||
-                data?.Bio ||
-                data?.bio ||
-                ""
+            Name: data?.Name || data?.name || data?.DisplayName || data?.displayName || data?.FullName || data?.fullName || "User",
+            Username: data?.Username || data?.username || data?.UserName || data?.userName || data?.Login || data?.login || "user",
+            Subscribers: data?.Subscribers ?? data?.subscribers ?? data?.SubscribersCount ?? data?.subscribersCount ?? data?.Followers ?? data?.followers ?? 0,
+            AvatarUrl: getFullUrl(data?.AvatarUrl || data?.avatarUrl || data?.Avatar || data?.avatar || data?.ProfileImage || data?.profileImage || "/ava.png"),
+            BannerUrl: getFullUrl(data?.BannerUrl || data?.bannerUrl || data?.Banner || data?.banner || data?.BackgroundImage || data?.backgroundImage || "/backimage.jpg"),
+            Description: data?.Description || data?.description || data?.Bio || data?.bio || ""
         };
     }
 
