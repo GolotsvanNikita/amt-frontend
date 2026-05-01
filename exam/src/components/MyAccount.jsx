@@ -683,7 +683,6 @@ export function MyAccount() {
                                 key={sub.Id}
                                 className="subscription-card"
                                 onClick={() => handleOpenSubscription(sub)}
-                                style={{ cursor: "pointer" }}
                             >
                                 <img src={sub.Avatar} alt={sub.Name} />
                                 <p>{sub.Name}</p>

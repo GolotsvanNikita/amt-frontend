@@ -321,6 +321,9 @@
   text-align: center;
   cursor: pointer;
   transition: transform 0.2s ease;
+  background: transparent !important;
+  border: none !important;
+  padding: 0;
 }
 
 .subscription-card:hover {
@@ -333,8 +336,8 @@
   border-radius: 50%;
   object-fit: cover;
   margin-bottom: 12px;
-  background: #111;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: none !important;
+  background: transparent !important;
 }
 
 .subscription-card p {
