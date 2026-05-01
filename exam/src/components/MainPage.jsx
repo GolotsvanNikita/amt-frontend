@@ -536,16 +536,18 @@ export function MainPage() {
                 </div>
             </div>
 
-            <div className="categoryBtns">
-                {categoryButtons.map((category) => (
-                    <button
-                        key={category}
-                        className={selectedCategory === category ? "frts" : "another"}
-                        onClick={() => setSelectedCategory(category)}
-                    >
-                        {category}
-                    </button>
-                ))}
+            <div className="categoriesWrapper">
+                <div className="categoryBtns">
+                    {categoryButtons.map((category) => (
+                        <button
+                            key={category}
+                            className={selectedCategory === category ? "frts" : "another"}
+                            onClick={() => setSelectedCategory(category)}
+                        >
+                            {category}
+                        </button>
+                    ))}
+                </div>
             </div>
 
             {loadingSections && (
