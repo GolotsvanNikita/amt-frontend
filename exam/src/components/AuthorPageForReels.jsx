@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import "./AuthorPageForReels.css";
-
+// я ненавижу это
 function getAuthToken() {
     return (
         localStorage.getItem("token") ||
