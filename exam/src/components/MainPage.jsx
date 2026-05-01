@@ -58,6 +58,7 @@ function normalizeVideo(video, index = 0) {
         title: video.title || "Untitled video",
         thumbnail: video.thumbnail || video.thumbnailUrl || "/1v.png",
         channelName: video.channelName || video.author || "Unknown channel",
+        avatar: video.channelAvatarUrl || video.avatar || video.authorAvatar || "/ava.png",
         meta: metaString,
         viewsCount: parseViewsCount(metaString),
         category:
@@ -350,23 +351,35 @@ export function MainPage() {
             >
                 <img
                     src={normalizedVideo.thumbnail}
+                    className="videoThumb"
                     alt={normalizedVideo.title || "Video thumbnail"}
                 />
 
-                <div className="videoInfo">
-                    <h4>{normalizedVideo.title}</h4>
-                    <p
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            if (normalizedVideo.channelId) {
-                                navigate(`/channel/${normalizedVideo.channelId}`);
-                            }
-                        }}
-                        style={{ cursor: normalizedVideo.channelId ? "pointer" : "default" }}
-                    >
-                        {normalizedVideo.channelName}
-                    </p>
-                    <span>{normalizedVideo.meta}</span>
+                <div className="videoMeta">
+                    <img
+                        src={normalizedVideo.avatar}
+                        className="metaAvatar"
+                        alt={normalizedVideo.channelName}
+                        onError={(e) => { e.currentTarget.src = "/ava.png"; }}
+                    />
+
+                    <div className="videoInfo">
+                        <h4>{normalizedVideo.title}</h4>
+                        <p
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                if (normalizedVideo.channelId) {
+                                    navigate(`/channel/${normalizedVideo.channelId}`);
+                                }
+                            }}
+                            style={{ cursor: normalizedVideo.channelId ? "pointer" : "default" }}
+                        >
+                            {normalizedVideo.channelName}
+                        </p>
+                        <span>{normalizedVideo.meta}</span>
+                    </div>
+
+                    <div className="videoMore">⋮</div>
                 </div>
             </button>
         );
