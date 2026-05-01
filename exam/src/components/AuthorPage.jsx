@@ -224,22 +224,24 @@ export function AuthorPage() {
                 throw new Error(lastFailureMessage || "Failed to load channel");
             }
 
+            const rawBanner = successPayload?.channel?.bannerUrl || successPayload?.channel?.BannerUrl;
+            const finalBanner = isValidImageSrc(rawBanner) ? rawBanner : "/7.jpg";
+
+            const rawAvatar = successPayload?.channel?.avatarUrl || successPayload?.channel?.AvatarUrl;
+            const finalAvatar = isValidImageSrc(rawAvatar) ? rawAvatar : "/ava.png";
+
             const normalizedChannel = {
                 id: String(
                     successPayload?.channel?.id ??
                     successPayload?.channel?._id ??
                     decodedChannelId
                 ),
-                title: successPayload?.channel?.title || "Unknown channel",
-                description: successPayload?.channel?.description || "",
-                avatarUrl: isValidImageSrc(successPayload?.channel?.avatarUrl)
-                    ? successPayload.channel.avatarUrl
-                    : "/ava.png",
-                subscriberCount: successPayload?.channel?.subscriberCount || "0",
-                customUrl: successPayload?.channel?.customUrl || "@unknown",
-                bannerUrl: isValidImageSrc(successPayload?.channel?.bannerUrl)
-                    ? successPayload.channel.bannerUrl
-                    : "/7.jpg",
+                title: successPayload?.channel?.title || successPayload?.channel?.Title || "Unknown channel",
+                description: successPayload?.channel?.description || successPayload?.channel?.Description || "",
+                avatarUrl: finalAvatar,
+                subscriberCount: successPayload?.channel?.subscriberCount || successPayload?.channel?.SubscriberCount || "0",
+                customUrl: successPayload?.channel?.customUrl || successPayload?.channel?.CustomUrl || "@unknown",
+                bannerUrl: finalBanner,
             };
 
             const normalizedVideos = Array.isArray(successPayload?.videos)
