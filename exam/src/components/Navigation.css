@@ -98,9 +98,9 @@ body {
 .mic {
     border: none;
     cursor: pointer;
-    background-color: #393939 !important;
-    width: 12px;
-    height: 17.5px;
+    background-color: #222 !important;
+    width: 44px;
+    height: 44px;
     border-radius: 50%;
     display: flex;
     justify-content: center;
@@ -110,7 +110,12 @@ body {
 }
 
 .mic:hover {
-    background-color: #2a2a2a !important;
+    background-color: #333 !important;
+}
+
+.mic img {
+    width: 16px;
+    height: auto;
 }
 
 .mic img {
