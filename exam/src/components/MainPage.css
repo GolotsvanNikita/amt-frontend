@@ -353,7 +353,7 @@
     box-shadow: 0 0 0 3px rgba(100, 134, 219, 0.28);
 }
 
-.videoCard img {
+.videoCard .videoThumb {
     width: 100%;
     height: 180px;
     object-fit: cover;
@@ -361,7 +361,7 @@
     display: block;
 }
 
-.videoCard:hover img {
+.videoCard:hover .videoThumb {
     transform: scale(1.05);
 }
 
@@ -428,7 +428,7 @@
     padding: 16px;
 }
 
-.metaAvatar {
+.videoCard .metaAvatar {
     width: 36px;
     height: 36px;
     border-radius: 50%;
