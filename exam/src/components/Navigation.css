@@ -13,7 +13,7 @@ body {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 48px 60px 24px 60px;
+    padding: 48px 45px 24px 45px;
     z-index: 1000;
 }
 
