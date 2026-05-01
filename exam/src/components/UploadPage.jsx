@@ -65,8 +65,8 @@ export function UploadPage() {
 
             const endpoint =
                 uploadType === "reel"
-                    ? `${API_BASE}/api/reels/upload`
-                    : `${API_BASE}/api/video/upload`;
+                    ? `${API_BASE}/api/VideoUpload/upload-reel`
+                    : `${API_BASE}/api/VideoUpload/upload`;
 
             const response = await fetch(endpoint, {
                 method: "POST",
