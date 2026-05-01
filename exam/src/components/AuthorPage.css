@@ -41,18 +41,16 @@
     position: relative;
     z-index: 2;
     width: 100%;
-    max-width: 1240px;
-    margin: 0 auto;
-    padding: 0 20px 30px 20px;
+    padding: 0 40px 30px 40px;
     display: flex;
     flex-direction: column;
+    align-items: flex-start;
     gap: 20px;
 }
 
 .author-content {
-    max-width: 1240px;
-    margin: 0 auto;
-    padding: 0 20px;
+    width: 100%;
+    padding: 0 40px;
     position: relative;
     z-index: 2;
 }
@@ -103,36 +101,41 @@
 }
 
 .author-subscribe-btn {
-    background-color: #c00;
+    background-color: #890300;
     color: #fff;
-    border: none;
-    min-width: 130px;
-    height: 40px;
-    padding: 0 20px;
-    border-radius: 20px;
+    border: 1px solid #890300;
+    min-width: 136px;
+    height: 38px;
+    padding: 10px 30px;
+    border-radius: 10px;
     font-family: 'Inter', sans-serif;
-    font-size: 14px;
+    font-size: 15px;
     font-weight: 500;
     cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     transition: all 0.2s ease;
 }
 
 .author-subscribe-btn:hover:not(:disabled) {
-    background-color: #a00;
+    background-color: #a10300;
+    border-color: #a10300;
 }
 
 .author-subscribe-btn.is-subscribed {
-    background: #272727;
-    color: #f1f1f1;
+    background: transparent;
+    color: #fff;
+    border: 1px solid #890300;
 }
 
 .author-bell-btn {
     background: transparent;
-    border: none;
+    border: 1px solid #333;
     cursor: pointer;
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
+    width: 38px;
+    height: 38px;
+    border-radius: 10px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -140,7 +143,7 @@
 }
 
 .author-bell-btn:hover {
-    background: rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.05);
 }
 
 .author-description-wrapper {
@@ -410,7 +413,12 @@
 
     .author-header-top {
         flex-direction: column;
-        text-align: center;
+        text-align: left;
+        align-items: flex-start;
+    }
+
+    .author-content, .author-header-container {
+        padding: 0 15px;
     }
 
     .author-stats {
@@ -419,10 +427,6 @@
 
     .author-actions {
         justify-content: center;
-    }
-
-    .author-content {
-        padding: 0 15px;
     }
 
     .author-section-head h2 {
