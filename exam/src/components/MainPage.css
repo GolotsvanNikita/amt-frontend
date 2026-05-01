@@ -303,25 +303,24 @@
 }
 
 .videoSection {
-    padding: 40px 20px;
+    padding: 30px 40px;
     color: white;
 }
 
 .videoSection h3 {
     font-family: 'Jura', sans-serif;
-    font-size: 24px;
-    font-weight: 600;
-    margin-bottom: 25px;
-    color: white;
-    padding-left: 10px;
+    font-size: 20px;
+    font-weight: 400;
+    margin-bottom: 20px;
+    color: #e8e8e8;
+    padding-left: 0;
 }
 
 .videoGrid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-    gap: 20px;
-    max-width: 1200px;
-    margin: 0 auto;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 24px;
+    width: 100%;
 }
 
 .videoCard {
@@ -403,14 +402,11 @@
 }
 
 .mainPageStatus {
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 8px 10px 0;
+    padding: 8px 0 0;
     color: #a8a8a8;
     font-family: 'Inter', sans-serif;
     font-size: 14px;
 }
-
 .sectionDivider {
     border: none;
     height: 1px;
