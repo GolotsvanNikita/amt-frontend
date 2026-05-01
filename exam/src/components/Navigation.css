@@ -8,14 +8,13 @@ body {
     top: 0;
     left: 0;
     width: 100%;
-    height: 60px;
+    height: 80px;
     background-color: black;
     display: flex;
     justify-content: space-between;
     align-items: center;
     padding: 0 24px;
     z-index: 1000;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .nav-left, .nav-right {
@@ -35,14 +34,14 @@ body {
 }
 
 .logo {
-    width: 90px;
+    width: 120px;
     height: auto;
 }
 
 .inputNav {
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 20px;
     width: 100%;
     max-width: 600px;
 }
@@ -57,9 +56,9 @@ body {
 .combine input {
     border-radius: 40px;
     border: 1px solid rgba(255, 255, 255, 0.2);
-    background-color: #121212;
+    background-color: #000;
     width: 100%;
-    height: 40px;
+    height: 44px;
     color: white;
     padding-left: 20px;
     padding-right: 50px;
@@ -69,7 +68,6 @@ body {
 
 .combine input:focus {
     border-color: #3e5db3;
-    background-color: #000;
 }
 
 .combine input::placeholder {
@@ -101,8 +99,8 @@ body {
     border: none;
     cursor: pointer;
     background-color: #181818;
-    width: 40px;
-    height: 40px;
+    width: 44px;
+    height: 44px;
     border-radius: 50%;
     display: flex;
     justify-content: center;
@@ -139,8 +137,8 @@ body {
 }
 
 .user-avatar {
-    width: 32px;
-    height: 32px;
+    width: 34px;
+    height: 34px;
     border-radius: 50%;
     object-fit: cover;
 }
