@@ -1,10 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ChangeListManager">
-    <list default="true" id="afd2bbcc-86c1-4574-b58f-8438f9b9c45f" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/exam/src/components/MyAccount.css" beforeDir="false" afterPath="$PROJECT_DIR$/exam/src/components/MyAccount.css" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/exam/src/components/MyAccount.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/exam/src/components/MyAccount.jsx" afterDir="false" />
-    </list>
+    <list default="true" id="afd2bbcc-86c1-4574-b58f-8438f9b9c45f" name="Changes" comment="" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -56,7 +53,7 @@
       <option name="presentableId" value="Default" />
       <updated>1776276529895</updated>
       <workItem from="1776276531658" duration="5878000" />
-      <workItem from="1777648365133" duration="21009000" />
+      <workItem from="1777648365133" duration="21511000" />
     </task>
     <servers />
   </component>
