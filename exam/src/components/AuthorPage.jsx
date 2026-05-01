@@ -237,7 +237,6 @@ export function AuthorPage() {
                     : "/ava.png",
                 subscriberCount: successPayload?.channel?.subscriberCount || "0",
                 customUrl: successPayload?.channel?.customUrl || "@unknown",
-
                 bannerUrl: isValidImageSrc(successPayload?.channel?.bannerUrl)
                     ? successPayload.channel.bannerUrl
                     : "/7.jpg",
