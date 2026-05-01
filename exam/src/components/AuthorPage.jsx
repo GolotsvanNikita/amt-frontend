@@ -383,9 +383,8 @@ export function AuthorPage() {
                     }}
                 />
                 <div className="author-banner-overlay" />
-            </div>
 
-            <div className="author-content">
+                {/* ШАПКА КАНАЛА ЛЕЖИТ ПОВЕРХ БАННЕРА */}
                 <section className="author-header-container">
                     <div className="author-header-top">
                         <img
@@ -440,7 +439,8 @@ export function AuthorPage() {
                         </div>
                     )}
                 </section>
-
+            </div>
+            <div className="author-content">
                 {featuredVideo && (
                     <section className="author-section">
                         <div className="author-section-head">
