@@ -92,7 +92,8 @@ export function UploadPage() {
             });
 
             if (!response.ok) {
-                throw new Error(data?.message || data || "Upload failed.");
+                const errorMsg = data?.message || data?.title || (typeof data === 'string' ? data : "Upload failed.");
+                throw new Error(errorMsg);
             }
 
             setMessage(`${uploadType === "reel" ? "Reel" : "Video"} uploaded successfully.`);
