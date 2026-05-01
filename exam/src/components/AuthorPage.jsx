@@ -384,7 +384,6 @@ export function AuthorPage() {
                 />
                 <div className="author-banner-overlay" />
 
-                {/* ШАПКА КАНАЛА ЛЕЖИТ ПОВЕРХ БАННЕРА */}
                 <section className="author-header-container">
                     <div className="author-header-top">
                         <img
@@ -441,22 +440,23 @@ export function AuthorPage() {
                 </section>
             </div>
             <div className="author-content">
+                <nav className="author-nav-tabs">
+                    <button className="author-nav-tab active">HOME</button>
+                    <button className="author-nav-tab">VIDEOS</button>
+                    <button className="author-nav-tab">PLAYME</button>
+                    <button className="author-nav-tab">PLAYLISTS</button>
+                    <button className="author-nav-tab">COMMUNITY</button>
+                    <button className="author-nav-tab">ABOUT</button>
+                </nav>
+
                 {featuredVideo && (
-                    <section className="author-section">
-                        <div className="author-section-head">
-                            <h2>Featured video</h2>
-                        </div>
+                    <section className="author-featured-section">
+                        <div className="author-featured-glow" />
 
                         <article
-                            className="author-featured-card"
+                            className="author-featured-layout"
                             onClick={() => {
                                 const targetId = getVideoRouteId(featuredVideo);
-
-                                console.log("FEATURED CLICK:", {
-                                    featuredVideo,
-                                    targetId,
-                                });
-
                                 if (targetId) {
                                     navigate(`/video/${targetId}`, {
                                         state: { video: featuredVideo },
@@ -464,28 +464,35 @@ export function AuthorPage() {
                                 }
                             }}
                         >
-                            <img
-                                src={featuredVideo.thumbnailUrl}
-                                alt={featuredVideo.title}
-                                className="author-featured-thumb"
-                                onError={(e) => {
-                                    e.currentTarget.src = "/1.jpg";
-                                }}
-                            />
+                            <div className="author-featured-thumb-wrap">
+                                <img
+                                    src={featuredVideo.thumbnailUrl}
+                                    alt={featuredVideo.title}
+                                    className="author-featured-thumb"
+                                    onError={(e) => {
+                                        e.currentTarget.src = "/1.jpg";
+                                    }}
+                                />
+                                <div className="author-featured-play-btn">
+                                    <svg viewBox="0 0 24 24" width="32" height="32" fill="#000">
+                                        <path d="M8 5v14l11-7z" />
+                                    </svg>
+                                </div>
+                            </div>
 
                             <div className="author-featured-info">
                                 <h3>{featuredVideo.title}</h3>
 
                                 {!!(featuredVideo.views || featuredVideo.publishedAt) && (
-                                    <p>
-                                        {featuredVideo.views}
-                                        {featuredVideo.views && featuredVideo.publishedAt ? " · " : ""}
-                                        {featuredVideo.publishedAt}
+                                    <p className="author-featured-meta">
+                                        {featuredVideo.views} views {featuredVideo.publishedAt ? `Premiered on ${featuredVideo.publishedAt}` : ""}
                                     </p>
                                 )}
 
                                 {featuredVideo.description && (
-                                    <span>{featuredVideo.description}</span>
+                                    <div className="author-featured-desc">
+                                        {featuredVideo.description}
+                                    </div>
                                 )}
                             </div>
                         </article>
