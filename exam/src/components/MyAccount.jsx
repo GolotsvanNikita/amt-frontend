@@ -197,6 +197,13 @@ export function MyAccount() {
         const rawId = extractVideoId(item, index);
         const videoId = String(rawId);
 
+        const channelName = extractChannelName(item);
+
+        let avatar = extractChannelAvatar(item);
+        if (!avatar || avatar === "/ava.png" || avatar === "null") {
+            avatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(channelName)}&background=random&color=fff&size=100`;
+        }
+
         return {
             Id: videoId,
             VideoId: videoId,
@@ -215,8 +222,8 @@ export function MyAccount() {
                 0
             ),
             Time: normalizeTimeAgo(item),
-            Avatar: extractChannelAvatar(item),
-            Username: extractChannelName(item),
+            Avatar: avatar,
+            Username: channelName,
             Description: item?.Description || item?.description || "",
             Raw: item
         };
