@@ -176,13 +176,14 @@ export function MyAccount() {
         return getFullUrl(avatar);
     }
 
-    function normalizeVideo(item, index = 0, type = "video") {
+    function normalizeVideo(item, index = 0, type = "video", currentProfile = null) {
         const rawId = extractVideoId(item, index);
         const videoId = String(rawId);
 
-        const channelName = extractChannelName(item);
+        const channelName = item?.ChannelName || item?.channelName || item?.Username || item?.username || currentProfile?.Username || profile?.Username || "unknown";
 
-        let avatar = extractChannelAvatar(item);
+        let avatar = getFullUrl(item?.channelAvatarUrl || item?.ChannelAvatarUrl || item?.Avatar || item?.avatar || currentProfile?.AvatarUrl || profile?.AvatarUrl || "/ava.png");
+
         if (!avatar || avatar === "/ava.png" || avatar === "null") {
             avatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(channelName)}&background=random&color=fff&size=100`;
         }
@@ -193,16 +194,9 @@ export function MyAccount() {
             Type: type,
             Title: extractTitle(item),
             Thumbnail: extractThumbnail(item),
+            VideoUrl: getFullUrl(item?.VideoUrl || item?.videoUrl), // ИСПРАВЛЕНО: Передаем ссылку на видео!
             Views: formatViews(
-                item?.Views ??
-                item?.views ??
-                item?.ViewsCount ??
-                item?.viewsCount ??
-                item?.ViewCount ??
-                item?.viewCount ??
-                item?.TotalViews ??
-                item?.totalViews ??
-                0
+                item?.Views ?? item?.views ?? item?.ViewsCount ?? item?.viewsCount ?? 0
             ),
             Time: normalizeTimeAgo(item),
             Avatar: avatar,
@@ -374,9 +368,9 @@ export function MyAccount() {
                 : [];
 
             setProfile(normalizedProfile);
-            setPopularVideos(popularArray.map((item, index) => normalizeVideo(item, index, "popular")));
-            setMyVideos(myVideosArray.map((item, index) => normalizeVideo(item, index, "my")));
-            setWatchedVideos(watchedArray.map((item, index) => normalizeVideo(item, index, "watched")));
+            setPopularVideos(popularArray.map((item, index) => normalizeVideo(item, index, "popular", normalizedProfile)));
+            setMyVideos(myVideosArray.map((item, index) => normalizeVideo(item, index, "my", normalizedProfile)));
+            setWatchedVideos(watchedArray.map((item, index) => normalizeVideo(item, index, "watched", normalizedProfile)));
             setPlaylists(playlistsArray.map((item, index) => normalizePlaylist(item, index)));
             setSubscriptions(subscriptionsArray.map((item, index) => normalizeSubscription(item, index)));
             setAchievement(normalizeAchievement(achievementData));

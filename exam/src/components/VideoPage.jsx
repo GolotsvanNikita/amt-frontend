@@ -138,7 +138,9 @@ function getFirstValidImage(...values) {
 function getResolvedId(video) {
     return getFirstNonEmptyString(
         String(video?.videoId ?? ""),
+        String(video?.VideoId ?? ""),
         String(video?.id ?? ""),
+        String(video?.Id ?? ""),
         String(video?._id ?? ""),
         String(video?.youtubeId ?? ""),
         String(video?.resolvedId ?? "")
@@ -295,23 +297,25 @@ function normalizeVideo(video = {}) {
 
     const resolvedChannelName = getFirstNonEmptyString(
         video?.channelName,
+        video?.ChannelName,
         video?.author,
+        video?.Username,
+        video?.username,
         video?.channel?.title,
-        video?.channel?.name,
         video?.ownerName,
-        video?.snippet?.channelTitle,
         "Unknown channel"
     );
 
     const resolvedTitle = getFirstNonEmptyString(
         video?.title,
+        video?.Title,
         video?.snippet?.title,
         video?.name,
         "Untitled video"
     );
-
     const resolvedThumbnail = getFirstValidImage(
         video?.thumbnailUrl,
+        video?.Thumbnail,
         video?.thumbnail,
         video?.preview,
         video?.imageUrl,
@@ -324,13 +328,10 @@ function normalizeVideo(video = {}) {
 
     const resolvedChannelAvatar = getFirstValidImage(
         video?.channel?.avatarUrl,
-        video?.channel?.avatar,
-        video?.channel?.imageUrl,
-        video?.channel?.thumbnailUrl,
-        video?.channel?.photoUrl,
+        video?.Avatar,
+        video?.avatar,
         video?.channelAvatar,
         video?.authorAvatar,
-        video?.ownerAvatar,
         video?.channelAvatarUrl
     ) || "/ava.png";
 
