@@ -46,6 +46,10 @@ function normalizeVideo(video, index = 0) {
             ? `${video.views} • ${video.publishedAt}`
             : video.meta || video.viewsText || "";
 
+    const channelName = video.channelName || video.author || "Unknown channel";
+
+    const dynamicAvatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(channelName)}&background=random&color=fff&size=100`;
+
     return {
         id: video.videoId || video.id || `video-${index}`,
         channelId: String(
@@ -57,8 +61,10 @@ function normalizeVideo(video, index = 0) {
         ),
         title: video.title || "Untitled video",
         thumbnail: video.thumbnail || video.thumbnailUrl || "/1v.png",
-        channelName: video.channelName || video.author || "Unknown channel",
-        avatar: video.channelAvatarUrl || video.avatar || video.authorAvatar || "/ava.png",
+        channelName: channelName,
+
+        avatar: video.channelAvatarUrl || video.channelAvatar || video.avatarUrl || video.avatar || video.authorAvatar || dynamicAvatar,
+
         meta: metaString,
         viewsCount: parseViewsCount(metaString),
         category:
@@ -360,7 +366,9 @@ export function MainPage() {
                         src={normalizedVideo.avatar}
                         className="metaAvatar"
                         alt={normalizedVideo.channelName}
-                        onError={(e) => { e.currentTarget.src = "/ava.png"; }}
+                        onError={(e) => {
+                            e.currentTarget.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(normalizedVideo.channelName)}&background=222&color=fff`;
+                        }}
                     />
 
                     <div className="videoInfo">
