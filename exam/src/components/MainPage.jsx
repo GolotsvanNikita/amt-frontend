@@ -329,7 +329,7 @@ export function MainPage() {
                     title: video.title,
                     thumbnailUrl: video.thumbnail,
                     channelName: video.channelName,
-                    channelAvatarUrl: video.avatar,
+                    avatarUrl: video.avatar,
                     meta: video.meta,
                     category: video.category,
                 }),
@@ -340,13 +340,13 @@ export function MainPage() {
                 return [video, ...filtered].slice(0, 20);
             });
         } catch (err) {
-            console.error("Failed to record history:", err);
+            console.error(err);
         }
 
         navigate(`/video/${video.id}`, {
             state: { video },
         });
-    }
+    };
 
     const renderVideoCard = (video) => {
         const normalizedVideo = normalizeVideo(video);

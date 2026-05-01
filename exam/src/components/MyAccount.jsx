@@ -180,6 +180,8 @@ export function MyAccount() {
 
     function extractChannelAvatar(item) {
         return (
+            item?.channelAvatarUrl ||
+            item?.ChannelAvatarUrl ||
             item?.ChannelAvatar ||
             item?.channelAvatar ||
             item?.Avatar ||
