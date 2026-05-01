@@ -147,7 +147,9 @@ function normalizeSubscription(sub, index) {
         sub?.author
     );
 
-    const avatarCandidate =
+    const channelName = sub?.channelName || sub?.ChannelName || sub?.name || sub?.title || sub?.author || "Unknown channel";
+
+    let avatarCandidate =
         sub?.avatarUrl ||
         sub?.AvatarUrl ||
         sub?.authorAvatar ||
@@ -157,6 +159,10 @@ function normalizeSubscription(sub, index) {
         sub?.avatar ||
         sub?.Avatar ||
         "";
+
+    if (!avatarCandidate || avatarCandidate === "/ava.png" || avatarCandidate === "null" || !isValidImageSrc(avatarCandidate)) {
+        avatarCandidate = `https://ui-avatars.com/api/?name=${encodeURIComponent(channelName)}&background=random&color=fff&size=100`;
+    }
 
     const normalized = {
         id:
@@ -184,27 +190,14 @@ function normalizeSubscription(sub, index) {
         routeValue,
         sourceType,
 
-        channelName:
-            sub?.channelName ||
-            sub?.ChannelName ||
-            sub?.name ||
-            sub?.title ||
-            sub?.author ||
-            "Unknown channel",
+        channelName: channelName,
 
-        avatarUrl: isValidImageSrc(avatarCandidate)
-            ? avatarCandidate
-            : "/ava.png",
+        avatarUrl: avatarCandidate,
     };
 
     normalized.path = buildSubscriptionPath({
         ...sub,
         ...normalized,
-    });
-
-    console.log("NORMALIZED SUB:", {
-        raw: sub,
-        normalized,
     });
 
     return normalized;
@@ -361,12 +354,11 @@ export function SideMenu() {
                                 return (
                                     <li key={sub.id}>
                                         <img
-                                            src={sub.avatarUrl || "/ava.png"}
+                                            src={sub.avatarUrl}
                                             alt={sub.channelName}
                                             className="imgS"
                                             onError={(e) => {
-                                                console.log("AVATAR ERROR → fallback");
-                                                e.currentTarget.src = "/ava.png";
+                                                e.currentTarget.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(sub.channelName)}&background=222&color=fff`;
                                             }}
                                         />
 
