@@ -526,3 +526,263 @@
         width: 280px;
     }
 }
+
+
+
+.yt-page-root {
+    animation: ytFadeIn 0.45s ease both;
+}
+
+.yt-wrapper {
+    animation: ytPlayerEnter 0.6s ease both;
+}
+
+.video-section {
+    animation: ytVideoEnter 0.7s ease both;
+}
+
+.video-actions-bar {
+    animation: ytActionsEnter 0.5s ease both;
+    animation-delay: 0.1s;
+}
+
+.AboutAvtor {
+    animation: ytAboutEnter 0.55s ease both;
+    animation-delay: 0.15s;
+}
+
+.yt-rec-container {
+    animation: ytRecsEnter 0.6s ease both;
+    animation-delay: 0.2s;
+}
+
+
+.RecomendVideo {
+    opacity: 0;
+    transform: translateX(20px);
+    animation: recItemEnter 0.4s ease forwards;
+}
+
+.RecomendVideo:nth-child(1) { animation-delay: 0.05s; }
+.RecomendVideo:nth-child(2) { animation-delay: 0.1s; }
+.RecomendVideo:nth-child(3) { animation-delay: 0.15s; }
+.RecomendVideo:nth-child(4) { animation-delay: 0.2s; }
+.RecomendVideo:nth-child(5) { animation-delay: 0.25s; }
+
+.yt-card {
+    opacity: 0;
+    transform: translateY(20px);
+    animation: ytCardEnter 0.45s ease forwards;
+}
+
+.yt-card:nth-child(1) { animation-delay: 0.05s; }
+.yt-card:nth-child(2) { animation-delay: 0.1s; }
+.yt-card:nth-child(3) { animation-delay: 0.15s; }
+.yt-card:nth-child(4) { animation-delay: 0.2s; }
+
+/* hover улучшение */
+.RecomendVideo {
+    transition: transform 0.2s ease, background 0.2s ease;
+}
+
+.RecomendVideo:hover {
+    transform: translateX(4px);
+}
+
+.yt-card {
+    transition: transform 0.25s ease;
+}
+
+.yt-card:hover {
+    transform: translateY(-4px);
+}
+
+/* ===== KEYFRAMES ===== */
+
+@keyframes ytFadeIn {
+    from {
+        opacity: 0;
+        background: #050505;
+    }
+    to {
+        opacity: 1;
+        background: #000;
+    }
+}
+
+@keyframes ytPlayerEnter {
+    from {
+        opacity: 0;
+        transform: translateY(20px) scale(0.98);
+        filter: blur(6px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+        filter: blur(0);
+    }
+}
+
+@keyframes ytVideoEnter {
+    from {
+        opacity: 0;
+        transform: scale(1.02);
+        filter: blur(8px);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+        filter: blur(0);
+    }
+}
+
+@keyframes ytActionsEnter {
+    from {
+        opacity: 0;
+        transform: translateY(18px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes ytAboutEnter {
+    from {
+        opacity: 0;
+        transform: translateY(16px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes ytRecsEnter {
+    from {
+        opacity: 0;
+        transform: translateY(22px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes recItemEnter {
+    from {
+        opacity: 0;
+        transform: translateX(20px);
+        filter: blur(4px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+        filter: blur(0);
+    }
+}
+
+@keyframes ytCardEnter {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+        filter: blur(5px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+        filter: blur(0);
+    }
+}
+
+/* ===== BETTER RESPONSIVE ===== */
+
+@media (min-width: 1600px) {
+    .yt-page {
+        max-width: 1700px;
+        gap: 28px;
+    }
+
+    .yt-wrapper {
+        width: 1200px;
+    }
+
+    .video-section {
+        height: 620px;
+    }
+
+    .VideoFromThisChannel {
+        width: 380px;
+    }
+}
+
+@media (max-width: 1000px) {
+    .video-section {
+        height: 380px;
+    }
+
+    .RecomendVideo img {
+        width: 120px;
+        height: 70px;
+    }
+}
+
+@media (max-width: 768px) {
+    .video-section {
+        height: 280px;
+    }
+
+    .overlay-text h1 {
+        font-size: 24px;
+    }
+
+    .overlay-text p {
+        font-size: 14px;
+    }
+
+    .video-actions-bar {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .channel-info {
+        width: 100%;
+        justify-content: space-between;
+    }
+
+    .actions {
+        width: 100%;
+        justify-content: space-between;
+    }
+
+    .yt-card {
+        width: 260px;
+    }
+}
+
+@media (max-width: 500px) {
+    .video-section {
+        height: 240px;
+    }
+
+    .controls {
+        gap: 6px;
+    }
+
+    .time-display {
+        font-size: 12px;
+    }
+
+    .RecomendVideo {
+        gap: 8px;
+    }
+
+    .RecomendVideo img {
+        width: 110px;
+        height: 62px;
+    }
+
+    .yt-card {
+        width: 220px;
+    }
+}
