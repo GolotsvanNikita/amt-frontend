@@ -18,6 +18,8 @@
     gap: 18px;
 }
 
+/* ===== КАРТОЧКА ===== */
+
 .searchCard {
     display: flex;
     gap: 16px;
@@ -25,21 +27,47 @@
     color: white;
     padding: 12px;
     border-radius: 12px;
-    transition: background 0.2s;
+    cursor: pointer;
+
+    /* 🔥 плавное появление */
+    opacity: 0;
+    transform: translateY(18px);
+    animation: searchFadeIn 0.4s ease forwards;
+
+    transition: 
+        background 0.2s ease,
+        transform 0.2s ease;
 }
 
+/* stagger эффект */
+.searchCard:nth-child(1) { animation-delay: 0.03s; }
+.searchCard:nth-child(2) { animation-delay: 0.06s; }
+.searchCard:nth-child(3) { animation-delay: 0.09s; }
+.searchCard:nth-child(4) { animation-delay: 0.12s; }
+.searchCard:nth-child(5) { animation-delay: 0.15s; }
+.searchCard:nth-child(6) { animation-delay: 0.18s; }
+
+/* hover */
 .searchCard:hover {
     background: #1f1f1f;
+    transform: translateX(6px);
 }
 
+/* картинка */
 .searchCard img {
     width: 260px;
     height: 145px;
     object-fit: cover;
     border-radius: 12px;
     background: #222;
+    transition: transform 0.25s ease;
 }
 
+.searchCard:hover img {
+    transform: scale(1.04);
+}
+
+/* текст */
 .searchInfo h3 {
     margin: 0 0 10px;
     font-size: 18px;
@@ -50,6 +78,7 @@
     color: #aaa;
 }
 
+/* состояния */
 .searchError {
     color: #ff5c5c;
 }
@@ -59,6 +88,7 @@
     color: #aaa;
 }
 
+/* кнопка */
 .loadMoreSearch {
     margin-top: 24px;
     padding: 10px 18px;
@@ -68,4 +98,26 @@
     color: black;
     cursor: pointer;
     font-weight: 600;
+    transition: transform 0.2s ease, background 0.2s ease;
+}
+
+.loadMoreSearch:hover {
+    transform: scale(1.05);
+    background: #e6e6e6;
+}
+
+/* ===== АНИМАЦИЯ ===== */
+
+@keyframes searchFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(18px);
+        filter: blur(4px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+        filter: blur(0);
+    }
 }
