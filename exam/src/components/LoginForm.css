@@ -403,3 +403,125 @@ body {
         grid-template-rows: repeat(7, 180px);
     }
 }
+
+@media (min-width: 1600px) {
+    .reg-shell {
+        max-width: 1500px;
+        grid-template-columns: 520px 1fr;
+    }
+
+    .reg-title {
+        font-size: 64px;
+    }
+
+    .reg-form-card {
+        height: 520px;
+    }
+
+    .reg-gallery {
+        grid-template-rows: repeat(3, 170px);
+    }
+}
+
+@media (max-width: 1200px) {
+    .reg-shell {
+        grid-template-columns: 1fr;
+        max-width: 900px;
+        gap: 20px;
+    }
+
+    .reg-form-card {
+        margin: 0 auto;
+        max-width: 520px;
+        height: auto;
+    }
+
+    .reg-gallery {
+        grid-template-columns: repeat(2, 1fr);
+        grid-template-rows: repeat(4, 160px);
+    }
+
+    .reg-title {
+        font-size: 42px;
+    }
+}
+
+@media (max-width: 900px) {
+    .reg-page {
+        padding: 14px;
+    }
+
+    .reg-title {
+        font-size: 34px;
+    }
+
+    .reg-row {
+        grid-template-columns: 1fr;
+        gap: 10px;
+    }
+
+    .reg-form-card {
+        padding: 16px;
+    }
+
+    .reg-bottom-row {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 12px;
+    }
+
+    .reg-social-icons {
+        justify-content: center;
+    }
+
+    .reg-submit-btn {
+        width: 100%;
+    }
+}
+
+@media (max-width: 600px) {
+    .reg-page {
+        padding: 10px;
+    }
+
+    .reg-title {
+        font-size: 28px;
+    }
+
+    .reg-input {
+        height: 40px;
+        font-size: 13px !important;
+    }
+
+    .reg-form-card {
+        padding: 14px 12px;
+    }
+
+    .reg-gallery {
+        grid-template-columns: 1fr;
+        grid-template-rows: repeat(6, 140px);
+    }
+
+    .reg-bottom-text {
+        font-size: 12px;
+    }
+}
+
+@media (max-width: 420px) {
+    .reg-title {
+        font-size: 24px;
+    }
+
+    .reg-input {
+        height: 38px;
+        font-size: 12px !important;
+    }
+
+    .reg-form-card {
+        padding: 12px 10px;
+    }
+
+    .reg-gallery {
+        grid-template-rows: repeat(5, 120px);
+    }
+}

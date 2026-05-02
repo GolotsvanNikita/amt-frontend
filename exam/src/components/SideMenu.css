@@ -18,10 +18,10 @@
     overflow-y: auto;
     overflow-x: hidden;
     flex-shrink: 0;
+    transition: width 0.25s ease, margin-left 0.25s ease, padding 0.25s ease;
 }
 
-.sidebarSection ul
-{
+.sidebarSection ul {
     list-style: none;
     padding: 0;
     margin: 0;
@@ -34,6 +34,13 @@
     padding: 8px 0;
     cursor: pointer;
     overflow: hidden;
+    border-radius: 10px;
+    transition: background-color 0.2s ease, transform 0.2s ease;
+}
+
+.sidebarSection ul li:hover {
+    background-color: rgba(255, 255, 255, 0.06);
+    transform: translateX(3px);
 }
 
 .sidebarSection ul li a {
@@ -49,8 +56,7 @@
     display: block;
 }
 
-.sidebarSection h4
-{
+.sidebarSection h4 {
     margin-bottom: 10px;
     font-size: 20px;
     color: white;
@@ -62,11 +68,12 @@
     margin-top: 0;
 }
 
-.imgS
-{
+.imgS {
     width: 35px;
     height: 35px;
     border-radius: 50%;
+    flex-shrink: 0;
+    object-fit: cover;
 }
 
 .showMore {
@@ -80,63 +87,217 @@
     user-select: none;
 }
 
-.more
-{
+.more {
     width: 15px;
     height: 10px;
 }
 
 .firstSection img,
-.secondSection img
-{
+.secondSection img {
     width: 25px;
     height: 25px;
+    flex-shrink: 0;
 }
 
-hr
-{
+hr {
     margin-top: 25px;
     border: none;
     border-top: 0.5px solid rgba(255, 255, 255, 0.2);
     width: 100%;
 }
 
-.categories img
-{
+.categories img {
     width: 15px;
     height: 15px;
     margin-right: 4px;
+    flex-shrink: 0;
 }
 
-.thirdSection img
-{
+.thirdSection img {
     width: 25px;
     height: 25px;
+    flex-shrink: 0;
 }
 
-::-webkit-scrollbar
-{
+::-webkit-scrollbar {
     width: 3px;
 }
 
-::-webkit-scrollbar-track
-{
+::-webkit-scrollbar-track {
     background-color: rgba(255,249,253,0.70);
     border-radius: 20px;
 }
 
-::-webkit-scrollbar-thumb
-{
+::-webkit-scrollbar-thumb {
     background-color: #6486DB;
     border-radius: 24px;
 }
 
-span
-{
+span {
     color: white;
 }
 
-a
-{
+a {
     text-decoration: none;
+}
+
+@media (min-width: 1600px) {
+    .sidebar {
+        width: 260px;
+        margin-left: 32px;
+        padding: 24px;
+        font-size: 17px;
+    }
+
+    .sidebarSection h4 {
+        font-size: 22px;
+    }
+
+    .imgS {
+        width: 38px;
+        height: 38px;
+    }
+}
+
+@media (max-width: 1200px) {
+    .sidebar {
+        width: 220px;
+        margin-left: 16px;
+        padding: 18px;
+    }
+
+    .sidebarSection h4 {
+        font-size: 18px;
+    }
+}
+
+@media (max-width: 992px) {
+    .sidebar {
+        width: 86px;
+        margin-left: 8px;
+        padding: 16px 10px;
+        align-items: center;
+        gap: 16px;
+    }
+
+    .sidebarSection {
+        width: 100%;
+    }
+
+    .sidebarSection h4,
+    .sidebarSection ul li span,
+    .showMore span,
+    hr {
+        display: none;
+    }
+
+    .sidebarSection ul li {
+        justify-content: center;
+        padding: 10px 0;
+        gap: 0;
+    }
+
+    .firstSection img,
+    .secondSection img,
+    .thirdSection img {
+        width: 28px;
+        height: 28px;
+    }
+
+    .imgS {
+        width: 36px;
+        height: 36px;
+    }
+
+    .showMore {
+        justify-content: center;
+        margin-top: 4px;
+    }
+}
+
+@media (max-width: 768px) {
+    .sidebar {
+        width: 100%;
+        height: auto;
+        min-height: 66px;
+        max-height: 78px;
+        margin-left: 0;
+        padding: 8px 12px;
+        border-right: none;
+        border-bottom: 1px solid #1e1e1e;
+        flex-direction: row;
+        align-items: center;
+        gap: 12px;
+        overflow-x: auto;
+        overflow-y: hidden;
+        position: sticky;
+        top: 0;
+        z-index: 50;
+    }
+
+    .sidebarSection {
+        flex-shrink: 0;
+        width: auto;
+    }
+
+    .sidebarSection ul {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .sidebarSection ul li {
+        padding: 8px;
+        min-width: 44px;
+        justify-content: center;
+    }
+
+    .sidebarSection h4,
+    .sidebarSection ul li span,
+    .showMore,
+    hr {
+        display: none;
+    }
+
+    .imgS {
+        width: 34px;
+        height: 34px;
+    }
+
+    .firstSection img,
+    .secondSection img,
+    .thirdSection img {
+        width: 26px;
+        height: 26px;
+    }
+}
+
+@media (max-width: 480px) {
+    .sidebar {
+        min-height: 58px;
+        max-height: 64px;
+        padding: 6px 10px;
+        gap: 8px;
+    }
+
+    .sidebarSection ul {
+        gap: 6px;
+    }
+
+    .sidebarSection ul li {
+        min-width: 38px;
+        padding: 7px;
+    }
+
+    .imgS {
+        width: 30px;
+        height: 30px;
+    }
+
+    .firstSection img,
+    .secondSection img,
+    .thirdSection img {
+        width: 23px;
+        height: 23px;
+    }
 }
