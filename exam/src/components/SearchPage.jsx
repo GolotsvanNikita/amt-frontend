@@ -13,6 +13,44 @@ export function SearchPage() {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
 
+    const getVideoId = (video) => {
+        if (!video) return "";
+
+        if (typeof video.id === "string") return video.id;
+        if (typeof video.videoId === "string") return video.videoId;
+        if (typeof video.youtubeId === "string") return video.youtubeId;
+
+        if (video.id && typeof video.id === "object") {
+            return video.id.videoId || "";
+        }
+
+        return "";
+    };
+
+    const getTitle = (video) => {
+        return video.title || video.snippet?.title || "Untitled";
+    };
+
+    const getThumbnail = (video) => {
+        return (
+            video.thumbnailUrl ||
+            video.thumbnail ||
+            video.snippet?.thumbnails?.high?.url ||
+            video.snippet?.thumbnails?.medium?.url ||
+            video.snippet?.thumbnails?.default?.url ||
+            "/default-thumbnail.png"
+        );
+    };
+
+    const getChannelName = (video) => {
+        return (
+            video.channelName ||
+            video.channelTitle ||
+            video.snippet?.channelTitle ||
+            "Unknown channel"
+        );
+    };
+
     const loadSearchResults = async (pageToken = "") => {
         if (!query.trim()) return;
 
@@ -20,7 +58,8 @@ export function SearchPage() {
             setLoading(true);
             setError("");
 
-            const url = `${API_URL}/api/video/search?q=${encodeURIComponent(query)}&pageToken=${pageToken}`;
+            const url = `${API_URL}/api/video/search?q=${encodeURIComponent(query)}&pageToken=${encodeURIComponent(pageToken)}`;
+            console.log("SEARCH URL:", url);
 
             const response = await fetch(url);
 
@@ -29,6 +68,7 @@ export function SearchPage() {
             }
 
             const data = await response.json();
+            console.log("SEARCH RESPONSE:", data);
 
             const newVideos = data.videos || data.items || [];
 
@@ -55,7 +95,9 @@ export function SearchPage() {
 
     return (
         <div className="searchPage">
-            <h2>Search results for: <span>{query}</span></h2>
+            <h2>
+                Search results for: <span>{query}</span>
+            </h2>
 
             {error && <p className="searchError">{error}</p>}
 
@@ -64,22 +106,23 @@ export function SearchPage() {
             )}
 
             <div className="searchResults">
-                {videos.map((video) => {
-                    const videoId = video.id || video.videoId;
-                    const title = video.title || video.snippet?.title || "Untitled";
-                    const thumbnail =
-                        video.thumbnailUrl ||
-                        video.thumbnail ||
-                        video.snippet?.thumbnails?.medium?.url ||
-                        video.snippet?.thumbnails?.high?.url;
+                {videos.map((video, index) => {
+                    const videoId = getVideoId(video);
+                    const title = getTitle(video);
+                    const thumbnail = getThumbnail(video);
+                    const channelName = getChannelName(video);
 
-                    const channelName =
-                        video.channelName ||
-                        video.snippet?.channelTitle ||
-                        "Unknown channel";
+                    if (!videoId) {
+                        console.warn("VIDEO WITHOUT ID:", video);
+                        return null;
+                    }
 
                     return (
-                        <Link to={`/video/${videoId}`} className="searchCard" key={videoId}>
+                        <Link
+                            to={`/video/${videoId}`}
+                            className="searchCard"
+                            key={`${videoId}-${index}`}
+                        >
                             <img src={thumbnail} alt={title} />
 
                             <div className="searchInfo">
@@ -104,3 +147,5 @@ export function SearchPage() {
         </div>
     );
 }
+
+export default SearchPage;

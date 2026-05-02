@@ -72,14 +72,32 @@
   margin-bottom: 12px;
 }
 
+/* ===== АНИМАЦИЯ ===== */
+
 .comment-block {
   margin-bottom: 24px;
+  animation: commentFadeIn 0.35s ease both;
 }
+
+/* stagger */
+.comment-block:nth-child(1) { animation-delay: 0.03s; }
+.comment-block:nth-child(2) { animation-delay: 0.06s; }
+.comment-block:nth-child(3) { animation-delay: 0.09s; }
+.comment-block:nth-child(4) { animation-delay: 0.12s; }
+.comment-block:nth-child(5) { animation-delay: 0.15s; }
 
 .comment {
   display: flex;
   gap: 14px;
   align-items: flex-start;
+  transition: transform 0.2s ease, background-color 0.2s ease;
+  border-radius: 12px;
+  padding: 8px;
+}
+
+.comment:hover {
+  background-color: rgba(255, 255, 255, 0.04);
+  transform: translateX(4px);
 }
 
 .comment.reply {
@@ -165,7 +183,7 @@
 .reply-form input:focus {
   outline: none;
   border-color: #aaa;
-} 
+}
 
 .reply-form button {
   background: #333;
@@ -176,4 +194,19 @@
   width: 30px;
   height: 30px;
   cursor: pointer;
+}
+
+
+@keyframes commentFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+    filter: blur(3px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+    filter: blur(0);
+  }
 }
