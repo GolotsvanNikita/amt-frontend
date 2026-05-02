@@ -38,9 +38,7 @@ export function SearchPage() {
         }
 
         navigate(`/video/${videoId}`, {
-            state: {
-                video
-            }
+            state: { video }
         });
     };
 
@@ -52,6 +50,7 @@ export function SearchPage() {
             setError("");
 
             const url = `${API_URL}/api/video/search?q=${encodeURIComponent(query)}&pageToken=${encodeURIComponent(pageToken)}`;
+            console.log("SEARCH URL:", url);
 
             const response = await fetch(url);
 
@@ -60,6 +59,7 @@ export function SearchPage() {
             }
 
             const data = await response.json();
+            console.log("SEARCH RESPONSE:", data);
 
             const newVideos = data.videos || data.items || [];
 
@@ -79,11 +79,42 @@ export function SearchPage() {
         loadSearchResults();
     }, [query]);
 
+    useEffect(() => {
+        const elements = document.querySelectorAll(
+            ".searchPage .reveal-on-scroll:not(.visible)"
+        );
+
+        if (!elements.length) return;
+
+        const observer = new IntersectionObserver(
+            (entries) => {
+                entries.forEach((entry) => {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add("visible");
+                        observer.unobserve(entry.target);
+                    }
+                });
+            },
+            {
+                threshold: 0.1,
+                rootMargin: "0px 0px -30px 0px",
+            }
+        );
+
+        elements.forEach((el) => observer.observe(el));
+
+        return () => observer.disconnect();
+    }, [videos.length]);
+
     return (
         <div className="searchPage">
             <h2>Search results for: <span>{query}</span></h2>
 
             {error && <p className="searchError">{error}</p>}
+
+            {!loading && videos.length === 0 && !error && (
+                <p className="emptySearch">No videos found</p>
+            )}
 
             <div className="searchResults">
                 {videos.map((video, index) => {
@@ -106,7 +137,7 @@ export function SearchPage() {
                     return (
                         <div
                             className="searchCard reveal-on-scroll"
-                            key={index}
+                            key={`${getVideoId(video)}-${index}`}
                             onClick={() => openVideo(video)}
                         >
                             <img src={thumbnail} alt={title} />
@@ -133,3 +164,5 @@ export function SearchPage() {
         </div>
     );
 }
+
+export default SearchPage;
