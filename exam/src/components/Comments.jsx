@@ -22,7 +22,6 @@ export function Comments({
         return Array.isArray(comments) ? comments : [];
     }, [comments]);
 
-    // 🔥 Плавное появление при скролле
     useEffect(() => {
         const elements = document.querySelectorAll(
             ".comments .reveal-on-scroll:not(.visible)"
@@ -50,6 +49,47 @@ export function Comments({
         return () => observer.disconnect();
     }, [normalizedComments.length]);
 
+    useEffect(() => {
+        if (
+            !hasMoreComments ||
+            loadingMoreComments ||
+            typeof onLoadMoreComments !== "function"
+        ) {
+            return;
+        }
+
+        const node = loadMoreRef.current;
+        if (!node) return;
+
+        const observer = new IntersectionObserver(
+            (entries) => {
+                const firstEntry = entries[0];
+
+                if (
+                    firstEntry.isIntersecting &&
+                    hasMoreComments &&
+                    !loadingMoreComments
+                ) {
+                    onLoadMoreComments();
+                }
+            },
+            {
+                root: null,
+                threshold: 0.1,
+                rootMargin: "250px",
+            }
+        );
+
+        observer.observe(node);
+
+        return () => observer.disconnect();
+    }, [
+        hasMoreComments,
+        loadingMoreComments,
+        onLoadMoreComments,
+        normalizedComments.length,
+    ]);
+
     return (
         <div className="comments">
             <h3>Comments</h3>
@@ -72,11 +112,17 @@ export function Comments({
             <div className="comment-list">
                 {normalizedComments.map((comment, index) => (
                     <div
-                        key={index}
+                        key={comment.id || index}
                         className="comment-block reveal-on-scroll"
                     >
                         <div className="comment">
-                            <img src={comment.avatar || "/ava.png"} alt="avatar" />
+                            <img
+                                src={comment.avatar || "/ava.png"}
+                                alt="avatar"
+                                onError={(e) => {
+                                    e.currentTarget.src = "/ava.png";
+                                }}
+                            />
 
                             <div className="comment-body">
                                 <div className="comment-meta">
@@ -111,9 +157,7 @@ export function Comments({
                                     type="text"
                                     placeholder="Reply..."
                                     value={replyText}
-                                    onChange={(e) =>
-                                        setReplyText(e.target.value)
-                                    }
+                                    onChange={(e) => setReplyText(e.target.value)}
                                 />
 
                                 <button>➤</button>
@@ -123,7 +167,13 @@ export function Comments({
                 ))}
             </div>
 
-            {hasMoreComments && <div ref={loadMoreRef} style={{ height: 1 }} />}
+            {hasMoreComments && (
+                <div ref={loadMoreRef} className="commentsLoadTrigger" />
+            )}
+
+            {loadingMoreComments && (
+                <div className="commentsLoading">Loading more comments...</div>
+            )}
         </div>
     );
 }

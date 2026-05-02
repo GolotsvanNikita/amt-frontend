@@ -101,3 +101,15 @@
   transform: translateY(0);
   filter: blur(0);
 }
+
+.commentsLoadTrigger {
+  width: 100%;
+  height: 1px;
+}
+
+.commentsLoading {
+  margin-top: 16px;
+  text-align: center;
+  color: #aaa;
+  font-size: 14px;
+}
