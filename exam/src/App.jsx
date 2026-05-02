@@ -17,6 +17,7 @@ import { AuthorPageForReels } from "./components/AuthorPageForReels";
 import { SubscriptionsPage } from './components/SubscriptionsPage';
 import { HistoryPage } from './components/HistoryPage';
 import { UploadPage } from './components/UploadPage';
+import {SearchPage} from './components/SearchPage';
 import './App.css';
 
 function TokenInterceptor() {
@@ -82,6 +83,8 @@ function App() {
                         <Route path="subcriptions" element={<SubscriptionsPage/>} />
 
                         <Route path="upload" element = {<UploadPage/>}/>
+
+                        <Route path="search" element = {<SearchPage/>} />
                     </Route>
 
                     <Route path="*" element={<Navigate to="/register" />} />
