@@ -660,3 +660,320 @@
         max-width: 220px;
     }
 }
+
+
+
+.mainPage {
+    animation: pageEnter 0.45s ease both;
+}
+
+.ads {
+    animation: heroEnter 0.7s ease both;
+}
+
+.topContent h2 {
+    animation: slideFromLeft 0.6s ease both;
+}
+
+.topContent p {
+    animation: slideFromLeft 0.6s ease both;
+    animation-delay: 0.08s;
+}
+
+.bottomContent {
+    animation: slideFromBottom 0.65s ease both;
+    animation-delay: 0.12s;
+}
+
+.categoriesWrapper {
+    animation: fadeUp 0.5s ease both;
+    animation-delay: 0.16s;
+}
+
+.videoSection {
+    animation: fadeUp 0.55s ease both;
+}
+
+.videoCard {
+    opacity: 0;
+    animation: cardEnter 0.48s ease forwards;
+    transition: transform 0.22s ease;
+}
+
+.videoCard:nth-child(1) { animation-delay: 0.03s; }
+.videoCard:nth-child(2) { animation-delay: 0.06s; }
+.videoCard:nth-child(3) { animation-delay: 0.09s; }
+.videoCard:nth-child(4) { animation-delay: 0.12s; }
+.videoCard:nth-child(5) { animation-delay: 0.15s; }
+.videoCard:nth-child(6) { animation-delay: 0.18s; }
+.videoCard:nth-child(7) { animation-delay: 0.21s; }
+.videoCard:nth-child(8) { animation-delay: 0.24s; }
+
+.videoCard:hover {
+    transform: translateY(-4px) !important;
+}
+
+.videoCard .videoThumb {
+    transition: transform 0.25s ease, filter 0.25s ease !important;
+}
+
+.videoCard:hover .videoThumb {
+    transform: scale(1.035) !important;
+    filter: brightness(1.08) !important;
+}
+
+.videoMeta {
+    transition: transform 0.22s ease;
+}
+
+.videoCard:hover .videoMeta {
+    transform: translateY(2px);
+}
+
+.another,
+.frts {
+    transition: transform 0.18s ease, background-color 0.18s ease, border-color 0.18s ease !important;
+}
+
+.another:hover,
+.frts:hover {
+    transform: translateY(-2px);
+}
+
+.carousel {
+    animation: carouselEnter 0.65s ease both;
+    animation-delay: 0.2s;
+}
+
+@keyframes pageEnter {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes heroEnter {
+    from {
+        opacity: 0;
+        transform: scale(1.03);
+        filter: blur(8px);
+    }
+
+    to {
+        opacity: 1;
+        transform: scale(1);
+        filter: blur(0);
+    }
+}
+
+@keyframes slideFromLeft {
+    from {
+        opacity: 0;
+        transform: translateX(-24px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+@keyframes slideFromBottom {
+    from {
+        opacity: 0;
+        transform: translateY(22px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes fadeUp {
+    from {
+        opacity: 0;
+        transform: translateY(18px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes cardEnter {
+    from {
+        opacity: 0;
+        transform: translateY(18px) scale(0.985);
+        filter: blur(4px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+        filter: blur(0);
+    }
+}
+
+@keyframes carouselEnter {
+    from {
+        opacity: 0;
+        transform: translateX(22px) scale(0.98);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateX(0) scale(1);
+    }
+}
+
+
+
+@media (min-width: 1600px) {
+    .videoSection {
+        padding: 36px 64px;
+    }
+
+    .videoGrid {
+        grid-template-columns: repeat(5, 1fr);
+        gap: 28px;
+    }
+
+    .ads {
+        height: 580px;
+    }
+
+    .topContent h2,
+    .topContent p {
+        font-size: 48px;
+    }
+
+    .carousel {
+        max-width: 430px;
+        height: 200px;
+    }
+
+    .carousel .carousel-item,
+    .carousel .carousel-item img {
+        height: 200px;
+    }
+}
+
+@media (max-width: 1200px) {
+    .videoGrid {
+        grid-template-columns: repeat(3, 1fr);
+        gap: 22px;
+    }
+
+    .ads {
+        height: 460px;
+    }
+
+    .topContent h2,
+    .topContent p {
+        font-size: 34px;
+    }
+}
+
+@media (max-width: 900px) {
+    .videoGrid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 18px;
+    }
+
+    .videoSection {
+        padding: 26px 22px;
+    }
+
+    .bottomContent {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .bottomContent button {
+        margin-left: 0;
+    }
+
+    .carousel {
+        margin-left: 0;
+        max-width: 100%;
+    }
+}
+
+@media (max-width: 640px) {
+    .ads {
+        min-height: 380px;
+        height: auto;
+    }
+
+    .topContent {
+        padding: 16px 14px 0;
+    }
+
+    .topContent h2,
+    .topContent p {
+        font-size: 24px;
+    }
+
+    .bottomContent {
+        padding: 14px;
+        gap: 12px;
+    }
+
+    .bottomContent button {
+        width: 100%;
+        max-width: 220px;
+        height: 48px;
+        font-size: 22px;
+    }
+
+    .bottomContent p {
+        font-size: 14px;
+    }
+
+    .videoSection {
+        padding: 24px 14px;
+    }
+
+    .videoGrid {
+        grid-template-columns: 1fr;
+        gap: 20px;
+    }
+
+    .videoInfo {
+        padding: 0 !important;
+    }
+
+    .videoInfo h4 {
+        font-size: 15px;
+    }
+
+    .videoInfo p {
+        font-size: 13px;
+    }
+
+    .videoInfo span {
+        font-size: 12px;
+    }
+
+    .videoCard .metaAvatar {
+        width: 34px;
+        height: 34px;
+    }
+
+    .categoryBtns {
+        padding-left: 14px !important;
+        padding-right: 90px !important;
+    }
+
+    .another,
+    .frts {
+        height: 34px !important;
+        padding: 0 14px !important;
+        font-size: 13px !important;
+    }
+}
