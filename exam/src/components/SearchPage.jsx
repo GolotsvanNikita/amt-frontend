@@ -1,11 +1,13 @@
 import React, { useEffect, useState } from "react";
-import { useSearchParams, Link } from "react-router-dom";
+import { useSearchParams, useNavigate } from "react-router-dom";
 import "./SearchPage.css";
 
 const API_URL = import.meta.env.VITE_API_URL;
 
 export function SearchPage() {
     const [searchParams] = useSearchParams();
+    const navigate = useNavigate();
+
     const query = searchParams.get("q") || "";
 
     const [videos, setVideos] = useState([]);
@@ -27,28 +29,19 @@ export function SearchPage() {
         return "";
     };
 
-    const getTitle = (video) => {
-        return video.title || video.snippet?.title || "Untitled";
-    };
+    const openVideo = (video) => {
+        const videoId = getVideoId(video);
 
-    const getThumbnail = (video) => {
-        return (
-            video.thumbnailUrl ||
-            video.thumbnail ||
-            video.snippet?.thumbnails?.high?.url ||
-            video.snippet?.thumbnails?.medium?.url ||
-            video.snippet?.thumbnails?.default?.url ||
-            "/default-thumbnail.png"
-        );
-    };
+        if (!videoId) {
+            console.warn("NO VIDEO ID:", video);
+            return;
+        }
 
-    const getChannelName = (video) => {
-        return (
-            video.channelName ||
-            video.channelTitle ||
-            video.snippet?.channelTitle ||
-            "Unknown channel"
-        );
+        navigate(`/video/${videoId}`, {
+            state: {
+                video
+            }
+        });
     };
 
     const loadSearchResults = async (pageToken = "") => {
@@ -59,7 +52,6 @@ export function SearchPage() {
             setError("");
 
             const url = `${API_URL}/api/video/search?q=${encodeURIComponent(query)}&pageToken=${encodeURIComponent(pageToken)}`;
-            console.log("SEARCH URL:", url);
 
             const response = await fetch(url);
 
@@ -68,16 +60,10 @@ export function SearchPage() {
             }
 
             const data = await response.json();
-            console.log("SEARCH RESPONSE:", data);
 
             const newVideos = data.videos || data.items || [];
 
-            if (pageToken) {
-                setVideos(prev => [...prev, ...newVideos]);
-            } else {
-                setVideos(newVideos);
-            }
-
+            setVideos(prev => pageToken ? [...prev, ...newVideos] : newVideos);
             setNextPageToken(data.nextPageToken || "");
         } catch (err) {
             console.error("SEARCH PAGE ERROR:", err);
@@ -95,33 +81,33 @@ export function SearchPage() {
 
     return (
         <div className="searchPage">
-            <h2>
-                Search results for: <span>{query}</span>
-            </h2>
+            <h2>Search results for: <span>{query}</span></h2>
 
             {error && <p className="searchError">{error}</p>}
 
-            {!loading && videos.length === 0 && !error && (
-                <p className="emptySearch">No videos found</p>
-            )}
-
             <div className="searchResults">
                 {videos.map((video, index) => {
-                    const videoId = getVideoId(video);
-                    const title = getTitle(video);
-                    const thumbnail = getThumbnail(video);
-                    const channelName = getChannelName(video);
+                    const title = video.title || video.snippet?.title || "Untitled";
 
-                    if (!videoId) {
-                        console.warn("VIDEO WITHOUT ID:", video);
-                        return null;
-                    }
+                    const thumbnail =
+                        video.thumbnailUrl ||
+                        video.thumbnail ||
+                        video.snippet?.thumbnails?.high?.url ||
+                        video.snippet?.thumbnails?.medium?.url ||
+                        video.snippet?.thumbnails?.default?.url ||
+                        "/default-thumbnail.png";
+
+                    const channelName =
+                        video.channelName ||
+                        video.channelTitle ||
+                        video.snippet?.channelTitle ||
+                        "Unknown channel";
 
                     return (
-                        <Link
-                            to={`/video/${videoId}`}
-                            className="searchCard"
-                            key={`${videoId}-${index}`}
+                        <div
+                            className="searchCard reveal-on-scroll"
+                            key={index}
+                            onClick={() => openVideo(video)}
                         >
                             <img src={thumbnail} alt={title} />
 
@@ -129,7 +115,7 @@ export function SearchPage() {
                                 <h3>{title}</h3>
                                 <p>{channelName}</p>
                             </div>
-                        </Link>
+                        </div>
                     );
                 })}
             </div>
@@ -147,5 +133,3 @@ export function SearchPage() {
         </div>
     );
 }
-
-export default SearchPage;

@@ -187,19 +187,19 @@ export function MainPage() {
 
                 const normalizedHistory = Array.isArray(data)
                     ? data.map((video, index) =>
-                        normalizeVideo(
-                            {
-                                id: video.videoId || video.id,
-                                title: video.title,
-                                thumbnail: video.thumbnail || video.thumbnailUrl,
-                                channelName: video.channelName || video.author,
-                                channelAvatarUrl: video.channelAvatarUrl || video.avatar,
-                                meta: video.meta || video.viewsText || "",
-                                category: video.category,
-                            },
-                            index
-                        )
-                    )
+                          normalizeVideo(
+                              {
+                                  id: video.videoId || video.id,
+                                  title: video.title,
+                                  thumbnail: video.thumbnail || video.thumbnailUrl,
+                                  channelName: video.channelName || video.author,
+                                  channelAvatarUrl: video.channelAvatarUrl || video.avatar,
+                                  meta: video.meta || video.viewsText || "",
+                                  category: video.category,
+                              },
+                              index
+                          )
+                      )
                     : [];
 
                 setHistory(normalizedHistory);
@@ -329,7 +329,7 @@ export function MainPage() {
                     title: video.title,
                     thumbnailUrl: video.thumbnail,
                     channelName: video.channelName,
-                    avatarUrl: video.avatar, // ИСПРАВЛЕНО НА avatarUrl
+                    avatarUrl: video.avatar,
                     meta: video.meta,
                     category: video.category,
                 }),
@@ -354,7 +354,7 @@ export function MainPage() {
         return (
             <button
                 type="button"
-                className="videoCard"
+                className="videoCard reveal-on-scroll"
                 key={normalizedVideo.id}
                 onClick={() => handleVideoClick(normalizedVideo)}
             >
@@ -370,7 +370,9 @@ export function MainPage() {
                         className="metaAvatar"
                         alt={normalizedVideo.channelName}
                         onError={(e) => {
-                            e.currentTarget.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(normalizedVideo.channelName)}&background=222&color=fff`;
+                            e.currentTarget.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(
+                                normalizedVideo.channelName
+                            )}&background=222&color=fff`;
                         }}
                     />
 
@@ -383,7 +385,9 @@ export function MainPage() {
                                     navigate(`/channel/${normalizedVideo.channelId}`);
                                 }
                             }}
-                            style={{ cursor: normalizedVideo.channelId ? "pointer" : "default" }}
+                            style={{
+                                cursor: normalizedVideo.channelId ? "pointer" : "default",
+                            }}
                         >
                             {normalizedVideo.channelName}
                         </p>
@@ -395,6 +399,7 @@ export function MainPage() {
             </button>
         );
     };
+
     const filteredSections = useMemo(() => {
         return videoSections.map((section) => ({
             ...section,
@@ -424,16 +429,19 @@ export function MainPage() {
     const [carouselIndex, setCarouselIndex] = useState(0);
     const [carouselKey, setCarouselKey] = useState(0);
 
-    const getRandomVideos = useCallback((excludeIds = []) => {
-        if (!allVideos.length) return [];
+    const getRandomVideos = useCallback(
+        (excludeIds = []) => {
+            if (!allVideos.length) return [];
 
-        const filtered = allVideos.filter((video) => !excludeIds.includes(video.id));
-        const source = filtered.length >= 5 ? filtered : allVideos;
+            const filtered = allVideos.filter((video) => !excludeIds.includes(video.id));
+            const source = filtered.length >= 5 ? filtered : allVideos;
 
-        const shuffled = [...source].sort(() => Math.random() - 0.5);
+            const shuffled = [...source].sort(() => Math.random() - 0.5);
 
-        return shuffled.slice(0, 5);
-    }, [allVideos]);
+            return shuffled.slice(0, 5);
+        },
+        [allVideos]
+    );
 
     useEffect(() => {
         if (!allVideos.length) return;
@@ -456,15 +464,48 @@ export function MainPage() {
             setTimeout(() => {
                 const nextPack = getRandomVideos(currentIds);
 
-                console.log("OLD CAROUSEL IDS:", currentIds);
-                console.log("NEW CAROUSEL PACK:", nextPack);
-
                 setCarouselVideos(nextPack);
                 setCarouselIndex(0);
                 setCarouselKey((prev) => prev + 1);
             }, 250);
         }
     };
+
+    useEffect(() => {
+        const elements = document.querySelectorAll(
+            ".mainPage .reveal-on-scroll:not(.visible)"
+        );
+
+        if (!elements.length) return;
+
+        const observer = new IntersectionObserver(
+            (entries) => {
+                entries.forEach((entry) => {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add("visible");
+                        observer.unobserve(entry.target);
+                    }
+                });
+            },
+            {
+                threshold: 0.08,
+                rootMargin: "0px 0px -30px 0px",
+            }
+        );
+
+        elements.forEach((el) => observer.observe(el));
+
+        return () => observer.disconnect();
+    }, [
+        filteredSections,
+        filteredHistory.length,
+        filteredAllVideos.length,
+        loadingSections,
+        loadingHistory,
+        loadingAllVideos,
+        loadingMoreAllVideos,
+        selectedCategory,
+    ]);
 
     return (
         <div className="mainPage">

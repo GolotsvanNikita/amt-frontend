@@ -2,28 +2,19 @@
   background: #000;
   color: white;
   padding: 24px;
-  font-family: Arial, sans-serif;
   max-width: 800px;
   margin: 0 auto;
 }
 
-.comments h3 {
-  font-size: 20px;
-  margin-bottom: 16px;
-}
-
 .comment-form {
   display: flex;
-  align-items: center;
   gap: 10px;
-  border-bottom: 1px solid #444;
-  padding-bottom: 12px;
   margin-bottom: 20px;
 }
 
 .comment-form img {
-  width: 44px;
-  height: 44px;
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
 }
 
@@ -32,84 +23,27 @@
   background: transparent;
   border: none;
   color: white;
-  font-size: 16px;
-  padding: 6px;
-}
-
-.comment-form input:focus {
-  outline: none;
-}
-
-.form-icons {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.form-icons span {
-  font-size: 18px;
-  cursor: pointer;
-  opacity: 0.8;
-}
-
-.form-icons button {
-  background: #333;
-  border: none;
-  font-size: 16px;
-  border-radius: 50%;
-  width: 32px;
-  height: 32px;
-  cursor: pointer;
 }
 
 .sendCom {
   background: none;
   border: none;
-  border-radius: 50%;
-  width: 40px;
-  height: 40px;
   cursor: pointer;
-  margin-bottom: 12px;
 }
-
-/* ===== АНИМАЦИЯ ===== */
 
 .comment-block {
-  margin-bottom: 24px;
-  animation: commentFadeIn 0.35s ease both;
+  margin-bottom: 20px;
 }
-
-/* stagger */
-.comment-block:nth-child(1) { animation-delay: 0.03s; }
-.comment-block:nth-child(2) { animation-delay: 0.06s; }
-.comment-block:nth-child(3) { animation-delay: 0.09s; }
-.comment-block:nth-child(4) { animation-delay: 0.12s; }
-.comment-block:nth-child(5) { animation-delay: 0.15s; }
 
 .comment {
   display: flex;
-  gap: 14px;
-  align-items: flex-start;
-  transition: transform 0.2s ease, background-color 0.2s ease;
-  border-radius: 12px;
-  padding: 8px;
-}
-
-.comment:hover {
-  background-color: rgba(255, 255, 255, 0.04);
-  transform: translateX(4px);
-}
-
-.comment.reply {
-  margin-left: 48px;
-  margin-top: 12px;
+  gap: 12px;
 }
 
 .comment img {
-  width: 44px;
-  height: 44px;
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
-  align-self: flex-start;
 }
 
 .comment-body {
@@ -118,95 +52,52 @@
 
 .comment-meta {
   display: flex;
-  gap: 10px;
+  gap: 8px;
   font-size: 14px;
-  font-weight: bold;
 }
 
 .comment-time {
   color: #aaa;
-  font-weight: normal;
-}
-
-.comment-body p {
-  margin: 4px 0 0;
-  font-size: 15px;
-  line-height: 1.4;
-  text-align: left;
 }
 
 .comment-actions {
-  display: flex;
-  gap: 14px;
-  margin-top: 4px;
-  align-items: center;
-}
-
-.emojis {
-  font-size: 18px;
-  opacity: 0.8;
+  margin-top: 6px;
 }
 
 .reply-btn {
-  font-size: 14px;
-  color: #aaa;
   cursor: pointer;
+  color: #aaa;
 }
 
 .reply-btn:hover {
-  color: #ddd;
+  color: white;
 }
 
 .reply-form {
   display: flex;
-  align-items: center;
   gap: 10px;
   margin-top: 10px;
-}
-
-.reply-form img {
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
 }
 
 .reply-form input {
   flex: 1;
   background: transparent;
   border: none;
-  color: white;
-  font-size: 14px;
   border-bottom: 1px solid #555;
-  padding: 4px;
-}
-
-.reply-form input:focus {
-  outline: none;
-  border-color: #aaa;
-}
-
-.reply-form button {
-  background: #333;
   color: white;
-  border: none;
-  font-size: 16px;
-  border-radius: 50%;
-  width: 30px;
-  height: 30px;
-  cursor: pointer;
 }
 
+/* 🔥 АНИМАЦИЯ */
 
-@keyframes commentFadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(12px);
-    filter: blur(3px);
-  }
+.reveal-on-scroll {
+  opacity: 0;
+  transform: translateY(16px);
+  filter: blur(4px);
+  transition: all 0.4s ease;
+}
 
-  to {
-    opacity: 1;
-    transform: translateY(0);
-    filter: blur(0);
-  }
+.reveal-on-scroll.visible {
+  opacity: 1;
+  transform: translateY(0);
+  filter: blur(0);
 }
