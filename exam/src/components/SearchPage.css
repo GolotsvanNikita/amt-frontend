@@ -1,0 +1,71 @@
+.searchPage {
+    padding: 24px;
+    color: white;
+}
+
+.searchPage h2 {
+    margin-bottom: 24px;
+    font-size: 24px;
+}
+
+.searchPage h2 span {
+    color: #aaa;
+}
+
+.searchResults {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+}
+
+.searchCard {
+    display: flex;
+    gap: 16px;
+    text-decoration: none;
+    color: white;
+    padding: 12px;
+    border-radius: 12px;
+    transition: background 0.2s;
+}
+
+.searchCard:hover {
+    background: #1f1f1f;
+}
+
+.searchCard img {
+    width: 260px;
+    height: 145px;
+    object-fit: cover;
+    border-radius: 12px;
+    background: #222;
+}
+
+.searchInfo h3 {
+    margin: 0 0 10px;
+    font-size: 18px;
+}
+
+.searchInfo p {
+    margin: 0;
+    color: #aaa;
+}
+
+.searchError {
+    color: #ff5c5c;
+}
+
+.emptySearch,
+.loadingSearch {
+    color: #aaa;
+}
+
+.loadMoreSearch {
+    margin-top: 24px;
+    padding: 10px 18px;
+    border: none;
+    border-radius: 20px;
+    background: white;
+    color: black;
+    cursor: pointer;
+    font-weight: 600;
+}
